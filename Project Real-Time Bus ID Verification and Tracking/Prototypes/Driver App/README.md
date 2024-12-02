@@ -1,6 +1,6 @@
 # driver_app
 
-A prototype
+A new Flutter project.
 
 ## Getting Started
 

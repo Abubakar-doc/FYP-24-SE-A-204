@@ -1,13 +1,10 @@
+// Root-level build.gradle file
 buildscript {
     repositories {
-        google()  // Use Google's repository to fetch dependencies
-        mavenCentral()  // Use Maven Central for other dependencies
+        google()
+        mavenCentral()
     }
     dependencies {
-        // Android Gradle Plugin (make sure you use the correct version)
-        classpath 'com.android.tools.build:gradle:7.0.4'
-
-        // Google Services Plugin (add this if using Firebase or other Google services)
         classpath 'com.google.gms:google-services:4.4.2'
     }
 }
@@ -22,8 +19,6 @@ allprojects {
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(":app")
 }
 

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "80257405191",
-    "project_id": "bus-prototype-db",
-    "storage_bucket": "bus-prototype-db.firebasestorage.app"
+    "project_number": "708312683474",
+    "project_id": "driver-app-prototyp",
+    "storage_bucket": "driver-app-prototyp.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:80257405191:android:090c1f5f783af1544af5a2",
+        "mobilesdk_app_id": "1:708312683474:android:67cd3a807932e69d62ae0b",
         "android_client_info": {
           "package_name": "com.example.driver_app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDcbn1EE0yz367r3SeYkluJoR65HPLw8vA"
+          "current_key": "AIzaSyDcYFXM0osrmzjg7Poi9OjlHjSFQyOOKcc"
         }
       ],
       "services": {
