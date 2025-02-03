@@ -1,30 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:rtbivt/screens/common/splash/splash.dart';
+import 'package:rtbivt/screens/common/welcome/welcome.dart';
 
 class DriverHomeScreen extends StatelessWidget {
   DriverHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Driver Home"),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(height: 20),
-              // A simple text field for input
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: "Name", // Hint text that moves up when focused
-                ),
-              ),
-              SizedBox(height: 20),
-            ],
-          ),
-        ),
-      );
+    return Scaffold(
+        body: Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: SafeArea(
+          child: WelcomeScreen()
+          // child: SplashScreen()
+      ),
+    ));
   }
 }

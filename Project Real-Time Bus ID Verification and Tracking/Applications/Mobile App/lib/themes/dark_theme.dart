@@ -22,8 +22,8 @@ ThemeData darkTheme = ThemeData(
     iconTheme: IconThemeData(color: darkTextColor),
   ),
   textTheme: TextTheme(
-    bodyLarge: TextStyle(color: darkTextColor, fontSize: 18),
-    bodyMedium: TextStyle(color: Colors.white70, fontSize: 16),
+    bodyLarge: TextStyle(fontSize: 18),
+    bodyMedium: TextStyle(fontSize: 16),
   ),
   textButtonTheme: TextButtonThemeData(
     style: ButtonStyle(
@@ -35,7 +35,7 @@ ThemeData darkTheme = ThemeData(
         ),
       ),
       textStyle: MaterialStateProperty.all(
-        TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'OpenSans'),
       ),
     ),
   ),

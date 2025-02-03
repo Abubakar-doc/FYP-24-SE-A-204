@@ -22,8 +22,8 @@ ThemeData lightTheme = ThemeData(
     iconTheme: IconThemeData(color: lightTextColor),
   ),
   textTheme: TextTheme(
-    bodyLarge: TextStyle(color: lightTextColor, fontSize: 18),
-    bodyMedium: TextStyle(color: Colors.black54, fontSize: 16),
+    bodyLarge: TextStyle(fontSize: 18),
+    bodyMedium: TextStyle(fontSize: 16),
   ),
   textButtonTheme: TextButtonThemeData(
     style: ButtonStyle(
@@ -35,7 +35,7 @@ ThemeData lightTheme = ThemeData(
         ),
       ),
       textStyle: MaterialStateProperty.all(
-        TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'OpenSans'),
       ),
     ),
   ),
