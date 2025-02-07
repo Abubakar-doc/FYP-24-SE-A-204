@@ -29,6 +29,7 @@ ThemeData darkTheme = ThemeData(
     style: ButtonStyle(
       foregroundColor: MaterialStateProperty.all(textButtonColor),
       backgroundColor: MaterialStateProperty.all(primaryColor),
+      padding: MaterialStateProperty.all(EdgeInsets.symmetric(vertical: 16)),
       shape: MaterialStateProperty.all(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),

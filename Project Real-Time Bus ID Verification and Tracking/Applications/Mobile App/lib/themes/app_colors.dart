@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 // Primary and Secondary Colors
-const Color primaryColor = Color(0xFF0686CB);
+const Color primaryColor = Colors.blue;
+// const Color primaryColor = Color(0xFF0686CB);
 const Color secondaryColor = Colors.deepPurple;
 
 // Background Colors

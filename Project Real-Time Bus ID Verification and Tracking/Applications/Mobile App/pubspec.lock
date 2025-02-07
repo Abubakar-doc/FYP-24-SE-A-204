@@ -238,6 +238,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  firebase_auth:
+    dependency: "direct main"
+    description:
+      name: firebase_auth
+      sha256: eabb0dddb72956b7004aabf03c0bf650c19f92e470441d6a4e6b19cd4e9ca958
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.4.1"
+  firebase_auth_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_auth_platform_interface
+      sha256: b8684ade236c20638a17343f89029f7059fef13245cc102413d5c9cf6f98afb5
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.5.1"
+  firebase_auth_web:
+    dependency: transitive
+    description:
+      name: firebase_auth_web
+      sha256: "5ea5f2fbe02900ff2772ed9ea95ed8b1c7e160f4b4b6000d227bdeecd40904f8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.13.7"
   firebase_core:
     dependency: "direct main"
     description:
@@ -334,7 +358,7 @@ packages:
     source: hosted
     version: "2.3.2"
   hive:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: hive
       sha256: "8dcf6db979d7933da8217edcec84e9df1bdb4e4edc7fc77dbd5aa74356d6d941"
@@ -350,7 +374,7 @@ packages:
     source: hosted
     version: "1.1.0"
   hive_generator:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: hive_generator
       sha256: "06cb8f58ace74de61f63500564931f9505368f45f98958bd7a6c35ba24159db4"
@@ -385,10 +409,10 @@ packages:
     dependency: transitive
     description:
       name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
+      sha256: c1b2e9b5ea78c45e1a0788d29606ba27dc5f71f019f32ca5140f61ef071838cf
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.7"
+    version: "0.7.1"
   json_annotation:
     dependency: transitive
     description:
@@ -597,6 +621,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
+  skeletonizer:
+    dependency: "direct main"
+    description:
+      name: skeletonizer
+      sha256: "0dcacc51c144af4edaf37672072156f49e47036becbc394d7c51850c5c1e884b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.3"
   sky_engine:
     dependency: transitive
     description: flutter

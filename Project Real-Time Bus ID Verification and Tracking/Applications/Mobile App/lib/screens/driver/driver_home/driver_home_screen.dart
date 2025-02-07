@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:rtbivt/screens/common/splash/splash.dart';
-import 'package:rtbivt/screens/common/welcome/welcome.dart';
+import 'package:rtbivt/widget/drawer/custom_drawer.dart';
 
 class DriverHomeScreen extends StatelessWidget {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   DriverHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: SafeArea(
-          child: WelcomeScreen()
-          // child: SplashScreen()
-      ),
-    ));
+      key: _scaffoldKey,
+      drawer: const CustomDrawer(),
+      body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: IconButton(
+                onPressed: () {
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+                icon: Icon(Icons.menu)),
+          )),
+    );
   }
 }

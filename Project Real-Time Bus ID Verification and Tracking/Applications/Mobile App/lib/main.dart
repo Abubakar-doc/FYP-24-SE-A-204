@@ -2,7 +2,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:rtbivt/screens/driver/driver_home/driver_home_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:rtbivt/model/user.dart';
+import 'package:rtbivt/screens/driver/driver_main.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/light_theme.dart';
 import 'themes/dark_theme.dart';
@@ -11,6 +13,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await GetStorage.init();
+  await Hive.initFlutter();
+  Hive.registerAdapter(UserModelAdapter());
 
   runApp(MyApp());
 }
@@ -25,13 +29,13 @@ class MyApp extends StatelessWidget {
     return GetX<ThemeController>(
       builder: (controller) {
         return GetMaterialApp(
-          debugShowCheckedModeBanner: false,
+          debugShowCheckedModeBanner: false, 
           title: 'Flutter GetX Theme',
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode:
               controller.themeMode.value,
-          home: DriverHomeScreen(),
+          home: DriverMain(),
         );
       },
     );
