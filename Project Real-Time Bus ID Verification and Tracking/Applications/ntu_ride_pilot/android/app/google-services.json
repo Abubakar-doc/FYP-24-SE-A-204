@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "486360365924",
+    "project_id": "ntu-ride-pilot",
+    "storage_bucket": "ntu-ride-pilot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:486360365924:android:84ec43940533efb969d871",
+        "android_client_info": {
+          "package_name": "com.example.ntu_ride_pilot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBx2E-USCg4Qf4e_vmPN2kNiQD3M80VcRw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
