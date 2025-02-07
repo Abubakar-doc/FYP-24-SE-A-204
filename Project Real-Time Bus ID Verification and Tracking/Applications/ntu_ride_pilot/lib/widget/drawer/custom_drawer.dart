@@ -12,7 +12,7 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
-  bool _isCollapsed = false;
+  final bool _isCollapsed = true;
 
   int _activeIndex = 0;
 
@@ -40,7 +40,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
           color: isDarkTheme ? darkBackgroundColor : lightBackgroundColor,
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.all(10),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -53,8 +53,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.home_outlined,
                 title: 'Home',
                 infoCount: 0,
-                isActive: _activeIndex == 0,  // Check if this tile is active
-                onTap: () => _onTileTapped(0),  // Set active index on tap
+                isActive: _activeIndex == 0, // Check if this tile is active
+                onTap: () => _onTileTapped(0), // Set active index on tap
               ),
 
               // CustomListTile for Notifications
@@ -63,8 +63,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.notifications,
                 title: 'Notifications',
                 infoCount: 2,
-                isActive: _activeIndex == 1,  // Check if this tile is active
-                onTap: () => _onTileTapped(1),  // Set active index on tap
+                isActive: _activeIndex == 1, // Check if this tile is active
+                onTap: () => _onTileTapped(1), // Set active index on tap
               ),
 
               // CustomListTile for Feedback
@@ -73,8 +73,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.feedback_outlined,
                 title: 'Feedback',
                 infoCount: 0,
-                isActive: _activeIndex == 2,  // Check if this tile is active
-                onTap: () => _onTileTapped(2),  // Set active index on tap
+                isActive: _activeIndex == 2, // Check if this tile is active
+                onTap: () => _onTileTapped(2), // Set active index on tap
               ),
 
               // CustomListTile for Settings
@@ -83,31 +83,31 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.settings,
                 title: 'Settings',
                 infoCount: 0,
-                isActive: _activeIndex == 3,  // Check if this tile is active
-                onTap: () => _onTileTapped(3),  // Set active index on tap
+                isActive: _activeIndex == 3, // Check if this tile is active
+                onTap: () => _onTileTapped(3), // Set active index on tap
               ),
 
               const Spacer(),
               BottomUserInfo(isCollapsed: _isCollapsed),
-              Align(
-                alignment: _isCollapsed
-                    ? Alignment.bottomRight
-                    : Alignment.bottomCenter,
-                child: IconButton(
-                  splashColor: Colors.transparent,
-                  icon: Icon(
-                    _isCollapsed
-                        ? Icons.arrow_back_ios
-                        : Icons.arrow_forward_ios,
-                    size: 16,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isCollapsed = !_isCollapsed;
-                    });
-                  },
-                ),
-              ),
+              // Align(
+              //   alignment: _isCollapsed
+              //       ? Alignment.bottomRight
+              //       : Alignment.bottomCenter,
+              //   child: IconButton(
+              //     splashColor: Colors.transparent,
+              //     icon: Icon(
+              //       _isCollapsed
+              //           ? Icons.arrow_back_ios
+              //           : Icons.arrow_forward_ios,
+              //       size: 16,
+              //     ),
+              //     onPressed: () {
+              //       setState(() {
+              //         _isCollapsed = !_isCollapsed;
+              //       });
+              //     },
+              //   ),
+              // ),
             ],
           ),
         ),
