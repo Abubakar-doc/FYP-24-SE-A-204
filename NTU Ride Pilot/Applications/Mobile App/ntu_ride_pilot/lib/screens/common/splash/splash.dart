@@ -8,7 +8,7 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Future.delayed(Duration(seconds: 2), () async {
+    Future.delayed(Duration(seconds: 0), () async {
       await _authService.isSignedIn();
     });
 
