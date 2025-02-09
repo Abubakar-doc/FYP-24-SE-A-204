@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
-import 'package:ntu_ride_pilot/screens/driver/driver_home/driver_home_screen.dart';
+import 'package:ntu_ride_pilot/screens/driver/home/driver_home_screen.dart';
 import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 

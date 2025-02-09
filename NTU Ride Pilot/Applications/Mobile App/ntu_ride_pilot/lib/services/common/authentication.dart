@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/welcome/welcome.dart';
-import 'package:ntu_ride_pilot/screens/driver/driver_home/driver_home_screen.dart';
+import 'package:ntu_ride_pilot/screens/driver/home/driver_home_screen.dart';
 import 'package:ntu_ride_pilot/screens/student/student_home/student_home_screen.dart';
 import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
 import 'package:ntu_ride_pilot/services/student/student_service.dart';
