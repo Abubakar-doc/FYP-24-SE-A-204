@@ -21,7 +21,6 @@ class StudentService {
           rollNo: data['roll_no'],
           feePaid: data['fee_paid'] ?? false,
           busCardId: data['bus_card_id'],
-          busCardStatus: data['bus_card_status'],
         );
       }
     } catch (e) {

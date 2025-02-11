@@ -1,47 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:ntu_ride_pilot/themes/app_colors.dart';
 
 class CustomDropdown extends StatelessWidget {
   final String title;
   final String? selectedValue;
   final List<String> items;
   final ValueChanged<String?> onChanged;
-  final Color dropdownColor;
-  final Color hintColor;
-  final Color textColor;
 
   const CustomDropdown({
-    Key? key,
+    super.key,
     required this.title,
     required this.selectedValue,
     required this.items,
     required this.onChanged,
-    required this.dropdownColor,
-    required this.hintColor,
-    required this.textColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: dropdownColor,
+        color: theme.brightness == Brightness.dark ? DarkInputFieldFillColor : LightInputFieldFillColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          dropdownColor: dropdownColor,
+          dropdownColor: theme.brightness == Brightness.dark ? DarkInputFieldFillColor : LightInputFieldFillColor,
           value: selectedValue,
           hint: Text(
             title,
             style: TextStyle(
-              color: hintColor,
+              color: theme.brightness == Brightness.dark ? DarkhintTextColor : Colors.grey.shade700,
             ),
           ),
           isExpanded: true,
           icon: Icon(
             Icons.arrow_drop_down,
-            color: textColor,
+            color: theme.brightness == Brightness.dark ? darkTextColor : Colors.black,
           ),
           onChanged: onChanged,
           items: items.map((String value) {
@@ -50,7 +46,7 @@ class CustomDropdown extends StatelessWidget {
               child: Text(
                 value,
                 style: TextStyle(
-                  color: textColor,
+                  color: theme.brightness == Brightness.dark ? darkTextColor : Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),

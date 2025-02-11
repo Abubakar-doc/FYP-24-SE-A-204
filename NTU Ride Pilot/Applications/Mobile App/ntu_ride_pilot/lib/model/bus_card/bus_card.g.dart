@@ -1,47 +1,44 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'student.dart';
+part of 'bus_card.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class StudentModelAdapter extends TypeAdapter<StudentModel> {
+class BusCardModelAdapter extends TypeAdapter<BusCardModel> {
   @override
-  final int typeId = 2;
+  final int typeId = 3;
 
   @override
-  StudentModel read(BinaryReader reader) {
+  BusCardModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return StudentModel(
-      email: fields[0] as String,
-      name: fields[1] as String,
-      rollNo: fields[2] as String,
-      feePaid: fields[3] as bool,
-      busCardId: fields[4] as String,
-      role: fields[6] as String,
+    return BusCardModel(
+      busCardId: fields[0] as String,
+      rollNo: fields[1] as String,
+      isActive: fields[2] as bool,
+      name: fields[4] as String,
+      updatedAt: fields[5] as DateTime?,
     );
   }
 
   @override
-  void write(BinaryWriter writer, StudentModel obj) {
+  void write(BinaryWriter writer, BusCardModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(5)
       ..writeByte(0)
-      ..write(obj.email)
-      ..writeByte(1)
-      ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.rollNo)
-      ..writeByte(3)
-      ..write(obj.feePaid)
-      ..writeByte(4)
       ..write(obj.busCardId)
-      ..writeByte(6)
-      ..write(obj.role);
+      ..writeByte(1)
+      ..write(obj.rollNo)
+      ..writeByte(2)
+      ..write(obj.isActive)
+      ..writeByte(4)
+      ..write(obj.name)
+      ..writeByte(5)
+      ..write(obj.updatedAt);
   }
 
   @override
@@ -50,7 +47,7 @@ class StudentModelAdapter extends TypeAdapter<StudentModel> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is StudentModelAdapter &&
+      other is BusCardModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

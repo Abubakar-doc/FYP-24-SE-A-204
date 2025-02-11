@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/home/home_screen.dart';
@@ -19,11 +20,15 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(DriverModelAdapter());
   Hive.registerAdapter(StudentModelAdapter());
+  Hive.registerAdapter(BusCardModelAdapter());
   if (!Hive.isBoxOpen('driverBox')) {
     await Hive.openBox<DriverModel>('driverBox');
   }
   if (!Hive.isBoxOpen('studentBox')) {
     await Hive.openBox<StudentModel>('studentBox');
+  }
+  if (!Hive.isBoxOpen('bus_cards')) {
+    await Hive.openBox<BusCardModel>('bus_cards');
   }
 
   runApp(MyApp());

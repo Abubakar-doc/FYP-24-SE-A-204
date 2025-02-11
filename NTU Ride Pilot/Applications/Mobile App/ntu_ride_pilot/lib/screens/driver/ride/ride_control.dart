@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_control.dart';
+import 'package:ntu_ride_pilot/services/driver/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/widget/detail_row/detail_row.dart';
 import 'package:ntu_ride_pilot/controllers/ride_control_controller.dart';
 import 'package:flutter/services.dart';
 
 class RideControlScreen extends StatefulWidget {
-  RideControlScreen({super.key});
+  const RideControlScreen({super.key});
 
   @override
   State<RideControlScreen> createState() => _RideControlScreenState();
@@ -15,9 +18,10 @@ class RideControlScreen extends StatefulWidget {
 
 class _RideControlScreenState extends State<RideControlScreen> {
   final RideControlController controller = Get.put(RideControlController());
-  String _currentInput = ""; // Stores RFID input
-  String _cardStatus = "Waiting for card input..."; // Displays card status
-  final FocusNode _focusNode = FocusNode(); // Focus for RFID scanner
+  final RideService _rideService = RideService();
+  String _currentInput = "";
+  String _cardStatus = "Tap bus card on rfid reader...";
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -31,12 +35,72 @@ class _RideControlScreenState extends State<RideControlScreen> {
     super.dispose();
   }
 
-  void _handleCardInput(String input) {
+
+  Timer? _resetTimer; // Global variable to track the reset timer
+
+  void _handleCardInput(String input) async {
+    // Immediately show processing status
     setState(() {
-      _cardStatus = "Card ID: $input"; // Update card status with input
+      _cardStatus = "Processing...";
     });
-    // Add logic here to validate the RFID card or perform any operation
+
+    // Get the response from RideService
+    RideServiceResponse response = await _rideService.handleCardInput(input);
+
+    // Variables to store status message and card image
+    String message;
+    String cardImage;
+
+    // Determine message and image based on response status
+    switch (response.statusCode) {
+      case RideService.CARD_NOT_FOUND:
+        message = "Unverified: No record found for ${response.rollNo} (${response.studentName}).";
+        cardImage = controller.redCard;
+        break;
+
+      case RideService.CARD_INACTIVE:
+        message = "Unverified: Inactive card for ${response.rollNo} (${response.studentName}).";
+        cardImage = controller.redCard;
+        break;
+
+      case RideService.STUDENT_ALREADY_ONBOARD:
+        message = "Unverified:\n"
+            "${response.rollNo} (${response.studentName})\n"
+            "Already onboard Bus ${response.busNumber}.";
+        cardImage = controller.redCard;
+        break;
+
+      case RideService.CARD_VERIFIED:
+        message = "Verified:\n${response.rollNo}\n(${response.studentName})";
+        cardImage = controller.greenCard;
+        break;
+
+      default:
+        message = "Unverified: An unknown error occurred.";
+        cardImage = controller.redCard;
+    }
+
+    // Update the UI with the new scan result
+    setState(() {
+      _cardStatus = message;
+      controller.setCardImage(cardImage);
+    });
+
+    // Cancel any existing reset timer
+    _resetTimer?.cancel();
+
+    // Start a new reset timer
+    _resetTimer = Timer(const Duration(seconds: 10), () {
+      if (!mounted) return;
+
+      setState(() {
+        _cardStatus = "Tap bus card on RFID reader...";
+        controller.resetCardImage(Theme.of(context).brightness);
+      });
+    });
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -64,11 +128,9 @@ class _RideControlScreenState extends State<RideControlScreen> {
           onKey: (RawKeyEvent event) {
             if (event is RawKeyDownEvent) {
               if (event.logicalKey == LogicalKeyboardKey.enter) {
-                // Handle Enter key as input completion
                 _handleCardInput(_currentInput);
                 _currentInput = "";
               } else {
-                // Append character to current input
                 _currentInput += event.character ?? "";
               }
             }
@@ -105,11 +167,11 @@ class _RideControlScreenState extends State<RideControlScreen> {
                         children: [
                           Image.asset(
                             controller.getImage(theme.brightness),
-                            height: 100, // Adjust height to fit well
+                            height: 100,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _cardStatus, // Display current card status
+                            _cardStatus,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -170,9 +232,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
                       onPressed: () {
                         // Handle Start Ride
                       },
-                      child: const Text(
-                        'Start Ride',
-                      ),
+                      child: const Text('Start Ride'),
                     ),
                   ],
                 ),

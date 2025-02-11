@@ -19,9 +19,6 @@ class StudentModel {
   @HiveField(4)
   final String busCardId;
 
-  @HiveField(5)
-  final String busCardStatus;
-
   @HiveField(6)
   late final String role;
 
@@ -31,7 +28,6 @@ class StudentModel {
     required this.rollNo,
     required this.feePaid,
     required this.busCardId,
-    required this.busCardStatus,
     this.role = 'student',
   });
 
@@ -42,7 +38,6 @@ class StudentModel {
       'roll_no': rollNo,
       'fee_paid': feePaid,
       'bus_card_id': busCardId,
-      'bus_card_status': busCardStatus,
     };
   }
 
@@ -53,7 +48,6 @@ class StudentModel {
       rollNo: map['roll_no'] ?? '',
       feePaid: map['fee_paid'] ?? false,
       busCardId: map['bus_card_id'] ?? '',
-      busCardStatus: map['bus_card_status'] ?? '',
-    )..role = 'student'; // Assign role after fetching from Firestore
+    )..role = 'student';
   }
 }
