@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.9 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="26.0.9">
   <diagram name="Page-1" id="13e1069c-82ec-6db2-03f1-153e76fe0fe0">
-    <mxGraphModel dx="864" dy="908" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+    <mxGraphModel dx="1500" dy="1287" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -21,7 +21,7 @@
             <mxPoint x="664" y="255" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="3LE9rSa6zF7Dc0Env5Aw-81" value="Bus Added" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3LE9rSa6zF7Dc0Env5Aw-80" vertex="1" connectable="0">
+        <mxCell id="3LE9rSa6zF7Dc0Env5Aw-81" value="Setup a new ride" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3LE9rSa6zF7Dc0Env5Aw-80" vertex="1" connectable="0">
           <mxGeometry x="-0.0092" y="2" relative="1" as="geometry">
             <mxPoint y="-6" as="offset" />
           </mxGeometry>
@@ -54,7 +54,7 @@
             <mxPoint x="664" y="317" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="3LE9rSa6zF7Dc0Env5Aw-87" value="Check Status" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3LE9rSa6zF7Dc0Env5Aw-86" vertex="1" connectable="0">
+        <mxCell id="3LE9rSa6zF7Dc0Env5Aw-87" value="Check Card Status" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3LE9rSa6zF7Dc0Env5Aw-86" vertex="1" connectable="0">
           <mxGeometry x="-0.0092" y="2" relative="1" as="geometry">
             <mxPoint y="-6" as="offset" />
           </mxGeometry>
@@ -102,7 +102,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="3LE9rSa6zF7Dc0Env5Aw-148" value="Conformation Message" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3LE9rSa6zF7Dc0Env5Aw-147" vertex="1" connectable="0">
+        <mxCell id="3LE9rSa6zF7Dc0Env5Aw-148" value="Confirmation Email" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3LE9rSa6zF7Dc0Env5Aw-147" vertex="1" connectable="0">
           <mxGeometry x="0.2578" y="1" relative="1" as="geometry">
             <mxPoint y="-10" as="offset" />
           </mxGeometry>
@@ -447,7 +447,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="JW4kpRI1qPuGvppT-Yuk-71" value="Conformation Message" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="JW4kpRI1qPuGvppT-Yuk-70" vertex="1" connectable="0">
+        <mxCell id="JW4kpRI1qPuGvppT-Yuk-71" value="Confirmation Email" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="JW4kpRI1qPuGvppT-Yuk-70" vertex="1" connectable="0">
           <mxGeometry x="0.2578" y="1" relative="1" as="geometry">
             <mxPoint y="-10" as="offset" />
           </mxGeometry>
@@ -473,7 +473,7 @@
         <mxCell id="Om1g2NIAJvk-xu2bY28f-16" value="Mobile App" style="rounded=0;whiteSpace=wrap;html=1;" parent="JW4kpRI1qPuGvppT-Yuk-1" vertex="1">
           <mxGeometry width="90" height="31.632653061224495" as="geometry" />
         </mxCell>
-        <mxCell id="Om1g2NIAJvk-xu2bY28f-49" value="" style="endArrow=none;html=1;rounded=0;dashed=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="JW4kpRI1qPuGvppT-Yuk-73" edge="1" target="Om1g2NIAJvk-xu2bY28f-17">
+        <mxCell id="Om1g2NIAJvk-xu2bY28f-49" value="" style="endArrow=none;html=1;rounded=0;dashed=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="JW4kpRI1qPuGvppT-Yuk-73" target="Om1g2NIAJvk-xu2bY28f-17" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="418" y="1240" as="sourcePoint" />
             <mxPoint x="418" y="80" as="targetPoint" />
