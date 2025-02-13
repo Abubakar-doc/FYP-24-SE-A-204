@@ -67,7 +67,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
       case RideService.STUDENT_ALREADY_ONBOARD:
         message = "Unverified:\n"
             "${response.rollNo} (${response.studentName})\n"
-            "Already onboard Bus ${response.busNumber}.";
+            "Already onboard on Bus ${response.busNumber}.";
         cardImage = controller.redCard;
         break;
 
@@ -247,3 +247,4 @@ class _RideControlScreenState extends State<RideControlScreen> {
     );
   }
 }
+
