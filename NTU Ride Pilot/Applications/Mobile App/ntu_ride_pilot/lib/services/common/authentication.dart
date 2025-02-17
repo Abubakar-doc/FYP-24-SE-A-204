@@ -60,7 +60,7 @@ class AuthService extends GetxController {
 
       // If no role found in Firestore, force logout
       SnackbarUtil.showError("Login Issue", "User role not found. Please log in again.");
-      await logout();
+      // await logout();
 
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-disabled') {
@@ -70,10 +70,10 @@ class AuthService extends GetxController {
       } else {
         SnackbarUtil.showError("Authentication Error", e.message ?? "Something went wrong.");
       }
-      await logout();
+      // await logout();
     } catch (e) {
       SnackbarUtil.showError("Sign-in Check Error", "Unexpected error: ${e.toString()}");
-      await logout();
+      // await logout();
     }
   }
 

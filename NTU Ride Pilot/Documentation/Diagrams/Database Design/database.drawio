@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.9 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="26.0.9">
   <diagram name="Page-1" id="2ca16b54-16f6-2749-3443-fa8db7711227">
-    <mxGraphModel dx="819" dy="1328" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+    <mxGraphModel dx="1434" dy="1686" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -29,10 +29,10 @@
           <mxGeometry y="50" width="160" height="50" as="geometry" />
         </mxCell>
         <mxCell id="bIs_711gEDYV-41N-jUM-28" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="810" y="-110" width="160" height="200" as="geometry" />
+          <mxGeometry x="810" y="-110" width="160" height="210" as="geometry" />
         </mxCell>
-        <mxCell id="bIs_711gEDYV-41N-jUM-29" value="&lt;div&gt;+auto_id: string&lt;/div&gt;&lt;div&gt;+route_id: string&lt;/div&gt;&lt;div&gt;+ride_status: string&lt;br&gt;      +bus_id: string&lt;br&gt;      +driver_id: string&lt;br&gt;      +onboard: &lt;span class=&quot;hljs-keyword&quot;&gt;array(roll_no)&lt;/span&gt;&lt;br&gt;      +eta: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;      +speed: number&lt;br&gt;      +created_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="bIs_711gEDYV-41N-jUM-28" vertex="1">
-          <mxGeometry y="50" width="160" height="150" as="geometry" />
+        <mxCell id="bIs_711gEDYV-41N-jUM-29" value="&lt;div&gt;+auto_id: string&lt;/div&gt;&lt;div&gt;+route_id: string&lt;/div&gt;&lt;div&gt;+ride_status: string&lt;br&gt;      +bus_id: string&lt;br&gt;      +driver_id: string&lt;br&gt;      +onboard: &lt;span class=&quot;hljs-keyword&quot;&gt;map(roll_no,&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span class=&quot;hljs-keyword&quot;&gt;processing_mode)&lt;/span&gt;&lt;br&gt;      +eta: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;      +speed: number&lt;br&gt;      +created_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="bIs_711gEDYV-41N-jUM-28" vertex="1">
+          <mxGeometry y="50" width="160" height="160" as="geometry" />
         </mxCell>
         <mxCell id="bIs_711gEDYV-41N-jUM-30" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="250" y="-110" width="160" height="140" as="geometry" />
@@ -87,7 +87,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="iMbP7FaxJdQBUMleInDl-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="bIs_711gEDYV-41N-jUM-46" target="iMbP7FaxJdQBUMleInDl-1">
+        <mxCell id="iMbP7FaxJdQBUMleInDl-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="bIs_711gEDYV-41N-jUM-46" target="iMbP7FaxJdQBUMleInDl-1" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="610" y="-280" />
@@ -254,19 +254,19 @@
         <mxCell id="Z8k8_h2M4Hl8p6R_p7Wk-6" value="&lt;div&gt;+auto_id: string&lt;/div&gt;&lt;div&gt;+tittle: string&lt;/div&gt;&lt;div&gt;+message: string&lt;/div&gt;&lt;div&gt;      +created_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="Z8k8_h2M4Hl8p6R_p7Wk-5" vertex="1">
           <mxGeometry y="50" width="160" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="iMbP7FaxJdQBUMleInDl-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="iMbP7FaxJdQBUMleInDl-1" target="iMbP7FaxJdQBUMleInDl-5">
+        <mxCell id="iMbP7FaxJdQBUMleInDl-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="iMbP7FaxJdQBUMleInDl-1" target="iMbP7FaxJdQBUMleInDl-5" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="iMbP7FaxJdQBUMleInDl-1" value="Bus Card (Collection)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=110;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="iMbP7FaxJdQBUMleInDl-1" value="Bus Card (Collection)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=110;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="990" y="90" width="160" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="iMbP7FaxJdQBUMleInDl-2" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" vertex="1" parent="iMbP7FaxJdQBUMleInDl-1">
+        <mxCell id="iMbP7FaxJdQBUMleInDl-2" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="iMbP7FaxJdQBUMleInDl-1" vertex="1">
           <mxGeometry y="80" width="160" as="geometry" />
         </mxCell>
-        <mxCell id="iMbP7FaxJdQBUMleInDl-5" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="iMbP7FaxJdQBUMleInDl-5" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="990" y="220" width="160" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="iMbP7FaxJdQBUMleInDl-6" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;+bus_card_id: string&lt;/span&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;      +isActive: boolean&lt;/div&gt;+roll_no: string&amp;nbsp;&lt;div&gt;+name: string&lt;/div&gt;+last_boarded:&amp;nbsp;&lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;div&gt;+created_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;      +updated_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" vertex="1" parent="iMbP7FaxJdQBUMleInDl-5">
+        <mxCell id="iMbP7FaxJdQBUMleInDl-6" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;+bus_card_id: string&lt;/span&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;      +isActive: boolean&lt;/div&gt;+roll_no: string&amp;nbsp;&lt;div&gt;+name: string&lt;/div&gt;+last_boarded:&amp;nbsp;&lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;div&gt;+created_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;      +updated_at: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="iMbP7FaxJdQBUMleInDl-5" vertex="1">
           <mxGeometry y="50" width="160" height="110" as="geometry" />
         </mxCell>
       </root>

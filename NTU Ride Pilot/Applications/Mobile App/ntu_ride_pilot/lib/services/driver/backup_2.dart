@@ -1,68 +1,44 @@
+import 'dart:async';
 import 'dart:collection';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hive/hive.dart';
-import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:collection/collection.dart';
+import 'package:hive/hive.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 
 class RideService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Queue<String> _uploadQueue = Queue<String>();
-  bool _isUploading = false;
   final Connectivity _connectivity = Connectivity();
   bool _isOnline = true;
+  final Queue<Map<String, dynamic>> _verificationQueue = Queue();
+  late Timer _queueProcessor;
 
   static const String CARD_NOT_FOUND = "CARD_NOT_FOUND";
   static const String CARD_INACTIVE = "CARD_INACTIVE";
   static const String STUDENT_ALREADY_ONBOARD = "STUDENT_ALREADY_ONBOARD";
   static const String CARD_VERIFIED = "CARD_VERIFIED";
   static const String UNKNOWN_ERROR = "UNKNOWN_ERROR";
+  static const String NETWORK_ERROR = "NETWORK_ERROR";
 
   RideService() {
     _connectivity.onConnectivityChanged.listen((result) {
       _isOnline = result != ConnectivityResult.none;
       if (_isOnline) {
-        _processOfflineScans();
+        _processQueue();
       }
     });
+
+    // Start processing the queue every 5 seconds
+    _queueProcessor = Timer.periodic(Duration(seconds: 5), (_) => _processQueue());
   }
 
-  Future<void> _processOfflineScans() async {
-    var offlineBox = await Hive.openBox<Map>('offline_scans');
-    var onboardBox = await Hive.openBox<Map>('onboard_records');
-
-    var offlineScans = offlineBox.values.toList();
-
-    if (offlineScans.isNotEmpty) {
-      for (var scan in offlineScans) {
-        String rollNo = scan['rollNo'];
-
-        // Check if student is already onboard in Hive
-        if (onboardBox.containsKey(rollNo)) {
-          handleCardInput(STUDENT_ALREADY_ONBOARD);
-          continue;
-        }
-        _uploadQueue.add(rollNo);
-        handleCardInput(CARD_VERIFIED);
-      }
-
-      // Process only valid roll numbers
-      await processUploadQueue(isOffline: true);
-      await offlineBox.clear();
-    }
-
-    await offlineBox.close();
-    await onboardBox.close();
-  }
-
-
+  /// Handles card input and verifies the card locally.
   Future<RideServiceResponse> handleCardInput(String input) async {
-    var box = await Hive.openBox<BusCardModel>('bus_cards');
-    var offlineBox = await Hive.openBox<Map>('offline_scans');
+    var busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
     var onboardBox = await Hive.openBox<Map>('onboard_records');
 
     try {
-      BusCardModel? matchingCard = box.values.firstWhereOrNull(
+      BusCardModel? matchingCard = busCardBox.values.firstWhereOrNull(
             (card) => card.busCardId == input,
       );
 
@@ -74,6 +50,7 @@ class RideService {
         return RideServiceResponse(statusCode: CARD_INACTIVE);
       }
 
+      // Check if the student is already onboard in the current ride
       if (onboardBox.containsKey(matchingCard.rollNo)) {
         return RideServiceResponse(
           statusCode: STUDENT_ALREADY_ONBOARD,
@@ -83,34 +60,19 @@ class RideService {
         );
       }
 
-      if (_isOnline) {
-        String? busNumber = await isStudentAlreadyOnboard(matchingCard.rollNo);
+      // Add the card verification task to the queue
+      _verificationQueue.add({
+        'rollNo': matchingCard.rollNo,
+        'name': matchingCard.name,
+        'processingMode': _isOnline ? 'online' : 'offline',
+      });
 
-        if (busNumber != null) {
-          await onboardBox.put(matchingCard.rollNo, {
-            'bus_id': busNumber,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-
-          return RideServiceResponse(
-            statusCode: STUDENT_ALREADY_ONBOARD,
-            busNumber: busNumber,
-            studentName: matchingCard.name,
-            rollNo: matchingCard.rollNo,
-          );
-        }
-
-        _uploadQueue.add(matchingCard.rollNo);
-        processUploadQueue();
-      } else {
-        if (!offlineBox.values.any((scan) => scan['rollNo'] == matchingCard.rollNo)) {
-          await offlineBox.add({
-            'rollNo': matchingCard.rollNo,
-            'status': 'offline',
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-        }
-      }
+      // Register the student in the onboard box temporarily
+      await onboardBox.put(matchingCard.rollNo, {
+        'bus_id': "current_bus_id", // Replace with the actual bus ID
+        'timestamp': DateTime.now().toIso8601String(),
+        'status': _isOnline ? 'online' : 'offline',
+      });
 
       return RideServiceResponse(
         statusCode: CARD_VERIFIED,
@@ -118,169 +80,97 @@ class RideService {
         rollNo: matchingCard.rollNo,
       );
     } catch (e) {
-      print('❌❌❌❌❌❌❌ $e');
+      print("Error handling card input ❌❌❌❌❌❌❌❌: $e");
       return RideServiceResponse(statusCode: UNKNOWN_ERROR);
-    } finally {
-      await box.close();
-      await offlineBox.close();
-      await onboardBox.close();
     }
   }
 
-  Future<void> processUploadQueue({bool isOffline = false}) async {
-    if (_isUploading) return;
+  /// Processes the verification queue in the background.
+  Future<void> _processQueue() async {
+    if (!_isOnline) return; // Skip processing if offline
 
-    _isUploading = true;
+    while (_verificationQueue.isNotEmpty) {
+      var task = _verificationQueue.removeFirst();
+      String rollNo = task['rollNo'];
+      String name = task['name'];
+      String processingMode = task['processingMode'];
+
+      try {
+        await _updateOnboardStatus(rollNo, processingMode: processingMode);
+      } catch (e) {
+        print("Error processing queue task: $e");
+        // Re-add the task to the queue if it fails
+        _verificationQueue.add(task);
+      }
+    }
+  }
+
+  /// Updates the onboard status of a student in Firestore and Hive.
+  Future<void> _updateOnboardStatus(String rollNo, {required String processingMode}) async {
+    var onboardBox = await Hive.openBox<Map>('onboard_records');
     final String rideDocId = "3M4ebYvkNSatUqkP6Q1j";
     DocumentReference rideDocRef = _firestore.collection("rides").doc(rideDocId);
 
-    while (_uploadQueue.isNotEmpty) {
-      String rollNo = _uploadQueue.removeFirst();
+    String timestamp = DateTime.now().toIso8601String();
 
-      try {
-        if (isOffline) {
-          await rideDocRef.set({
-            "onboard": FieldValue.arrayUnion([rollNo]),
-            "status": "offline",
-            "offline_timestamp": DateTime.now().toIso8601String(),
-          }, SetOptions(merge: true));
-        } else {
-          DocumentSnapshot rideSnapshot = await rideDocRef.get();
-          Map<String, dynamic>? rideData = rideSnapshot.data() as Map<String, dynamic>?;
-
-          if (rideData == null || !rideData.containsKey("onboard")) {
-            await rideDocRef.set({
-              "onboard": [rollNo],
-            }, SetOptions(merge: true));
-          } else {
-            List<dynamic> onboardList = rideData["onboard"] ?? [];
-            if (onboardList.contains(rollNo)) {
-              continue;
-            }
-
-            await rideDocRef.update({
-              "onboard": FieldValue.arrayUnion([rollNo]),
-            });
+    try {
+      // Update Firestore
+      await rideDocRef.set({
+        'onboard': {
+          rollNo: {
+            "status": processingMode,
+            "timestamp": timestamp,
           }
         }
+      }, SetOptions(merge: true));
 
-        var onboardBox = await Hive.openBox<Map>('onboard_records');
-        await onboardBox.put(rollNo, {
-          'bus_id': rideDocId,
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-        await onboardBox.close();
-      } catch (e) {}
+      // Update Hive
+      await onboardBox.put(rollNo, {
+        'bus_id': rideDocId,
+        'timestamp': timestamp,
+        'status': processingMode,
+      });
+    } catch (e) {
+      print("Error updating onboard status: $e");
+      rethrow; // Propagate the error to handle it in the calling function
     }
-
-    _isUploading = false;
   }
 
-  Future<String?> isStudentAlreadyOnboard(String rollNo) async {
-    DateTime threeHoursAgo = DateTime.now().subtract(Duration(hours: 3));
-    DateTime now = DateTime.now();
-
-    QuerySnapshot rideDocs = await _firestore
-        .collection("rides")
-        .where("created_at", isGreaterThanOrEqualTo: Timestamp.fromDate(threeHoursAgo))
-        .where("created_at", isLessThanOrEqualTo: Timestamp.fromDate(now))
-        .get();
-
-    for (var doc in rideDocs.docs) {
-      Map<String, dynamic>? rideData = doc.data() as Map<String, dynamic>?;
-      if (rideData == null || !rideData.containsKey("onboard")) continue;
-
-      List<dynamic> onboardList = rideData["onboard"] ?? [];
-      if (onboardList.contains(rollNo)) {
-        return rideData["bus_id"] ?? "Unknown Bus";
-      }
-    }
-
-    return null;
-  }
-
+  /// Fetches and stores bus cards from Firestore to Hive.
   Future<void> fetchAndStoreBusCards(Function(bool) setLoading) async {
     setLoading(true);
 
     try {
-      var box = await Hive.openBox<BusCardModel>('bus_cards');
-      var offlineBox = await Hive.openBox<Map>('offline_scans'); // Open offline scan storage
-      var onboardBox = await Hive.openBox<Map>('onboard_records'); // Open onboard records
+      var busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
+      var offlineBox = await Hive.openBox<Map>('offline_scans');
+      var onboardBox = await Hive.openBox<Map>('onboard_records');
 
-      DateTime now = DateTime.now();
-
-      // **Delete any offline data before syncing**
+      // Clear old data
       await offlineBox.clear();
       await onboardBox.clear();
 
-      // **Fetch data from Firestore with timeout**
-      List<QueryDocumentSnapshot> docs = [];
-      try {
-        QuerySnapshot snapshot = await _firestore
-            .collection('bus_cards')
-            .get()
-            .timeout(const Duration(seconds: 20));
-        docs = snapshot.docs;
-      } catch (e) {
-        // print("⚠️ Network Issue: Failed to retrieve data from Firestore: $e");
-      }
-
-      // **Handle Offline Mode**
-      if (docs.isEmpty) {
-        setLoading(false);
-        return;
-      }
-
-      // **Convert Firestore Data to List of BusCardModel**
+      // Fetch data from Firestore with a timeout
+      QuerySnapshot snapshot = await _firestore.collection('bus_cards').get().timeout(Duration(seconds: 10));
       Map<String, BusCardModel> firestoreCards = {
-        for (var doc in docs)
+        for (var doc in snapshot.docs)
           doc.id: BusCardModel(
             busCardId: doc.id,
             rollNo: (doc.data() as Map<String, dynamic>)['roll_no'] ?? '',
             isActive: (doc.data() as Map<String, dynamic>)['isActive'] ?? true,
             name: (doc.data() as Map<String, dynamic>)['name'] ?? '',
-            updatedAt: now,
+            updatedAt: DateTime.now(),
           )
       };
 
-      // **Retrieve Existing Hive Data**
-      Map<String, BusCardModel> existingHiveCards = {
-        for (var card in box.values) card.busCardId: card
-      };
-
-      // **Identify New or Updated Cards**
-      Map<String, BusCardModel> newOrUpdatedCards = {};
-      for (var entry in firestoreCards.entries) {
-        if (!existingHiveCards.containsKey(entry.key) ||
-            existingHiveCards[entry.key]!.updatedAt.isBefore(entry.value.updatedAt)) {
-          newOrUpdatedCards[entry.key] = entry.value;
-        }
-      }
-
-      // **Identify Deleted Cards**
-      List<String> deletedCardIds = existingHiveCards.keys
-          .where((id) => !firestoreCards.containsKey(id))
-          .toList();
-
-      // **Apply Updates and Deletions**
-      if (newOrUpdatedCards.isNotEmpty) {
-        await box.putAll(newOrUpdatedCards);
-      }
-
-      if (deletedCardIds.isNotEmpty) {
-        await box.deleteAll(deletedCardIds);
-      }
-
-      // **Close Hive boxes**
-      await box.close();
-      await offlineBox.close();
-      await onboardBox.close();
-
+      // Update Hive with new or updated cards
+      await busCardBox.putAll(firestoreCards);
+    } on TimeoutException {
+      print("Network timeout while fetching bus cards.");
     } catch (e) {
-      // print("❌ Error fetching bus cards: $e");
+      print("Error fetching bus cards: $e");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 }
 
