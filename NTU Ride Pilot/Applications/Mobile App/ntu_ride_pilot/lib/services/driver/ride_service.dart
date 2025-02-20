@@ -50,7 +50,7 @@ class RideService {
         return RideServiceResponse(statusCode: CARD_INACTIVE);
       }
 
-      // Check if the student is already onboard in the current ride
+      // Check if the student is already onboard in the current  ride
       if (onboardBox.containsKey(matchingCard.rollNo)) {
         return RideServiceResponse(
           statusCode: STUDENT_ALREADY_ONBOARD,
