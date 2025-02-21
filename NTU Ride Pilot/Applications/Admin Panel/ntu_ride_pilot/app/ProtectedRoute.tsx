@@ -5,7 +5,7 @@ import { auth, firestore } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import LoadingScreen from "@/app/components/loading/loading";
+import LoadingScreen from "@/components/custom/loading/loading";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

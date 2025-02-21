@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/app/components/ProtectedRoute";
+import ProtectedRoute from "@/app/ProtectedRoute";
 import { User as FirebaseUser } from "firebase/auth";
+
 
 export default function Dashboard() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function Dashboard() {
         <h1>Dashboard</h1>
         {user && <p>Welcome, {user.email}!</p>}
         <button onClick={handleSignOut}>Sign Out</button>
+       
       </div>
     </ProtectedRoute>
   );

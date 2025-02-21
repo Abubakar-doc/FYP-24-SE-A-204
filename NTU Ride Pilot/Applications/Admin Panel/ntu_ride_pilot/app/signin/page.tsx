@@ -176,13 +176,17 @@ export default function SignIn() {
         </div>
       </div>
 
-      {/* Right Section with Background and Centered Content */}
-      <div className="w-1/2 bg-[#0078D7] flex items-center justify-center">
-        <div className="text-center">
-          <Image src="/logo.png" alt="NTU Ride Pilot" width={200} height={200} />
-          <h2 className="text-white text-2xl font-bold mt-4">NTU RIDE PILOT</h2>
-        </div>
-      </div>
+{/* Right Section with Background and Centered Content */}
+<div className="w-1/2 bg-[#0078D7] flex items-center justify-center m-6 rounded-lg shadow-lg p-6">
+  <div className="text-center">
+    <Image src="/images/mobile_app_mockup.png" alt="NTU Ride Pilot" width={400} height={400} />
+    <h2 className="text-white text-2xl font-bold mt-4">NTU RIDE PILOT</h2>
+  </div>
+</div>
+
+
+
+
     </div>
   );
 }
