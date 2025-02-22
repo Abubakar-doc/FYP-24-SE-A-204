@@ -14,7 +14,7 @@ class DriverModel {
   final String contactNo;
 
   @HiveField(3)
-  final String? profilePic;
+  final String? profilePicLink;
 
   @HiveField(4)
   late final String role;
@@ -23,7 +23,7 @@ class DriverModel {
     required this.email,
     required this.name,
     required this.contactNo,
-    this.profilePic,
+    this.profilePicLink,
     this.role = 'driver',
   });
 
@@ -32,7 +32,7 @@ class DriverModel {
       'email': email,
       'name': name,
       'contact_no': contactNo,
-      if (profilePic != null) 'profile_pic': profilePic,
+      if (profilePicLink != null) 'profile_pic': profilePicLink,
     };
   }
 
@@ -41,7 +41,7 @@ class DriverModel {
       email: map['email'] ?? '',
       name: map['name'] ?? '',
       contactNo: map['contact_no'] ?? '',
-      profilePic: map['profile_pic'],
+      profilePicLink: map['profile_pic'],
     )..role = 'driver';
   }
 }

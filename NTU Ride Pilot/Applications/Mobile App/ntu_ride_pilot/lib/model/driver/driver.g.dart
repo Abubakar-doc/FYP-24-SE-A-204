@@ -20,7 +20,7 @@ class DriverModelAdapter extends TypeAdapter<DriverModel> {
       email: fields[0] as String,
       name: fields[1] as String,
       contactNo: fields[2] as String,
-      profilePic: fields[3] as String?,
+      profilePicLink: fields[3] as String?,
       role: fields[4] as String,
     );
   }
@@ -36,7 +36,7 @@ class DriverModelAdapter extends TypeAdapter<DriverModel> {
       ..writeByte(2)
       ..write(obj.contactNo)
       ..writeByte(3)
-      ..write(obj.profilePic)
+      ..write(obj.profilePicLink)
       ..writeByte(4)
       ..write(obj.role);
   }

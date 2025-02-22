@@ -20,25 +20,22 @@ class BusCardModelAdapter extends TypeAdapter<BusCardModel> {
       busCardId: fields[0] as String,
       rollNo: fields[1] as String,
       isActive: fields[2] as bool,
-      name: fields[4] as String,
-      updatedAt: fields[5] as DateTime?,
+      name: fields[3] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, BusCardModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.busCardId)
       ..writeByte(1)
       ..write(obj.rollNo)
       ..writeByte(2)
       ..write(obj.isActive)
-      ..writeByte(4)
-      ..write(obj.name)
-      ..writeByte(5)
-      ..write(obj.updatedAt);
+      ..writeByte(3)
+      ..write(obj.name);
   }
 
   @override

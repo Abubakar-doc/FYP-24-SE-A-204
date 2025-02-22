@@ -7,7 +7,7 @@ class SnackbarUtil {
     Get.snackbar(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
+      snackPosition: SnackPosition.TOP,
       backgroundColor: Get.theme.colorScheme.error,
       colorText: Get.theme.colorScheme.onError,
       duration: Duration(seconds: 4),
@@ -19,7 +19,7 @@ class SnackbarUtil {
     Get.snackbar(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
+      snackPosition: SnackPosition.TOP,
       backgroundColor: Colors.green[500],
       colorText: Get.theme.colorScheme.onSecondary,
       duration: Duration(seconds: 4),
@@ -31,7 +31,7 @@ class SnackbarUtil {
     Get.snackbar(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
+      snackPosition: SnackPosition.TOP,
       backgroundColor: Colors.grey[400],
       colorText: Get.theme.colorScheme.onSecondary,
       duration: Duration(seconds: 4),

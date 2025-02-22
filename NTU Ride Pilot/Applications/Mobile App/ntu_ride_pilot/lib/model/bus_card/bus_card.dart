@@ -13,19 +13,15 @@ class BusCardModel {
   @HiveField(2)
   final bool isActive;
 
-  @HiveField(4)
+  @HiveField(3)
   final String name;
-
-  @HiveField(5)
-  DateTime updatedAt;
 
   BusCardModel({
     required this.busCardId,
     required this.rollNo,
     required this.isActive,
     required this.name,
-    DateTime? updatedAt,
-  }) : updatedAt = updatedAt ?? DateTime.now();
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -43,9 +39,5 @@ class BusCardModel {
       isActive: map['isActive'] ?? true,
       name: map['name'] ?? '',
     );
-  }
-
-  void updateTimestamp() {
-    updatedAt = DateTime.now();
   }
 }

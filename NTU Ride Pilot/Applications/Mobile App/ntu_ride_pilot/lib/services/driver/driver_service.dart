@@ -19,7 +19,7 @@ class DriverService {
           email: email,
           name: data['name'] ?? '',
           contactNo: data['contact_no'] ?? '',
-          profilePic: data['profile_pic'],
+          profilePicLink: data['profile_pic'],
         );
       }
     } catch (e) {

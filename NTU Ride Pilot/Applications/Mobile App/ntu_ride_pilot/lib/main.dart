@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:ntu_ride_pilot/controllers/profile_controller.dart';
 import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
@@ -18,6 +19,7 @@ void main() async {
   await Firebase.initializeApp();
   await GetStorage.init();
   Get.put(AuthService());
+  Get.put(DriverProfileController());
   await Hive.initFlutter();
   Hive.registerAdapter(DriverModelAdapter());
   Hive.registerAdapter(StudentModelAdapter());
@@ -50,7 +52,7 @@ class MyApp extends StatelessWidget {
       builder: (controller) {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false, 
-          title: 'Flutter GetX Theme',
+          title: 'NTU RIDE PILOT',
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode:

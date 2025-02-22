@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/services/common/user_profile.dart';
 
-class BottomUserInfoController extends GetxController {
+class DriverProfileController extends GetxController {
   final UserProfileService _userProfileService = UserProfileService();
 
   var name = "Guest".obs;
