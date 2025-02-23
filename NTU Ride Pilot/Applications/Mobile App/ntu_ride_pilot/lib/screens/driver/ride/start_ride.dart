@@ -1,7 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ntu_ride_pilot/controllers/profile_controller.dart';
+import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:ntu_ride_pilot/model/route/route.dart';
+import 'package:ntu_ride_pilot/model/bus/bus.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/ride_control.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/test_data.dart';
 import 'package:ntu_ride_pilot/services/driver/ride_service.dart';
@@ -21,25 +24,23 @@ class _StartRideScreenState extends State<StartRideScreen> {
   final RideService _rideService = RideService();
 
   bool _isLoading = false;
-  String? selectedBus;
-  String? selectedRoute;
+  BusModel? selectedBus;
   String errorMessageBus = "";
   String errorMessageRoute = "";
-
-  // Lists to hold the fetched bus and route values.
-  List<String> buses = [];
-  List<String> routes = [];
+  List<BusModel> buses = [];
+  List<RouteModel> routes = [];
+  RouteModel? selectedRoute;
 
   @override
   void initState() {
     super.initState();
     fetchBusesAndRoutes();
+    Get.put(DriverProfileController());
   }
 
   void fetchBusesAndRoutes() async {
-    List<String> fetchedBuses = await _rideService.fetchBuses();
-    List<String> fetchedRoutes = await _rideService.fetchRoutes();
-
+    List<BusModel> fetchedBuses = await _rideService.fetchBuses();
+    List<RouteModel> fetchedRoutes = await _rideService.fetchRoutes();
     setState(() {
       buses = fetchedBuses;
       routes = fetchedRoutes;
@@ -50,10 +51,46 @@ class _StartRideScreenState extends State<StartRideScreen> {
     setState(() => _isLoading = value);
   }
 
+  // void validateAndNavigate() async {
+  //   setLoading(true);
+  //   bool valid = true;
+  //   if (selectedBus == null) {
+  //     setState(() {
+  //       errorMessageBus = "Please select a bus.";
+  //     });
+  //     valid = false;
+  //   } else {
+  //     setState(() {
+  //       errorMessageBus = "";
+  //     });
+  //   }
+  //   if (selectedRoute == null) {
+  //     setState(() {
+  //       errorMessageRoute = "Please select a route.";
+  //     });
+  //     valid = false;
+  //   } else {
+  //     setState(() {
+  //       errorMessageRoute = "";
+  //     });
+  //   }
+  //   if (!valid) {
+  //     setLoading(false);
+  //     return;
+  //   }
+  //
+  //   // Print the selected bus and route IDs.
+  //   print("Bus ID: ${selectedBus!.busId}, Route ID: ${selectedRoute!.routeId}");
+  //
+  //   await _rideService.fetchAndStoreBusCards();
+  //   Get.to(() => RideControlScreen());
+  //   setLoading(false);
+  // }
+
   void validateAndNavigate() async {
     setLoading(true);
     bool valid = true;
-    if (selectedBus == null || selectedBus!.isEmpty) {
+    if (selectedBus == null) {
       setState(() {
         errorMessageBus = "Please select a bus.";
       });
@@ -63,7 +100,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
         errorMessageBus = "";
       });
     }
-    if (selectedRoute == null || selectedRoute!.isEmpty) {
+    if (selectedRoute == null) {
       setState(() {
         errorMessageRoute = "Please select a route.";
       });
@@ -73,12 +110,32 @@ class _StartRideScreenState extends State<StartRideScreen> {
         errorMessageRoute = "";
       });
     }
-    if (!valid) return;
-    // Both fields are valid, proceed:
-    await _rideService.fetchAndStoreBusCards();
-    Get.to(() => RideControlScreen());
+    if (!valid) {
+      setLoading(false);
+      return;
+    }
+
+    // Print the selected bus and route IDs.
+    print("Bus ID: ${selectedBus!.busId}, Route ID: ${selectedRoute!.routeId}");
+
+    // Create a new ride document in Firestore and store it locally.
+    RideModel? newRide = await _rideService.createNewRide(
+      bus: selectedBus!,
+      route: selectedRoute!,
+    );
+
+    if (newRide != null) {
+      // Ride successfully created. You can now fetch bus cards or proceed to the next screen.
+      await _rideService.fetchAndStoreBusCards();
+      Get.to(() => RideControlScreen());
+    } else {
+      // Optionally, show an error message if ride creation failed.
+      print("Ride creation failed.");
+    }
     setLoading(false);
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -166,20 +223,18 @@ class _StartRideScreenState extends State<StartRideScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Bus dropdown wrapped in Skeletonizer.
-                    Skeletonizer(
-                      enabled: buses.isEmpty,
-                      child: CustomDropdown(
-                        title: "Bus",
-                        selectedValue: selectedBus,
-                        items: buses,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedBus = value;
-                            errorMessageBus = ""; // Clear error on change.
-                          });
-                        },
-                      ),
+                    // Bus dropdown wrapped in CustomDropdown.
+                    CustomDropdown<BusModel>(
+                      title: "Bus",
+                      selectedValue: selectedBus,
+                      items: buses,
+                      displayItem: (bus) => bus.busId, // Display busId.
+                      onChanged: (value) {
+                        setState(() {
+                          selectedBus = value;
+                          errorMessageBus = ""; // Clear error on change.
+                        });
+                      },
                     ),
                     // Inline error message for Bus.
                     if (errorMessageBus.isNotEmpty)
@@ -195,10 +250,11 @@ class _StartRideScreenState extends State<StartRideScreen> {
                     // Route dropdown wrapped in Skeletonizer.
                     Skeletonizer(
                       enabled: routes.isEmpty,
-                      child: CustomDropdown(
+                      child: CustomDropdown<RouteModel>(
                         title: "Route",
                         selectedValue: selectedRoute,
                         items: routes,
+                        displayItem: (route) => route.name, // Display route name.
                         onChanged: (value) {
                           setState(() {
                             selectedRoute = value;
@@ -221,6 +277,9 @@ class _StartRideScreenState extends State<StartRideScreen> {
                     // Next button.
                     TextButton(
                       onPressed: _isLoading ? null : validateAndNavigate,
+                      style: ElevatedButton.styleFrom(
+                        disabledBackgroundColor: Colors.grey,
+                      ),
                       child: Text(
                         _isLoading
                             ? "Getting things ready..."

@@ -71,7 +71,6 @@ class _DriverSignInScreenState extends State<DriverSignInScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
               const Text('Enter your credentials to sign in',
                   style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
@@ -137,6 +136,9 @@ class _DriverSignInScreenState extends State<DriverSignInScreen> {
                 children: [
                   TextButton(
                     onPressed: _isLoading ? null : _signIn,
+                    style: ElevatedButton.styleFrom(
+                      disabledBackgroundColor: Colors.grey,
+                    ),
                     child: _isLoading
                         ? const Text('Signing In...')
                         : const Text('Sign In'),

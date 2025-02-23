@@ -22,16 +22,20 @@ class ProfileScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           // Profile Picture
-          Obx(() => CircleAvatar(
-            radius: 80,
-            backgroundColor: Colors.blue,
-            backgroundImage: controller.profilePic.value != null
-                ? NetworkImage(controller.profilePic.value!)
-                : null,
-            child: controller.profilePic.value == null
-                ? const Icon(Icons.person, size: 50, color: Colors.white)
-                : null,
-          )),
+          Obx(() {
+            final url = controller.profilePic.value;
+            final isValidUrl = url != null &&
+                url.isNotEmpty &&
+                (url.startsWith('http://') || url.startsWith('https://'));
+            return CircleAvatar(
+              radius: 80,
+              backgroundColor: Colors.blue,
+              backgroundImage: isValidUrl ? NetworkImage(url) : null,
+              child: !isValidUrl
+                  ? const Icon(Icons.person, size: 100, color: Colors.white)
+                  : null,
+            );
+          }),
           const SizedBox(height: 10),
           // Name
           Obx(() => Skeletonizer(

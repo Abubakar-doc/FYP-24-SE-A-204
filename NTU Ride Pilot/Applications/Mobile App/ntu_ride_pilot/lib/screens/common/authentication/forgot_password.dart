@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:ntu_ride_pilot/services/common/authentication.dart';
+import 'package:ntu_ride_pilot/services/common/common_auth.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -75,6 +75,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: _isLoading ? null : _resetPassword,
+                    style: ElevatedButton.styleFrom(
+                      disabledBackgroundColor: Colors.grey,
+                    ),
                     child: _isLoading
                         ? const Text('Sending Email...')
                         : const Text('Reset Password'),
