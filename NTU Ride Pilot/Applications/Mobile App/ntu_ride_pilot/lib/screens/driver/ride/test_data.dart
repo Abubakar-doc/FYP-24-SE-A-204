@@ -1,6 +1,9 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+// Import your RideModel class so that Hive recognizes the type.
+import 'package:ntu_ride_pilot/model/ride/ride.dart';
 
 class TestDataScreen extends StatefulWidget {
   const TestDataScreen({super.key});
@@ -84,34 +87,118 @@ class _TestDataScreenState extends State<TestDataScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('400 Students & Bus Cards Added Successfully!')),
+      const SnackBar(content: Text('400 Students & Bus Cards Added Successfully!')),
     );
   }
 
+  void addTestRoutes() async {
+    setState(() {
+      _isLoading = true;
+      _progress = 0.0;
+    });
+
+    try {
+      for (int i = 0; i < 3; i++) {
+        // Generate a random routeId
+        String routeId = "route_${Random().nextInt(100000)}";
+        String name = "Test Route ${i + 1}";
+        // Generate a busStopId map with 3 stops (sequence keys as strings: "1", "2", "3")
+        Map<String, String> busStopId = {};
+        for (int j = 1; j <= 3; j++) {
+          busStopId[j.toString()] = "BS_${Random().nextInt(1000)}";
+        }
+        DateTime createdAt = DateTime.now();
+
+        Map<String, dynamic> routeData = {
+          'route_id': routeId,
+          'name': name,
+          'bus_stop_id': busStopId,
+          'created_at': createdAt.toIso8601String(),
+        };
+
+        await _firestore.collection('routes').doc(routeId).set(routeData);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('3 Routes Added Successfully!')),
+      );
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding routes: $e')),
+      );
+    }
+
+    setState(() {
+      _isLoading = false;
+      _progress = 1.0;
+    });
+  }
+
+  /// Clears the `offline_scans` and `rides` boxes in Hive.
+  Future<void> _clearHiveBoxes() async {
+    setState(() {
+      _isLoading = true;
+      _progress = 0.0;
+    });
+
+    try {
+      final offlineBox = await Hive.openBox<Map>('offline_scans');
+      final rideBox = await Hive.openBox<RideModel>('rides');
+
+      await offlineBox.clear();
+      await rideBox.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Successfully cleared offline_scans & rides!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error clearing boxes: $e')),
+      );
+    }
+
+    setState(() {
+      _isLoading = false;
+      _progress = 1.0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Manage Test Data')),
+      appBar: AppBar(
+        title: const Text('Manage Test Data'),
+      ),
       body: Center(
-        child: Column(
+        child: _isLoading
+            ? Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (_isLoading)
-              Column(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 20),
-                  LinearProgressIndicator(value: _progress),
-                  SizedBox(height: 10),
-                  Text('${(_progress * 100).toStringAsFixed(0)}% Completed'),
-                ],
-              )
-            else
-              ElevatedButton(
-                onPressed: addTestData,
-                child: Text('Add 400 Students & Bus Cards'),
-              ),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 20),
+            LinearProgressIndicator(value: _progress),
+            const SizedBox(height: 10),
+            Text('${(_progress * 100).toStringAsFixed(0)}% Completed'),
+          ],
+        )
+            : Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: addTestData,
+              child: const Text('Add 400 Students & Bus Cards'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: addTestRoutes,
+              child: const Text('Add 3 Routes'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _clearHiveBoxes,
+              child: const Text('Clear offline_scans & rides'),
+            ),
           ],
         ),
       ),

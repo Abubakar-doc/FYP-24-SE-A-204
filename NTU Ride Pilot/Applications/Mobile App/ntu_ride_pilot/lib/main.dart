@@ -8,7 +8,7 @@ import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/home/home_screen.dart';
-import 'package:ntu_ride_pilot/services/common/authentication.dart';
+import 'package:ntu_ride_pilot/services/common/common_auth.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/light_theme.dart';
 import 'themes/dark_theme.dart';
@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
       builder: (controller) {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false, 
-          title: 'Flutter GetX Theme',
+          title: 'NTU RIDE PILOT',
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode:

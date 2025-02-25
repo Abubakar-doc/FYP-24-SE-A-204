@@ -17,27 +17,30 @@ class DriverModelAdapter extends TypeAdapter<DriverModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return DriverModel(
-      email: fields[0] as String,
-      name: fields[1] as String,
-      contactNo: fields[2] as String,
-      profilePic: fields[3] as String?,
-      role: fields[4] as String,
+      driverId: fields[0] as String,
+      email: fields[1] as String,
+      name: fields[2] as String,
+      contactNo: fields[3] as String?,
+      profilePicLink: fields[4] as String?,
+      role: fields[5] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, DriverModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.email)
+      ..write(obj.driverId)
       ..writeByte(1)
-      ..write(obj.name)
+      ..write(obj.email)
       ..writeByte(2)
-      ..write(obj.contactNo)
+      ..write(obj.name)
       ..writeByte(3)
-      ..write(obj.profilePic)
+      ..write(obj.contactNo)
       ..writeByte(4)
+      ..write(obj.profilePicLink)
+      ..writeByte(5)
       ..write(obj.role);
   }
 

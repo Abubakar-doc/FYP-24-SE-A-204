@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:ntu_ride_pilot/screens/common/settings/settings.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'bottom_user_info.dart';
 import 'custom_list_tile.dart';
@@ -53,8 +55,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.home_outlined,
                 title: 'Home',
                 infoCount: 0,
-                isActive: _activeIndex == 0, // Check if this tile is active
-                onTap: () => _onTileTapped(0), // Set active index on tap
+                isActive: _activeIndex == 0,
+                onTap: () {
+                  _onTileTapped(0);
+                  Navigator.pop(context);
+                },
               ),
 
               // CustomListTile for Notifications
@@ -63,8 +68,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.notifications,
                 title: 'Notifications',
                 infoCount: 2,
-                isActive: _activeIndex == 1, // Check if this tile is active
-                onTap: () => _onTileTapped(1), // Set active index on tap
+                isActive: _activeIndex == 1,
+                onTap: () {
+                  _onTileTapped(1);
+                  Navigator.pop(context);
+                },
               ),
 
               // CustomListTile for Feedback
@@ -73,41 +81,30 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 icon: Icons.feedback_outlined,
                 title: 'Feedback',
                 infoCount: 0,
-                isActive: _activeIndex == 2, // Check if this tile is active
-                onTap: () => _onTileTapped(2), // Set active index on tap
+                isActive: _activeIndex == 2,
+                onTap: () {
+                  _onTileTapped(2);
+                  Navigator.pop(context);
+                },
               ),
-
               // CustomListTile for Settings
               CustomListTile(
                 isCollapsed: _isCollapsed,
                 icon: Icons.settings,
                 title: 'Settings',
                 infoCount: 0,
-                isActive: _activeIndex == 3, // Check if this tile is active
-                onTap: () => _onTileTapped(3), // Set active index on tap
-              ),
+                isActive: _activeIndex == 3,
+                onTap: () {
+                  _onTileTapped(3);
+                  Navigator.pop(context);
+                  Future.delayed(const Duration(milliseconds: 200), () {
+                    Get.to(() => SettingsScreen());
+                  });
+                },
 
+              ),
               const Spacer(),
               BottomUserInfo(isCollapsed: _isCollapsed),
-              // Align(
-              //   alignment: _isCollapsed
-              //       ? Alignment.bottomRight
-              //       : Alignment.bottomCenter,
-              //   child: IconButton(
-              //     splashColor: Colors.transparent,
-              //     icon: Icon(
-              //       _isCollapsed
-              //           ? Icons.arrow_back_ios
-              //           : Icons.arrow_forward_ios,
-              //       size: 16,
-              //     ),
-              //     onPressed: () {
-              //       setState(() {
-              //         _isCollapsed = !_isCollapsed;
-              //       });
-              //     },
-              //   ),
-              // ),
             ],
           ),
         ),

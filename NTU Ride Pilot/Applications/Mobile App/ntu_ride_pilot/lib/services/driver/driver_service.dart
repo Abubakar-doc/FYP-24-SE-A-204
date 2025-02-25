@@ -1,30 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
+import 'package:ntu_ride_pilot/utils/utils.dart';
 
 class DriverService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<DriverModel?> getDriverByEmail(String email) async {
     try {
-      DocumentSnapshot doc = await _firestore
+      QuerySnapshot querySnapshot = await _firestore
           .collection('users')
           .doc('user_roles')
           .collection('drivers')
-          .doc(email)
+          .where('email', isEqualTo: email)
+          .limit(1)
           .get();
 
-      if (doc.exists) {
+      if (querySnapshot.docs.isNotEmpty) {
+        var doc = querySnapshot.docs.first;
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         return DriverModel(
-          email: email,
+          driverId: doc.id,
+          email: data['email'] ?? email,
           name: data['name'] ?? '',
           contactNo: data['contact_no'] ?? '',
-          profilePic: data['profile_pic'],
+          profilePicLink: data['profile_pic'],
         );
       }
     } catch (e) {
       print("Error fetching driver: $e");
     }
     return null;
+  }
+
+  Future<void> saveDriverToHive(String email) async {
+    try {
+      var driverDoc = await getDriverByEmail(email);
+      if (driverDoc != null) {
+        final box = Hive.box<DriverModel>('driverBox');
+        box.put('current_driver', driverDoc);
+      } else {
+        SnackbarUtil.showError("Sign-in Failed", "Driver not found.");
+      }
+    } catch (e) {
+      SnackbarUtil.showError("Error Saving Driver", e.toString());
+    }
+  }
+
+  DriverModel? getCurrentDriver() {
+    final box = Hive.box<DriverModel>('driverBox');
+    return box.get('current_driver');
   }
 }

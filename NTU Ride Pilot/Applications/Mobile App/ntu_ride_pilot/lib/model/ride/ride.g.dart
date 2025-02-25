@@ -17,15 +17,15 @@ class RideModelAdapter extends TypeAdapter<RideModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return RideModel(
-      autoId: fields[0] as String,
+      rideId: fields[0] as String?,
       routeId: fields[1] as String,
       rideStatus: fields[2] as String,
       busId: fields[3] as String,
       driverId: fields[4] as String,
-      onboard: (fields[5] as Map).cast<String, String>(),
-      eta: fields[6] as DateTime,
-      speed: fields[7] as double,
-      createdAt: fields[8] as DateTime?,
+      onboard: (fields[5] as Map).cast<String, dynamic>(),
+      etaNextStop: fields[6] as DateTime,
+      createdAt: fields[7] as DateTime?,
+      endedAt: fields[8] as DateTime?,
     );
   }
 
@@ -34,7 +34,7 @@ class RideModelAdapter extends TypeAdapter<RideModel> {
     writer
       ..writeByte(9)
       ..writeByte(0)
-      ..write(obj.autoId)
+      ..write(obj.rideId)
       ..writeByte(1)
       ..write(obj.routeId)
       ..writeByte(2)
@@ -46,11 +46,11 @@ class RideModelAdapter extends TypeAdapter<RideModel> {
       ..writeByte(5)
       ..write(obj.onboard)
       ..writeByte(6)
-      ..write(obj.eta)
+      ..write(obj.etaNextStop)
       ..writeByte(7)
-      ..write(obj.speed)
+      ..write(obj.createdAt)
       ..writeByte(8)
-      ..write(obj.createdAt);
+      ..write(obj.endedAt);
   }
 
   @override

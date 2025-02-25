@@ -23,9 +23,10 @@ class ThemeController extends GetxController {
     }
   }
 
-  void setTheme(ThemeMode mode) {
+  void setTheme(ThemeMode mode) async {
     themeMode.value = mode;
-    _box.write('themeMode', mode.toString().split('.').last); // Save selection
+    await _box.write('themeMode', mode.toString().split('.').last);
     Get.changeThemeMode(mode);
   }
+
 }
