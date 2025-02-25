@@ -173,7 +173,6 @@ class RideService {
         }
       }
 
-      // 6. Determine processing mode and timestamp.
       String processingMode = _isOnline ? 'online' : 'offline';
       String timestamp = DateTime.now().toIso8601String();
 
@@ -188,7 +187,7 @@ class RideService {
       // 8. Dispatch Firestore update in parallel if online (do not await).
       if (_isOnline) {
         // print("Updating Firestore with onboard data for rollNo ${matchingCard.rollNo}...");
-        _updateOnboardStatus(
+        updateOnboardStatus(
           rollNo: matchingCard.rollNo,
           processingMode: processingMode,
           timestamp: timestamp,
@@ -212,7 +211,7 @@ class RideService {
         rollNo: matchingCard.rollNo,
       );
     } catch (e) {
-      // print("Error handling card input: $e");
+      print("🤢🤢🤢🤢🤢Error handling card input: $e");
       return RideServiceResponse(statusCode: UNKNOWN_ERROR);
     }
   }
@@ -230,7 +229,7 @@ class RideService {
     while (_uploadQueue.isNotEmpty) {
       var task = _uploadQueue.removeFirst();
       try {
-        await _updateOnboardStatus(
+        await updateOnboardStatus(
           rollNo: task['rollNo'],
           processingMode: task['processingMode'],
           timestamp: task['timestamp'],
@@ -244,18 +243,13 @@ class RideService {
     }
   }
 
-  Future<void> _updateOnboardStatus({
-    required String rollNo,
-    required String processingMode,
-    required String timestamp,
-    required RideModel ride,
-  }) async {
+  Future<void> updateOnboardStatus({required String rollNo, required String processingMode, required String timestamp, required RideModel ride,}) async {
     DocumentReference rideDocRef = _firestore.collection("rides").doc(ride.rideId);
     await rideDocRef.set({
       'onboard': {
         rollNo: {
           'processingMode': processingMode,
-          'timestamp': timestamp,
+          // 'timestamp': timestamp,
         }
       }
     }, SetOptions(merge: true));

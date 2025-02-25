@@ -19,18 +19,21 @@ class UserProfileService {
       };
     }
 
-    // Use the getCurrentDriver method from DriverService instead of querying Firestore.
+    // Update Hive with the latest driver data from Firestore.
+    await _driverService.saveDriverToHive(user.email!);
+
+    // Retrieve the updated driver from Hive.
     DriverModel? currentDriver = _driverService.getCurrentDriver();
     if (currentDriver != null) {
       return {
         'name': currentDriver.name.isNotEmpty ? currentDriver.name : 'Unknown Driver',
-        'role': 'driver',
+        'role': currentDriver.role,
         'email': currentDriver.email,
         'profilePic': currentDriver.profilePicLink,
       };
     }
 
-    // Fallback if no driver is found in Hive.
+    // Fallback if no driver is found.
     return {
       'name': 'Guest',
       'role': '',
@@ -38,4 +41,5 @@ class UserProfileService {
       'profilePic': null,
     };
   }
+
 }

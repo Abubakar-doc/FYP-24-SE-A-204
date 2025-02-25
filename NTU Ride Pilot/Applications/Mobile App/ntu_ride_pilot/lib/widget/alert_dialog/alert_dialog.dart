@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
 class CustomAlertDialog extends StatelessWidget {
+  final String title;
+  final String message;
   final VoidCallback onConfirm;
   final VoidCallback onCancel;
 
   const CustomAlertDialog({
     super.key,
+    required this.title,
+    required this.message,
     required this.onConfirm,
     required this.onCancel,
   });
@@ -13,17 +17,20 @@ class CustomAlertDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Cancel this Ride?'),
-      content: const Text('Are you sure you want to cancel?'),
+      title: Text(title),
+      content: Text(message),
       actions: [
         GestureDetector(
           onTap: onCancel,
           child: const Text('No'),
         ),
-        SizedBox(width: 10,),
+        const SizedBox(width: 10),
         GestureDetector(
           onTap: onConfirm,
-          child: const Text('Yes', style: TextStyle(color: Colors.red),),
+          child: const Text(
+            'Yes',
+            style: TextStyle(color: Colors.red),
+          ),
         ),
       ],
     );

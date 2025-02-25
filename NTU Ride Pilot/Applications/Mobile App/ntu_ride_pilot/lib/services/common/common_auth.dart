@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
+import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
+import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/welcome/welcome.dart';
 import 'package:ntu_ride_pilot/screens/driver/home/driver_home_screen.dart';
+import 'package:ntu_ride_pilot/screens/driver/ride/ride_control.dart';
 import 'package:ntu_ride_pilot/screens/student/student_home/student_home_screen.dart';
 import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
 import 'package:ntu_ride_pilot/services/student/student_service.dart';
@@ -12,6 +15,71 @@ import 'package:ntu_ride_pilot/utils/utils.dart';
 
 class AuthService extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Future<void> isSignedIn() async {
+  //   try {
+  //     User? user = _auth.currentUser;
+  //
+  //     if (user == null) {
+  //       Get.off(() => WelcomeScreen());
+  //       return;
+  //     }
+  //
+  //     await user.reload();
+  //     user = _auth.currentUser;
+  //
+  //     if (user == null) {
+  //       throw FirebaseAuthException(code: 'user-not-found');
+  //     }
+  //
+  //     final driverBox = Hive.box<DriverModel>('driverBox');
+  //     final studentBox = Hive.box<StudentModel>('studentBox');
+  //
+  //     if (driverBox.containsKey('current_driver')) {
+  //       Get.off(() => DriverHomeScreen());
+  //       return;
+  //     } else if (studentBox.containsKey('current_student')) {
+  //       Get.off(() => StudentHomeScreen());
+  //       return;
+  //     }
+  //
+  //     String email = user.email ?? "";
+  //     final DriverService driverService = DriverService();
+  //     final StudentService studentService = StudentService();
+  //
+  //     DriverModel? driver = await driverService.getDriverByEmail(email);
+  //     if (driver != null) {
+  //       driverBox.put('current_driver', driver);
+  //       Get.off(() => DriverHomeScreen());
+  //       return;
+  //     }
+  //
+  //     StudentModel? student = await studentService.getStudentByEmail(email);
+  //     if (student != null) {
+  //       studentBox.put('current_student', student);
+  //       Get.off(() => StudentHomeScreen());
+  //       return;
+  //     }
+  //
+  //     // If no role found in Firestore, force logout
+  //     SnackbarUtil.showError("Login Issue", "User role not found. Please log in again.");
+  //     // await logout();
+  //
+  //   } on FirebaseAuthException catch (e) {
+  //     if (e.code == 'user-disabled') {
+  //       SnackbarUtil.showError("Account Disabled", "Your account has been disabled by an admin.");
+  //     } else if (e.code == 'user-not-found') {
+  //       SnackbarUtil.showError("Account Not Found", "This account no longer exists.");
+  //     } else {
+  //       SnackbarUtil.showError("Authentication Error", e.message ?? "Something went wrong.");
+  //     }
+  //     // await logout();
+  //   } catch (e) {
+  //     SnackbarUtil.showError("Sign-in Check Error", "Unexpected error: ${e.toString()}");
+  //     // await logout();
+  //   }
+  // }
+
 
   Future<void> isSignedIn() async {
     try {
@@ -32,8 +100,16 @@ class AuthService extends GetxController {
       final driverBox = Hive.box<DriverModel>('driverBox');
       final studentBox = Hive.box<StudentModel>('studentBox');
 
+      // If a driver is already logged in, check if there's an active ride.
       if (driverBox.containsKey('current_driver')) {
-        Get.off(() => DriverHomeScreen());
+        var rideBox = await Hive.openBox<RideModel>('rides');
+        if (rideBox.containsKey('currentRide')) {
+          // Navigate to RideControlScreen if a ride is found.
+          Get.off(() => RideControlScreen());
+        } else {
+          // Otherwise, go to the normal DriverHomeScreen.
+          Get.off(() => DriverHomeScreen());
+        }
         return;
       } else if (studentBox.containsKey('current_student')) {
         Get.off(() => StudentHomeScreen());
@@ -47,7 +123,12 @@ class AuthService extends GetxController {
       DriverModel? driver = await driverService.getDriverByEmail(email);
       if (driver != null) {
         driverBox.put('current_driver', driver);
-        Get.off(() => DriverHomeScreen());
+        var rideBox = await Hive.openBox<RideModel>('rides');
+        if (rideBox.containsKey('currentRide')) {
+          Get.off(() => RideControlScreen());
+        } else {
+          Get.off(() => DriverHomeScreen());
+        }
         return;
       }
 
@@ -58,10 +139,8 @@ class AuthService extends GetxController {
         return;
       }
 
-      // If no role found in Firestore, force logout
+      // If no role is found in Firestore, force logout.
       SnackbarUtil.showError("Login Issue", "User role not found. Please log in again.");
-      // await logout();
-
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-disabled') {
         SnackbarUtil.showError("Account Disabled", "Your account has been disabled by an admin.");
@@ -70,26 +149,67 @@ class AuthService extends GetxController {
       } else {
         SnackbarUtil.showError("Authentication Error", e.message ?? "Something went wrong.");
       }
-      // await logout();
     } catch (e) {
       SnackbarUtil.showError("Sign-in Check Error", "Unexpected error: ${e.toString()}");
-      // await logout();
     }
   }
 
-
   Future<void> logout() async {
     try {
-      final driverBox = Hive.box<DriverModel>('driverBox');
-      final studentBox = Hive.box<StudentModel>('studentBox');
+      // // Delete the 'driverBox' if it exists.
+      // if (Hive.isBoxOpen('driverBox')) {
+      //   final driverBox = Hive.box<DriverModel>('driverBox');
+      //   await driverBox.clear();
+      //   // await driverBox.close();
+      //   await Hive.deleteBoxFromDisk('driverBox');
+      // } else if (await Hive.boxExists('driverBox')) {
+      //   final driverBox = await Hive.openBox<DriverModel>('driverBox');
+      //   await driverBox.clear();
+      //   // await driverBox.close();
+      //   await Hive.deleteBoxFromDisk('driverBox');
+      // }
+      //
+      // // Delete the 'studentBox' if it exists.
+      // if (Hive.isBoxOpen('studentBox')) {
+      //   final studentBox = Hive.box<StudentModel>('studentBox');
+      //   await studentBox.clear();
+      //   // await studentBox.close();
+      //   await Hive.deleteBoxFromDisk('studentBox');
+      // } else if (await Hive.boxExists('studentBox')) {
+      //   final studentBox = await Hive.openBox<StudentModel>('studentBox');
+      //   await studentBox.clear();
+      //   // await studentBox.close();
+      //   await Hive.deleteBoxFromDisk('studentBox');
+      // }
 
-      if (driverBox.containsKey('current_driver')) {
-        driverBox.delete('current_driver');
-      } else if (studentBox.containsKey('current_student')) {
-        studentBox.delete('current_student');
+      // Delete the 'rides' box if it exists.
+      if (Hive.isBoxOpen('rides')) {
+        final rideBox = Hive.box<RideModel>('rides');
+        await rideBox.clear();
+        // await rideBox.close();
+        await Hive.deleteBoxFromDisk('rides');
+      } else if (await Hive.boxExists('rides')) {
+        final rideBox = await Hive.openBox<RideModel>('rides');
+        await rideBox.clear();
+        // await rideBox.close();
+        await Hive.deleteBoxFromDisk('rides');
       }
 
-      await _auth.signOut();
+      // Delete the 'bus_cards' box if it exists.
+      if (Hive.isBoxOpen('bus_cards')) {
+        final busCardBox = Hive.box<BusCardModel>('bus_cards');
+        await busCardBox.clear();
+        // await busCardBox.close();
+        await Hive.deleteBoxFromDisk('bus_cards');
+      } else if (await Hive.boxExists('bus_cards')) {
+        final busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
+        await busCardBox.clear();
+        // await busCardBox.close();
+        await Hive.deleteBoxFromDisk('bus_cards');
+      }
+
+      // Sign out from Firebase and navigate to the welcome screen.
+      await FirebaseAuth.instance.signOut();
       Get.off(() => WelcomeScreen());
     } catch (e) {
       SnackbarUtil.showError("Logout Error", "Unexpected error: ${e.toString()}");

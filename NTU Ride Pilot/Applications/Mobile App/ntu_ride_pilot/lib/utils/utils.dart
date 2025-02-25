@@ -8,7 +8,7 @@ class SnackbarUtil {
       title,
       message,
       snackPosition: SnackPosition.TOP,
-      backgroundColor: Colors.red,
+      backgroundColor: Colors.red[600],
       colorText: Get.theme.colorScheme.onError,
       duration: Duration(seconds: 4),
     );

@@ -23,6 +23,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ThemeMode.system,
   ];
 
+  bool _isLoggingOut = false;
+
   String displayThemeMode(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.light:
@@ -66,25 +68,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 "Change Theme",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              SizedBox(
-                height: 10,
-              ),
+              const SizedBox(height: 10),
               Obx(() => CustomDropdown<ThemeMode>(
-                    title: "Select Theme",
-                    selectedValue: themeController.themeMode.value,
-                    items: themeOptions,
-                    displayItem: (mode) => displayThemeMode(mode),
-                    onChanged: (ThemeMode? mode) {
-                      if (mode != null) {
-                        themeController.setTheme(mode);
-                      }
-                    },
-                  )),
+                title: "Select Theme",
+                selectedValue: themeController.themeMode.value,
+                items: themeOptions,
+                displayItem: (mode) => displayThemeMode(mode),
+                onChanged: (ThemeMode? mode) {
+                  if (mode != null) {
+                    themeController.setTheme(mode);
+                  }
+                },
+              )),
               const SizedBox(height: 20),
               const Spacer(),
               TextButton(
-                style: TextButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () {
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  disabledBackgroundColor: Colors.grey,
+                ),
+                onPressed: _isLoggingOut
+                    ? null
+                    : () {
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -92,17 +97,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onCancel: () {
                           Navigator.of(context).pop();
                         },
-                        onConfirm: () {
+                        onConfirm: () async {
                           Navigator.of(context).pop();
-                          authService.logout();
+                          setState(() {
+                            _isLoggingOut = true;
+                          });
+                          await authService.logout();
+                          // Optionally, if logout fails and the user remains on this screen,
+                          // you can reset _isLoggingOut to false.
+                          setState(() {
+                            _isLoggingOut = false;
+                          });
                         },
+                        title: 'Logout?',
+                        message: 'Are you sure you want to Logout?',
                       );
                     },
                   );
                 },
-                child: const Text(
-                  'Log out',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  _isLoggingOut ? 'Logging Out...' : 'Log out',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               )
             ],
