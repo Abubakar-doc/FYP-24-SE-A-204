@@ -4,12 +4,13 @@ import 'package:ntu_ride_pilot/controllers/ride_control_controller.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_control.dart';
-import 'package:ntu_ride_pilot/services/driver/ride_service.dart';
+import 'package:ntu_ride_pilot/screens/driver/ride/start_ride.dart';
+import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/widget/alert_dialog/alert_dialog.dart';
 import 'package:ntu_ride_pilot/widget/detail_row/detail_row.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:ntu_ride_pilot/services/common/route_service.dart';
+import 'package:ntu_ride_pilot/services/route/route_service.dart';
 import 'widget/bus_card_verification_widget.dart';
 
 class RideControlScreen extends StatefulWidget {
@@ -78,7 +79,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
         });
         await _rideService.endRide(_currentRide!);
         // After ending the ride, pop back to the previous screen
-        Get.back();
+        Get.off(StartRideScreen());
       } else {
         // Starting the ride
         setState(() {
@@ -123,7 +124,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
       builder: (context) {
         return CustomAlertDialog(
           onCancel: () => Navigator.of(context).pop(false),
-          onConfirm: () => Navigator.of(context).pop(true),
+          onConfirm: () => Navigator.of(context).pop(true), title: 'Cancel Ride?', message: 'Are you sure you want to cancel this ride?',
         );
       },
     )) ??

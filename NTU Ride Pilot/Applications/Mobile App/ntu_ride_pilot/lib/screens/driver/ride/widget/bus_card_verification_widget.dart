@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ntu_ride_pilot/controllers/ride_control_controller.dart';
-import 'package:ntu_ride_pilot/services/driver/ride_service.dart';
+import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 

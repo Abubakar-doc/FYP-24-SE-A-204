@@ -33,7 +33,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
         curve: Curves.easeInOutCubic,
         duration: const Duration(milliseconds: 500),
         width: _isCollapsed ? 300 : 70,
-        margin: const EdgeInsets.only(bottom: 10, top: 10),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.only(
             bottomRight: Radius.circular(10),

@@ -7,7 +7,7 @@ import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/model/bus/bus.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/ride_control.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/test_data.dart';
-import 'package:ntu_ride_pilot/services/driver/ride_service.dart';
+import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/widget/drawer/custom_drawer.dart';
 import 'package:ntu_ride_pilot/widget/dropdown/driver_ride_dropdown.dart';
@@ -50,42 +50,6 @@ class _StartRideScreenState extends State<StartRideScreen> {
   void setLoading(bool value) {
     setState(() => _isLoading = value);
   }
-
-  // void validateAndNavigate() async {
-  //   setLoading(true);
-  //   bool valid = true;
-  //   if (selectedBus == null) {
-  //     setState(() {
-  //       errorMessageBus = "Please select a bus.";
-  //     });
-  //     valid = false;
-  //   } else {
-  //     setState(() {
-  //       errorMessageBus = "";
-  //     });
-  //   }
-  //   if (selectedRoute == null) {
-  //     setState(() {
-  //       errorMessageRoute = "Please select a route.";
-  //     });
-  //     valid = false;
-  //   } else {
-  //     setState(() {
-  //       errorMessageRoute = "";
-  //     });
-  //   }
-  //   if (!valid) {
-  //     setLoading(false);
-  //     return;
-  //   }
-  //
-  //   // Print the selected bus and route IDs.
-  //   print("Bus ID: ${selectedBus!.busId}, Route ID: ${selectedRoute!.routeId}");
-  //
-  //   await _rideService.fetchAndStoreBusCards();
-  //   Get.to(() => RideControlScreen());
-  //   setLoading(false);
-  // }
 
   void validateAndNavigate() async {
     setLoading(true);
@@ -149,10 +113,10 @@ class _StartRideScreenState extends State<StartRideScreen> {
             // Map placeholder.
             Positioned.fill(
               child: Container(
-                color: Colors.grey,
+                color: Colors.grey[700],
                 alignment: Alignment.center,
                 child: const Text(
-                  "Map",
+                  "Live Location Coming Soon",
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -228,7 +192,8 @@ class _StartRideScreenState extends State<StartRideScreen> {
                       title: "Bus",
                       selectedValue: selectedBus,
                       items: buses,
-                      displayItem: (bus) => bus.busId, // Display busId.
+                      // displayItem: (bus) => bus.busId, // Display busId.
+                      displayItem: (bus) => "Bus-${bus.busId}", // Display with "Bus-" prefix.
                       onChanged: (value) {
                         setState(() {
                           selectedBus = value;
@@ -254,7 +219,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
                         title: "Route",
                         selectedValue: selectedRoute,
                         items: routes,
-                        displayItem: (route) => route.name, // Display route name.
+                        displayItem: (route) => "Route-${route.name}", // Display with "Route-" prefix.
                         onChanged: (value) {
                           setState(() {
                             selectedRoute = value;
