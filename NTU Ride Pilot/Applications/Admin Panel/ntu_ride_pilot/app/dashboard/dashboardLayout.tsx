@@ -60,17 +60,12 @@ export default function DashboardLayout({
 
   return (
     <div className="flex flex-col h-screen bg-gray-500">
-        <div className='bg-white p-2 flex justify-between items-center'> {/* Header Section */}
-          <div>
-            <Image src="/images/National_Textile_University_Logo.png" alt="NTU Logo" className='ml-5 cursor-pointer' width={40} height={40} />
-          </div>
-          {user && <p>Welcome, {user.email}!</p>}
-          <button className='p-5 py-2 rounded-md bg-blue-500 hover:bg-blue-800' onClick={handleSignOut}>Sign Out</button>
-           
-        </div>
+        
       <div className='flex'>
         <Sidebar onItemSelected={handleItemSelected} />
         <main className="flex-1 p-4">
+        {user && <p>Welcome, {user.email}!</p>}
+        <button className='p-5 py-2 rounded-md bg-blue-500 hover:bg-blue-800' onClick={handleSignOut}>Sign Out</button>
           {renderContent()}
           {children} {/* Render additional protected pages here */}
         </main>
