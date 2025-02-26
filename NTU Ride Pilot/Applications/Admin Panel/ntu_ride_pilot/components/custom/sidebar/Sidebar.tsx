@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react';
-import { FaHome, FaUsers, FaTruck, FaRoute, FaBus, FaBullhorn, FaExclamationTriangle, FaCar, FaFileAlt, FaCog, FaUser, FaMapMarkerAlt } from 'react-icons/fa'; // Import more icons as needed
+import { FaHome, FaUsers, FaTruck, FaRoute, FaBus, FaBullhorn, FaExclamationTriangle, FaCar, FaFileAlt, FaCog, FaUser, FaMapMarkerAlt, FaGraduationCap } from 'react-icons/fa'; // Import more icons as needed
 
 interface SidebarItem {
   label: string;
@@ -13,9 +13,10 @@ const Sidebar: React.FC<{ onItemSelected: (itemValue: string) => void }> = ({ on
 
   const sidebarItems: SidebarItem[] = [
     { label: 'Dashboard', icon: <FaHome />, value: 'dashboard' },
-    { label: 'Sessions & Students', icon: <FaUsers />, value: 'sessions' },
+    { label: 'Sessions', icon: <FaUsers />, value: 'sessions' },
+    { label: 'Students', icon: <FaGraduationCap />, value: 'students' },
     { label: 'Drivers', icon: <FaTruck />, value: 'drivers' },
-      { label: 'Routes', icon: <FaRoute />, value: 'routes' },
+    { label: 'Routes', icon: <FaRoute />, value: 'routes' },
     { label: 'Bus Stops', icon: <FaMapMarkerAlt />, value: 'busStops' },
     { label: 'Buses', icon: <FaBus />, value: 'buses' },
     { label: 'Announcements', icon: <FaBullhorn />, value: 'announcements' },

@@ -1,23 +1,26 @@
-"use client";
-
+"use client"
+import DashboardLayout from './dashboardLayout';
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/app/ProtectedRoute";
 import { User as FirebaseUser } from "firebase/auth";
 
-
-export default function Dashboard() {
+export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((authenticatedUser) => {
-      setUser(authenticatedUser);
+      if (!authenticatedUser) {
+        // If user is not authenticated, redirect to sign-in page
+        router.push("/signin");
+      } else {
+        setUser(authenticatedUser);
+      }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   const handleSignOut = async () => {
     try {
@@ -28,14 +31,14 @@ export default function Dashboard() {
     }
   };
 
+  if (!user) {
+    // Prevent rendering dashboard if user is not authenticated
+    return null;
+  }
+
   return (
-    <ProtectedRoute>
-      <div>
-        <h1>Dashboard</h1>
-        {user && <p>Welcome, {user.email}!</p>}
-        <button onClick={handleSignOut}>Sign Out</button>
-       
-      </div>
-    </ProtectedRoute>
+    <DashboardLayout user={user} handleSignOut={handleSignOut}>
+      {/* Any additional content specific to this page */}
+    </DashboardLayout>
   );
 }
