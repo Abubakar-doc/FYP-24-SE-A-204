@@ -6,12 +6,37 @@ import 'package:skeletonizer/skeletonizer.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  Widget _buildStatRow(String title, String value, bool isDarkMode, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    // Retrieve the existing instance of the controller
+    // Retrieve the existing instance of the controller.
     final DriverProfileController controller = Get.find<DriverProfileController>();
 
     return Scaffold(
@@ -65,38 +90,18 @@ class ProfileScreen extends StatelessWidget {
                 color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Column(
-                children: [
-                  _buildStatRow("Total Rides", "15", isDarkMode),
-                  Divider(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400),
-                  _buildStatRow("Total Hours", "30", isDarkMode),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String title, String value, bool isDarkMode, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              child: Obx(() {
+                return Skeletonizer(
+                  enabled: controller.isLoading.value,
+                  child: Column(
+                    children: [
+                      _buildStatRow("Total Rides", controller.totalRides.value.toString(), isDarkMode),
+                      Divider(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400),
+                      _buildStatRow("Total Hours", controller.totalHours.value, isDarkMode),
+                    ],
+                  ),
+                );
+              }),
             ),
           ),
         ],

@@ -81,6 +81,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               )),
               const SizedBox(height: 20),
+              const Text(
+                "Connected Email",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: TextEditingController(
+                    text: authService.currentUserEmail ?? ''),
+                readOnly: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
               const Spacer(),
               TextButton(
                 style: ElevatedButton.styleFrom(

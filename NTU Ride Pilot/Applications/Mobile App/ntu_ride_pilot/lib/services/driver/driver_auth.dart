@@ -12,7 +12,8 @@ class DriverAuthService extends GetxController {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       await _driverService.saveDriverToHive(email);
-      Get.off(() => DriverHomeScreen());
+      Get.off(() => DriverHomeScreen(),
+          transition: Transition.rightToLeft);
     } catch (e) {
       SnackbarUtil.showError("Authentication Error", e.toString());
     }

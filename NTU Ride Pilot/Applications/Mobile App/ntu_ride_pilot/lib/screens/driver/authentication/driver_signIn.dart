@@ -147,7 +147,8 @@ class _DriverSignInScreenState extends State<DriverSignInScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        Get.to(() => ForgotPasswordScreen());
+                        Get.to(() => ForgotPasswordScreen(),
+                            transition: Transition.rightToLeft);
                       },
                       child: const Text('Forgot Password?'),
                     ),

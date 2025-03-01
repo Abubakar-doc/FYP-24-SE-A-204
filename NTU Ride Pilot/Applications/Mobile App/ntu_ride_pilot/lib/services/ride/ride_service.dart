@@ -110,40 +110,31 @@ class RideService {
 
   Future<RideServiceResponse> handleCardInput(String input) async {
     try {
-      // 1. Open the necessary Hive boxes.
-      // print("Opening bus_cards box...");
+      // 1. Open necessary Hive boxes.
       var busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
-      // print("Opening rides box...");
       var rideBox = await Hive.openBox<RideModel>('rides');
 
-      // 2. Look up the matching bus card.
-      // print("Searching for bus card with busCardId: $input");
+      // 2. Look up matching bus card.
       BusCardModel? matchingCard = busCardBox.values.firstWhereOrNull(
             (card) => card.busCardId == input,
       );
 
       if (matchingCard == null) {
-        // print("No matching bus card found for busCardId: $input");
         return RideServiceResponse(statusCode: CARD_NOT_FOUND);
       }
       if (!matchingCard.isActive) {
-        // print("Bus card found but is INACTIVE for busCardId: $input");
         return RideServiceResponse(statusCode: CARD_INACTIVE);
       }
 
-      // 3. Retrieve the ride from Hive using the "currentRide" key.
-      // print("Attempting to retrieve ride with key: currentRide");
+      // 3. Retrieve the ride from Hive.
       RideModel? currentRide = rideBox.get('currentRide');
       if (currentRide == null) {
-        // print("No ride found in Hive with the key: currentRide");
         return RideServiceResponse(statusCode: "RIDE_NOT_FOUND");
-      } else {
-        // print("Successfully retrieved ride: ${currentRide.rideId}");
       }
 
       // 4. Check if the card is already onboard in the local ride.
-      if (currentRide.onboard.containsKey(matchingCard.rollNo)) {
-        // print("Student with rollNo ${matchingCard.rollNo} is already onboard.");
+      if (currentRide.onlineOnBoard.contains(matchingCard.rollNo) ||
+          currentRide.offlineOnBoard.contains(matchingCard.rollNo)) {
         return RideServiceResponse(
           statusCode: STUDENT_ALREADY_ONBOARD,
           busNumber: currentRide.busId,
@@ -152,18 +143,33 @@ class RideService {
         );
       }
 
-      // 5. If online, also check Firestore for duplicate onboard.
       if (_isOnline) {
-        // print("Checking Firestore for duplicate onboard status...");
-        QuerySnapshot querySnapshot = await _firestore
+        DateTime threeHoursAgo = DateTime.now().subtract(Duration(hours: 3));
+        Timestamp threeHoursAgoTimestamp = Timestamp.fromDate(threeHoursAgo);
+
+        QuerySnapshot onlineSnapshot = await _firestore
             .collection('rides')
-            .where('onboard.${matchingCard.rollNo}', isNull: false)
+            .where('onlineOnBoard', arrayContains: matchingCard.rollNo)
+            .where('ride_status', whereIn: ['idle', 'inProgress'])
+            .where('created_at', isGreaterThanOrEqualTo: threeHoursAgoTimestamp)
             .get();
 
-        if (querySnapshot.docs.isNotEmpty) {
-          var docData = querySnapshot.docs.first.data() as Map<String, dynamic>;
-          String busId = docData['bus_id'] ?? '';
-          // print("Student with rollNo ${matchingCard.rollNo} is already onboard another ride in Firestore.");
+        QuerySnapshot offlineSnapshot = await _firestore
+            .collection('rides')
+            .where('offlineOnBoard', arrayContains: matchingCard.rollNo)
+            .where('ride_status', whereIn: ['idle', 'inProgress'])
+            .where('created_at', isGreaterThanOrEqualTo: threeHoursAgoTimestamp)
+            .get();
+
+        if (onlineSnapshot.docs.isNotEmpty || offlineSnapshot.docs.isNotEmpty) {
+          String busId = '';
+          if (onlineSnapshot.docs.isNotEmpty) {
+            var docData = onlineSnapshot.docs.first.data() as Map<String, dynamic>;
+            busId = docData['bus_id'] ?? '';
+          } else if (offlineSnapshot.docs.isNotEmpty) {
+            var docData = offlineSnapshot.docs.first.data() as Map<String, dynamic>;
+            busId = docData['bus_id'] ?? '';
+          }
           return RideServiceResponse(
             statusCode: STUDENT_ALREADY_ONBOARD,
             busNumber: busId,
@@ -173,20 +179,20 @@ class RideService {
         }
       }
 
+
       String processingMode = _isOnline ? 'online' : 'offline';
       String timestamp = DateTime.now().toIso8601String();
 
       // 7. Update onboard information in the local RideModel immediately.
-      // print("Adding student with rollNo ${matchingCard.rollNo} to onboard list...");
-      currentRide.onboard[matchingCard.rollNo] = {
-        'processingMode': processingMode,
-        'timestamp': timestamp,
-      };
+      if (processingMode == 'online') {
+        currentRide.onlineOnBoard.add(matchingCard.rollNo);
+      } else {
+        currentRide.offlineOnBoard.add(matchingCard.rollNo);
+      }
       await rideBox.put('currentRide', currentRide);
 
-      // 8. Dispatch Firestore update in parallel if online (do not await).
+      // 8. Dispatch Firestore update in parallel if online.
       if (_isOnline) {
-        // print("Updating Firestore with onboard data for rollNo ${matchingCard.rollNo}...");
         updateOnboardStatus(
           rollNo: matchingCard.rollNo,
           processingMode: processingMode,
@@ -196,7 +202,6 @@ class RideService {
       }
 
       // 9. Add to the upload queue for background processing.
-      // print("Adding rollNo ${matchingCard.rollNo} to the upload queue...");
       _uploadQueue.add({
         'rollNo': matchingCard.rollNo,
         'processingMode': processingMode,
@@ -204,14 +209,13 @@ class RideService {
       });
 
       // 10. Return success result.
-      // print("Card verified successfully for rollNo ${matchingCard.rollNo}.");
       return RideServiceResponse(
         statusCode: CARD_VERIFIED,
         studentName: matchingCard.name,
         rollNo: matchingCard.rollNo,
       );
     } catch (e) {
-      print("🤢🤢🤢🤢🤢Error handling card input: $e");
+      print("Error handling card input: $e");
       return RideServiceResponse(statusCode: UNKNOWN_ERROR);
     }
   }
@@ -219,6 +223,7 @@ class RideService {
   /// ─────────────────────────────────────────────────────────────────────────
   /// Background Queue Processing
   /// ─────────────────────────────────────────────────────────────────────────
+
   Future<void> _processQueue() async {
     if (!_isOnline) return;
 
@@ -243,17 +248,26 @@ class RideService {
     }
   }
 
-  Future<void> updateOnboardStatus({required String rollNo, required String processingMode, required String timestamp, required RideModel ride,}) async {
+  Future<void> updateOnboardStatus({
+    required String rollNo,
+    required String processingMode,
+    required String timestamp,
+    required RideModel ride,
+  }) async {
     DocumentReference rideDocRef = _firestore.collection("rides").doc(ride.rideId);
-    await rideDocRef.set({
-      'onboard': {
-        rollNo: {
-          'processingMode': processingMode,
-          // 'timestamp': timestamp,
-        }
-      }
-    }, SetOptions(merge: true));
+
+    // Update the appropriate onboard array using FieldValue.arrayUnion.
+    if (processingMode == 'online') {
+      await rideDocRef.set({
+        'onlineOnBoard': FieldValue.arrayUnion([rollNo]),
+      }, SetOptions(merge: true));
+    } else {
+      await rideDocRef.set({
+        'offlineOnBoard': FieldValue.arrayUnion([rollNo]),
+      }, SetOptions(merge: true));
+    }
   }
+
 
   /// ─────────────────────────────────────────────────────────────────────────
   /// Firestore Sync Utility Methods
@@ -332,35 +346,80 @@ class RideService {
     }
   }
 
-  Future<RideModel?> createNewRide({required BusModel bus, required RouteModel route,}) async {
+  Future<RideModel?> createNewRide({
+    required BusModel bus,
+    required RouteModel route,
+  }) async {
     try {
-      // Fetch the current driver
+      // Fetch the current driver.
       DriverService driverService = DriverService();
       DriverModel? currentDriver = driverService.getCurrentDriver();
 
       if (currentDriver == null) {
-        print("Error: No current driver found in Hive.");
+        // print("Error: No current driver found in Hive.");
         return null;
       }
 
-      // Create the ride doc in Firestore.
+      // Validation: Check if the selected bus is already in use.
+      DateTime threeHoursAgo = DateTime.now().subtract(Duration(hours: 3));
+      Timestamp threeHoursAgoTimestamp = Timestamp.fromDate(threeHoursAgo);
+
+      QuerySnapshot rideQuerySnapshot = await _firestore
+          .collection('rides')
+          .where('ride_status', whereIn: ['idle', 'inProgress'])
+          .where('created_at', isGreaterThanOrEqualTo: threeHoursAgoTimestamp)
+          .get();
+
+      for (var doc in rideQuerySnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        if (data['bus_id'] == bus.busId) {
+          // Bus is in use. Fetch driver and route details.
+          String existingDriverId = data['driver_id'];
+          String existingRouteId = data['route_id'];
+
+          DocumentSnapshot driverSnapshot = await _firestore
+              .collection('users')
+              .doc('user_roles')
+              .collection('drivers')
+              .doc(existingDriverId)
+              .get();
+          String driverName = "Unknown Driver";
+          if (driverSnapshot.exists) {
+            driverName = (driverSnapshot.data() as Map<String, dynamic>)['name'] ?? "Unknown Driver";
+          }
+
+          DocumentSnapshot routeSnapshot =
+          await _firestore.collection('routes').doc(existingRouteId).get();
+          String routeName = "Unknown Route";
+          if (routeSnapshot.exists) {
+            routeName = (routeSnapshot.data() as Map<String, dynamic>)['name'] ?? "Unknown Route";
+          }
+
+          // Throw custom exception.
+          throw BusInUseException(driverName, routeName);
+        }
+      }
+
+      // Bus is not in use; proceed to create a new ride.
       DocumentReference docRef = await _firestore.collection('rides').add({
         'route_id': route.routeId,
         'ride_status': 'idle',
         'bus_id': bus.busId,
         'driver_id': currentDriver.driverId,
         'created_at': FieldValue.serverTimestamp(),
-        'onboard': {},
+        'onlineOnBoard': [],
+        'offlineOnBoard': [],
       });
 
-      // Create local model.
+      // Create local RideModel.
       RideModel ride = RideModel(
         rideId: docRef.id,
         routeId: route.routeId,
         rideStatus: 'idle',
         busId: bus.busId,
         driverId: currentDriver.driverId,
-        onboard: {},
+        onlineOnBoard: [],
+        offlineOnBoard: [],
         etaNextStop: DateTime.now().add(const Duration(minutes: 15)),
         createdAt: DateTime.now(),
       );
@@ -371,10 +430,17 @@ class RideService {
 
       return ride;
     } catch (e) {
-      print("Error creating new ride: $e");
+      // Rethrow the BusInUseException so it can be handled in validateAndNavigate.
+      if (e is BusInUseException) {
+        rethrow;
+      }
+      // print("Error creating new ride: $e");
       return null;
     }
   }
+
+
+
 }
 
 class RideServiceResponse {
@@ -389,4 +455,16 @@ class RideServiceResponse {
     this.studentName,
     this.rollNo,
   });
+}
+
+
+class BusInUseException implements Exception {
+  static const String BUS_IN_USE = "BUS_IN_USE";
+  final String driverName;
+  final String routeName;
+
+  BusInUseException(this.driverName, this.routeName);
+
+  @override
+  String toString() => BUS_IN_USE;
 }

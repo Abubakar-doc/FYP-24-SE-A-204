@@ -96,9 +96,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   _onTileTapped(3);
                   Navigator.pop(context);
-                  Future.delayed(const Duration(milliseconds: 200), () {
-                    Get.to(() => SettingsScreen());
-                  });
+                    Get.to(() => SettingsScreen(),
+                      transition: Transition.rightToLeft);
                 },
 
               ),

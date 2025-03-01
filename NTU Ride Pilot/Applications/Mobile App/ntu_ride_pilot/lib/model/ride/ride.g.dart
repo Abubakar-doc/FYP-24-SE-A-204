@@ -19,20 +19,21 @@ class RideModelAdapter extends TypeAdapter<RideModel> {
     return RideModel(
       rideId: fields[0] as String?,
       routeId: fields[1] as String,
-      rideStatus: fields[2] as String,
+      rideStatus: fields[2] as String?,
       busId: fields[3] as String,
       driverId: fields[4] as String,
-      onboard: (fields[5] as Map).cast<String, dynamic>(),
-      etaNextStop: fields[6] as DateTime,
-      createdAt: fields[7] as DateTime?,
-      endedAt: fields[8] as DateTime?,
+      onlineOnBoard: (fields[5] as List).cast<String>(),
+      offlineOnBoard: (fields[6] as List).cast<String>(),
+      etaNextStop: fields[7] as DateTime,
+      createdAt: fields[8] as DateTime?,
+      endedAt: fields[9] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, RideModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.rideId)
       ..writeByte(1)
@@ -44,12 +45,14 @@ class RideModelAdapter extends TypeAdapter<RideModel> {
       ..writeByte(4)
       ..write(obj.driverId)
       ..writeByte(5)
-      ..write(obj.onboard)
+      ..write(obj.onlineOnBoard)
       ..writeByte(6)
-      ..write(obj.etaNextStop)
+      ..write(obj.offlineOnBoard)
       ..writeByte(7)
-      ..write(obj.createdAt)
+      ..write(obj.etaNextStop)
       ..writeByte(8)
+      ..write(obj.createdAt)
+      ..writeByte(9)
       ..write(obj.endedAt);
   }
 

@@ -7,6 +7,7 @@ import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_contr
 import 'package:ntu_ride_pilot/screens/driver/ride/start_ride.dart';
 import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
+import 'package:ntu_ride_pilot/utils/utils.dart';
 import 'package:ntu_ride_pilot/widget/alert_dialog/alert_dialog.dart';
 import 'package:ntu_ride_pilot/widget/detail_row/detail_row.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -67,34 +68,58 @@ class _RideControlScreenState extends State<RideControlScreen> {
   Future<void> _toggleRideStatus() async {
     if (_currentRide == null) return;
 
+    // Determine the action based on the current ride status.
+    final bool isRideInProgress = _currentRide!.rideStatus == 'inProgress';
+    final String action = isRideInProgress ? 'End' : 'Start';
+
+    // Show the confirmation dialog using the CustomAlertDialog widget.
+    final bool confirm = (await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return CustomAlertDialog(
+          title: '$action Ride?',
+          message: 'Are you sure you want to $action this ride?',
+          onCancel: () => Navigator.of(context).pop(false),
+          onConfirm: () => Navigator.of(context).pop(true),
+          yesColor: Colors.blue,
+        );
+      },
+    )) ?? false;
+
+    if (!confirm) return;
+
     setState(() {
       _isProcessing = true;
     });
 
     try {
-      if (_currentRide!.rideStatus == 'inProgress') {
-        // Ending the ride
+      if (isRideInProgress) {
+        // Ending the ride.
         setState(() {
           _buttonProgressText = 'Ending Ride...';
         });
         await _rideService.endRide(_currentRide!);
-        // After ending the ride, pop back to the previous screen
+        SnackbarUtil.showSuccess("Success", "Ride ended successfully.");
+        // After ending the ride, navigate back to the StartRideScreen.
         Get.off(StartRideScreen());
       } else {
-        // Starting the ride
+        // Starting the ride.
         setState(() {
           _buttonProgressText = 'Starting Ride...';
         });
         await _rideService.startRide(_currentRide!);
+        SnackbarUtil.showSuccess("Success", "Ride started successfully.");
       }
     } catch (e) {
       print('Error toggling ride status: $e');
+      SnackbarUtil.showError("Error", "Please try again.");
     } finally {
       setState(() {
         _isProcessing = false;
       });
     }
   }
+
 
   /// Cancels the ride by deleting the Firestore doc and clearing the local Hive box.
   Future<void> _cancelRide() async {

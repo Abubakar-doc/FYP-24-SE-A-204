@@ -45,6 +45,8 @@ dependencies:
   flutter_typeahead: ^5.2.0
   collection: any
   internet_connection_checker: ^3.0.1
+  audioplayers: ^6.2.0
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:
@@ -74,13 +76,10 @@ flutter:
           weight: 700
 
   assets:
-    - assets/pictures/National_Textile_University_Logo.png
-    - assets/pictures/driver.png
-    - assets/pictures/student.png
-    - assets/pictures/black_id_card.png
-    - assets/pictures/white_id_card.png
-    - assets/pictures/green_id_card.png
-    - assets/pictures/red_id_card.png
+    - assets/pictures/
+    - assets/sounds/
+
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

@@ -1,18 +1,27 @@
 import 'package:get/get.dart';
+import 'package:ntu_ride_pilot/services/driver/profile_stats.dart';
 import 'package:ntu_ride_pilot/services/profile/user_profile_service.dart';
+import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
 
 class DriverProfileController extends GetxController {
   final UserProfileService _userProfileService = UserProfileService();
+  final DriverService _driverService = DriverService();
+  final ProfileStatsService _profileStatsService = ProfileStatsService();
 
   var name = "Guest".obs;
   var role = "".obs;
   var profilePic = Rxn<String>();
   var isLoading = true.obs;
 
+  // Ride statistics observables.
+  var totalRides = 0.obs;
+  var totalHours = "0.0".obs;
+
   @override
   void onInit() {
     super.onInit();
     _loadUserData();
+    _loadRideStats();
   }
 
   Future<void> _loadUserData() async {
@@ -21,5 +30,12 @@ class DriverProfileController extends GetxController {
     role.value = userData['role'];
     profilePic.value = userData['profilePic'];
     isLoading.value = false;
+  }
+
+  Future<void> _loadRideStats() async {
+    // Now simply call the ProfileStatsService to get stats.
+    final stats = await _profileStatsService.fetchRideStats();
+    totalRides.value = stats['totalRides'];
+    totalHours.value = stats['totalHours'];
   }
 }

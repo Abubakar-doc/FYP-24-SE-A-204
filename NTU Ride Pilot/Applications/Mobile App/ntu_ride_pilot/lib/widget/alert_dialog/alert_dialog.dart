@@ -5,6 +5,7 @@ class CustomAlertDialog extends StatelessWidget {
   final String message;
   final VoidCallback onConfirm;
   final VoidCallback onCancel;
+  final Color? yesColor;
 
   const CustomAlertDialog({
     super.key,
@@ -12,6 +13,7 @@ class CustomAlertDialog extends StatelessWidget {
     required this.message,
     required this.onConfirm,
     required this.onCancel,
+    this.yesColor,
   });
 
   @override
@@ -27,9 +29,9 @@ class CustomAlertDialog extends StatelessWidget {
         const SizedBox(width: 10),
         GestureDetector(
           onTap: onConfirm,
-          child: const Text(
+          child: Text(
             'Yes',
-            style: TextStyle(color: Colors.red),
+            style: TextStyle(color: yesColor ?? Colors.red),
           ),
         ),
       ],
