@@ -74,12 +74,12 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-500">
+    <div className="flex flex-col h-screen ">
 
       <div className='flex'>
         <Sidebar onItemSelected={handleItemSelected} />
-        <main className="flex-1 p-4">
-          {user && <p>Welcome, {user.email}!</p>}
+        <main className="flex-1 ">
+          {/* {user && <p>Welcome, {user.email}!</p>} */}
           <button className='p-5 py-2 rounded-md bg-blue-500 hover:bg-blue-800' onClick={handleSignOut}>Sign Out</button>
           {renderContent()}
           {children} {/* Render additional protected pages here */}
