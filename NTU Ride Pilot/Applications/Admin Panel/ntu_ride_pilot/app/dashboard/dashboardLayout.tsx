@@ -14,6 +14,7 @@ import StudentsContent from '@/components/custom/Students/Students';
 import { useState } from 'react';
 import Image from 'next/image';
 import AddSessionForm from '@/components/custom/AddSessions/AddSessions';
+import AddStudentForm from '@/components/custom/Students/AddStudentForm'; // Import the AddStudentForm
 
 export default function DashboardLayout({
   children,
@@ -26,10 +27,12 @@ export default function DashboardLayout({
 }>) {
   const [selectedItem, setSelectedItem] = useState<string>('dashboard');
   const [showAddSessionForm, setShowAddSessionForm] = useState<boolean>(false); // New state
+  const [showAddStudentForm, setShowAddStudentForm] = useState<boolean>(false); // New state for students
 
   const handleItemSelected = (itemValue: string) => {
     setSelectedItem(itemValue);
     setShowAddSessionForm(false); // Reset form state when sidebar item changes
+    setShowAddStudentForm(false); // Reset student form state as well
   };
 
   const handleAddSessionClick = () => {
@@ -39,6 +42,15 @@ export default function DashboardLayout({
   const handleBackToSessions = () => {
     setShowAddSessionForm(false);
   };
+
+  const handleAddStudentClick = () => {
+    setShowAddStudentForm(true);
+  };
+
+  const handleBackToStudents = () => {
+    setShowAddStudentForm(false);
+  };
+
 
   const renderContent = () => {
     switch (selectedItem) {
@@ -51,7 +63,11 @@ export default function DashboardLayout({
           <SessionsContent onAddSessionClick={handleAddSessionClick} />
         );
       case 'students':
-        return <StudentsContent />;
+        return showAddStudentForm ? (
+          <AddStudentForm onBack={handleBackToStudents} />
+        ) : (
+          <StudentsContent onAddStudent={handleAddStudentClick} />
+        );
       case 'drivers':
         return <DriversContent />;
       case 'routes':

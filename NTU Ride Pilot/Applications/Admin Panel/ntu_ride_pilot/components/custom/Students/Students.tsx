@@ -1,16 +1,17 @@
+// StudentContent.tsx
 import React from 'react';
 import { useState } from 'react';
 
 interface StudentContentProps {
   onSearch?: (query: string) => void; // Optional search handler
   onFilter?: (filterValue: string) => void; // Optional filter handler
-  onAddStudent?: () => void; // Optional add student handler
+  onAddStudent?: () => void; // Optional add student handler - now required!
 }
 
 const StudentContent: React.FC<StudentContentProps> = ({
   onSearch,
   onFilter,
-  onAddStudent,
+  onAddStudent, // Destructure the onAddStudent prop
 }) => {
   const [selectedSession, setSelectedSession] = useState<string>('Session BS Spring 2024');
 
@@ -84,7 +85,7 @@ const StudentContent: React.FC<StudentContentProps> = ({
           </select>
           <button
             className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
-            onClick={onAddStudent}
+            onClick={onAddStudent}  // Call the onAddStudent prop when the button is clicked
           >
             + Add Students
           </button>
