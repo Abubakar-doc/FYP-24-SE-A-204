@@ -53,11 +53,6 @@ const DashboardContent: React.FC = () => {
 
   return (
     <div className="p-4">
-<<<<<<< Updated upstream
-      
-      <h2>Dashboard Content</h2>
-      <p>This is the main dashboard content.</p>
-=======
       {/* Ongoing Rides Section */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-white rounded-md shadow-sm p-4 flex items-center justify-between">
@@ -178,7 +173,6 @@ const DashboardContent: React.FC = () => {
         </div>
         <Bar options={chartOptions} data={chartData} />
       </div>
->>>>>>> Stashed changes
     </div>
   );
 };

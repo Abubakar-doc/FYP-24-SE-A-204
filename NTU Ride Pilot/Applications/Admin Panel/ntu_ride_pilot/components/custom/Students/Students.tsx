@@ -47,6 +47,7 @@ const StudentContent: React.FC<StudentContentProps> = ({
             {/* Add more session options here */}
             <option value="session2">Session 2</option>
             <option value="session3">Session 3</option>
+            <option value="session3">Session 3</option>
           </select>
 
           <div className="relative">
