@@ -1,7 +1,11 @@
-// components/custom/SessionsContent.tsx
+// components/custom/SessionsContent/SessionsContent.tsx
 import React from 'react';
 
-const SessionsContent: React.FC = () => {
+type SessionsContentProps = {
+  onAddSessionClick: () => void;
+};
+
+const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) => {
   return (
     <div className="p-4">
       {/* Header Section */}
@@ -34,14 +38,17 @@ const SessionsContent: React.FC = () => {
             <option>Filter by</option>
             {/* Add filter options here */}
           </select>
-          <button className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300">
+          <button
+            className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+            onClick={onAddSessionClick}
+          >
             + Add Session
           </button>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      {/* <div className="border-b mb-4">
+      <div className="border-b mb-4">
         <nav className="flex">
           <button className="px-6 py-3 font-semibold text-blue-500 border-b-2 border-blue-500">
             + Active
@@ -50,7 +57,7 @@ const SessionsContent: React.FC = () => {
             Suspended
           </button>
         </nav>
-      </div> */}
+      </div>
 
       {/* Table Section */}
       <div className="overflow-x-auto">
