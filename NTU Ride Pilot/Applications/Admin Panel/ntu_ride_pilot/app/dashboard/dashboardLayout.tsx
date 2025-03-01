@@ -1,4 +1,3 @@
-"use client"
 import Sidebar from '@/components/custom/sidebar/Sidebar';
 import DashboardContent from '@/components/custom/DashboardContent/DashboardContent';
 import SessionsContent from '@/components/custom/SessionsContent/SessionsContent';
@@ -40,7 +39,8 @@ export default function DashboardLayout({
   };
 
   const handleBackToSessions = () => {
-    setShowAddSessionForm(false);
+    setShowAddSessionForm(false); // This will show the SessionsContent component again
+    setSelectedItem('sessions'); // Make sure the sidebar item is correctly highlighted
   };
 
   const handleAddStudentClick = () => {
@@ -50,7 +50,6 @@ export default function DashboardLayout({
   const handleBackToStudents = () => {
     setShowAddStudentForm(false);
   };
-
 
   const renderContent = () => {
     switch (selectedItem) {
@@ -95,7 +94,6 @@ export default function DashboardLayout({
       <div className='flex'>
         <Sidebar onItemSelected={handleItemSelected} />
         <main className="flex-1 ">
-          {/* {user && <p>Welcome, {user.email}!</p>} */}
           <button className='p-5 py-2 rounded-md bg-blue-500 hover:bg-blue-800' onClick={handleSignOut}>Sign Out</button>
           {renderContent()}
           {children} {/* Render additional protected pages here */}

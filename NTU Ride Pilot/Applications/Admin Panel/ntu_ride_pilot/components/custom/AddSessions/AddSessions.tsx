@@ -1,4 +1,4 @@
-// components/custom/SessionsContent/AddSessionForm.tsx
+"use client"
 import React from 'react';
 import AddSessionHeader from './AddSessionHeader';
 import { useState } from 'react';
