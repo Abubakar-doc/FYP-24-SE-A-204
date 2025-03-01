@@ -41,7 +41,7 @@ const SessionsContent: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b mb-4">
+      {/* <div className="border-b mb-4">
         <nav className="flex">
           <button className="px-6 py-3 font-semibold text-blue-500 border-b-2 border-blue-500">
             + Active
@@ -50,7 +50,7 @@ const SessionsContent: React.FC = () => {
             Suspended
           </button>
         </nav>
-      </div>
+      </div> */}
 
       {/* Table Section */}
       <div className="overflow-x-auto">
