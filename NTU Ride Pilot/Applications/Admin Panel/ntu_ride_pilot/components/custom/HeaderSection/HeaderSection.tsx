@@ -58,7 +58,7 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({
           <option>Filter by</option>
           {/* Add filter options here */}
           <option value="option1">Option 1</option>
-          <option value="option2">Option 2</option>
+          
         </select>
         <button
           className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
