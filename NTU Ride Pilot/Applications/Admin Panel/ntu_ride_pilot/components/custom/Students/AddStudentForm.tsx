@@ -38,7 +38,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   return (
     <div className="bg-white rounded-md shadow-md p-4">
-      <AddStudentHeader />
+      <AddStudentHeader onBackToStudents={onBack} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

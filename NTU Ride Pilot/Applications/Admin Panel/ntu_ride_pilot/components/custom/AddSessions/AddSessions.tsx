@@ -1,7 +1,10 @@
-"use client"
-import React from 'react';
+// AddSessionForm.tsx
+"use client";
+
+import React, { useState } from 'react';
 import AddSessionHeader from './AddSessionHeader';
-import { useState } from 'react';
+import { firestore } from '@/lib/firebase';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 type AddSessionFormProps = {
   onBack: () => void;
@@ -13,22 +16,36 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [endDate, setEndDate] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission logic here (e.g., API call)
-    console.log('Form submitted', { name, startDate, endDate });
-    // Simulate success message after submission
-    setSuccessMessage('The session has been successfully created!');
-    // Clear the message after 3 seconds
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+    try {
+      const startDateTimestamp = Timestamp.fromDate(new Date(startDate));
+      const endDateTimestamp = Timestamp.fromDate(new Date(endDate));
+
+      await addDoc(collection(firestore, 'sessions'), {
+        name,
+        startDate: startDateTimestamp,
+        endDate: endDateTimestamp,
+      });
+      console.log('Session added to Firestore');
+      setSuccessMessage('The session has been successfully created!');
+      // Clear the message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Error adding session:', error);
+      setSuccessMessage('Failed to create session');
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    }
   };
 
   return (
     <div className="bg-white rounded-md shadow-md">
       {/* Header Component */}
-      <AddSessionHeader />
+      <AddSessionHeader onBackToSessions={onBack} />
 
       {/* Form Section */}
       <form onSubmit={handleSubmit} className="space-y-4 p-4">
@@ -116,8 +133,8 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
           </button>
         </div>
       </form>
-       {/* Success Message */}
-       {successMessage && (
+      {/* Success Message */}
+      {successMessage && (
         <div className="bg-green-500 text-white font-bold py-2 px-4 rounded">
           {successMessage}
         </div>

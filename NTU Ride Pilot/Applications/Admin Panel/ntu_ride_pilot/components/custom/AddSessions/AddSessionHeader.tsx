@@ -5,6 +5,7 @@ type AddSessionHeaderProps = {
   onBackToSessions: () => void; // Callback to go back to sessions
 };
 
+
 const AddSessionHeader: React.FC<AddSessionHeaderProps> = ({ onBackToSessions }) => {
   return (
     <div className="w-full bg-[#F5F5F5] rounded-md p-4">

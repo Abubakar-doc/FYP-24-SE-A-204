@@ -1,11 +1,15 @@
-// components/custom/SessionsContent/AddStudentHeader.tsx
+// AddStudentHeader.tsx
 import React from 'react';
 import { FaCog, FaBell } from 'react-icons/fa'; // Import icons
 import Link from 'next/link';
 import UploadFile from './UploadFile';
 import DownloadFile from './DownloadFile';
 
-const AddStudentHeader: React.FC = () => {
+type AddStudentHeaderProps = {
+  onBackToStudents: () => void;
+};
+
+const AddStudentHeader: React.FC<AddStudentHeaderProps> = ({ onBackToStudents }) => {
   return (
     <div className="w-full bg-[#F5F5F5] rounded-md p-4">
       {/* Top Row: Icons */}
@@ -19,9 +23,9 @@ const AddStudentHeader: React.FC = () => {
         {/* Left Side: Breadcrumbs */}
         <div className="flex items-start">
           <div className="text-black font-bold text-xl">
-            <Link href="/students" className="hover:text-gray-700">
+            <button onClick={onBackToStudents} className="hover:text-gray-700">
               Students
-            </Link>
+            </button>
             <span> &gt; </span>
             <span className="text-[#0686CB] font-bold">Add Students</span>
           </div>

@@ -1,11 +1,43 @@
-// components/custom/SessionsContent/SessionsContent.tsx
-import React from 'react';
+// SessionsContent.tsx
+import React, { useState, useEffect } from 'react';
+import { firestore } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+
+type Session = {
+  id: string;
+  name: string;
+  startDate: any; // Use 'any' for now, or define a more specific type if needed
+  endDate: any; // Use 'any' for now, or define a more specific type if needed
+};
 
 type SessionsContentProps = {
   onAddSessionClick: () => void;
 };
 
 const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(firestore, 'sessions'));
+        const sessionsData = querySnapshot.docs.map((doc) => {
+          const session: Session = { id: doc.id, ...doc.data() };
+          if (session.startDate && session.endDate) {
+            session.startDate = session.startDate.toDate().toLocaleDateString();
+            session.endDate = session.endDate.toDate().toLocaleDateString();
+          }
+          return session;
+        });
+        setSessions(sessionsData);
+      } catch (error) {
+        console.error('Error fetching sessions:', error);
+      }
+    };
+
+    fetchSessions();
+  }, []);
+
   return (
     <div className="p-4">
       {/* Header Section */}
@@ -47,18 +79,6 @@ const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) 
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      {/* <div className="border-b mb-4">
-        <nav className="flex">
-          <button className="px-6 py-3 font-semibold text-blue-500 border-b-2 border-blue-500">
-            + Active
-          </button>
-          <button className="px-6 py-3 font-semibold text-gray-500 hover:text-gray-700">
-            Suspended
-          </button>
-        </nav>
-      </div> */}
-
       {/* Table Section */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -71,10 +91,10 @@ const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) 
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Duration
+                Starting Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                No of Students
+                Ending Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -82,37 +102,23 @@ const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">1</td>
-              <td className="px-6 py-4 whitespace-nowrap">Session BS Spring 2025</td>
-              <td className="px-6 py-4 whitespace-nowrap">Feb 25, 2025 - Jun 25, 2025</td>
-              <td className="px-6 py-4 whitespace-nowrap">455</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {/* Action Icons - Replace with your preferred icons */}
-                <a href="#" className="text-blue-500 hover:text-blue-700">
-                  Edit
-                </a>
-                <a href="#" className="text-red-500 hover:text-red-700 ml-2">
-                  Delete
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">2</td>
-              <td className="px-6 py-4 whitespace-nowrap">Session Masters Spring 2025</td>
-              <td className="px-6 py-4 whitespace-nowrap">Feb 25, 2025 - Jun 25, 2025</td>
-              <td className="px-6 py-4 whitespace-nowrap">121</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {/* Action Icons - Replace with your preferred icons */}
-                <a href="#" className="text-blue-500 hover:text-blue-700">
-                  Edit
-                </a>
-                <a href="#" className="text-red-500 hover:text-red-700 ml-2">
-                  Delete
-                </a>
-              </td>
-            </tr>
-            {/* Add more rows as needed */}
+            {sessions.map((session) => (
+              <tr key={session.id}>
+                <td className="px-6 py-4 whitespace-nowrap">{session.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{session.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{session.startDate}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{session.endDate}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {/* Action Icons - Replace with your preferred icons */}
+                  <a href="#" className="text-blue-500 hover:text-blue-700">
+                    Edit
+                  </a>
+                  <a href="#" className="text-red-500 hover:text-red-700 ml-2">
+                    Delete
+                  </a>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

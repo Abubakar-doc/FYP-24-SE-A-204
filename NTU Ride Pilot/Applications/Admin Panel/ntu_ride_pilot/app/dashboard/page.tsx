@@ -1,5 +1,5 @@
 "use client"
-import DashboardLayout from './dashboardLayout';
+import DashboardLayout from './DashboardLayout';
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
