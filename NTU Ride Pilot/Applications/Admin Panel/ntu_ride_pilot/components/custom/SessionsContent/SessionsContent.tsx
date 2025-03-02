@@ -1,7 +1,9 @@
-// SessionsContent.tsx
+"use client"
 import React, { useState, useEffect } from 'react';
 import { firestore } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import Link from 'next/link';
+
 
 type Session = {
   id: string;
@@ -10,11 +12,9 @@ type Session = {
   endDate: any; // Use 'any' for now, or define a more specific type if needed
 };
 
-type SessionsContentProps = {
-  onAddSessionClick: () => void;
-};
 
-const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) => {
+
+const SessionsContent: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   useEffect(() => {
@@ -70,12 +70,14 @@ const SessionsContent: React.FC<SessionsContentProps> = ({ onAddSessionClick }) 
             <option>Filter by</option>
             {/* Add filter options here */}
           </select>
-          <button
-            className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
-            onClick={onAddSessionClick}
-          >
-            + Add Session
-          </button>
+          <Link href="/dashboard/sessions/add-session">
+            <button
+              className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+            >
+              + Add Session
+            </button>
+          </Link>
+
         </div>
       </div>
 
