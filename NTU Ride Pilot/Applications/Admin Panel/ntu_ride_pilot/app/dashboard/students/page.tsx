@@ -1,7 +1,7 @@
 "use client"
 import StudentContent from '@/components/custom/Students/Students';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/app/dashboard/DashboardLayout';
+import DashboardLayout from '../dashboardLayout';
 
 export default function StudentsPage() {
   const router = useRouter();

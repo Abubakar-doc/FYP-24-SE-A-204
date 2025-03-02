@@ -22,7 +22,12 @@ const SessionsContent: React.FC = () => {
       try {
         const querySnapshot = await getDocs(collection(firestore, 'sessions'));
         const sessionsData = querySnapshot.docs.map((doc) => {
-          const session: Session = { id: doc.id, ...doc.data() };
+          const session: Session = {
+            id: doc.id, ...doc.data(),
+            name: '',
+            startDate: undefined,
+            endDate: undefined
+          };
           if (session.startDate && session.endDate) {
             session.startDate = session.startDate.toDate().toLocaleDateString();
             session.endDate = session.endDate.toDate().toLocaleDateString();

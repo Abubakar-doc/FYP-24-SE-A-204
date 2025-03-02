@@ -1,7 +1,7 @@
 "use client"
 import AddSessionForm from '@/components/custom/AddSessions/AddSessions';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/app/dashboard/DashboardLayout';
+import DashboardLayout from '../../dashboardLayout';
 
 export default function AddSessionPage() {
   const router = useRouter();
