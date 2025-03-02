@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -37,21 +36,13 @@ void main() async {
   if (!Hive.isBoxOpen('rideBox')) {
     await Hive.openBox<RideModel>('rideBox');
   }
-  await setup();
+  await mapbox_setup();
   runApp(MyApp());
 }
 
-Future<void> setup() async {
-  await dotenv.load(fileName: ".env");  // Load the .env file from the root
-  String? accessToken = dotenv.env["MAPBOX_ACCESS_TOKEN"];
-  print("Mapbox Access Token: $accessToken");  // Ensure the token is loaded correctly
-  if (accessToken != null) {
-    MapboxOptions.setAccessToken(accessToken);
-  } else {
-    print("Error: Mapbox Access Token is not set in .env");
-  }
+Future<void> mapbox_setup() async {
+  MapboxOptions.setAccessToken("pk.eyJ1IjoiYTEzdTEzYWthciIsImEiOiJjbTZ1enk1OWQwMmk0MmpzY2hvZW9hdm1yIn0.MUvJhxa9kuRSvus6oclMMw");
 }
-
 
 
 
@@ -65,7 +56,7 @@ class MyApp extends StatelessWidget {
     return GetX<ThemeController>(
       builder: (controller) {
         return GetMaterialApp(
-          debugShowCheckedModeBanner: false, 
+          debugShowCheckedModeBanner: false,
           title: 'NTU RIDE PILOT',
           theme: lightTheme,
           darkTheme: darkTheme,
