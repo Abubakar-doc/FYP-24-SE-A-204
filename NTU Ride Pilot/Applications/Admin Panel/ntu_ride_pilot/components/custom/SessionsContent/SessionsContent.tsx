@@ -1,21 +1,23 @@
+// SessionsContent.tsx
 "use client"
 import React, { useState, useEffect } from 'react';
 import { firestore } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
 
-
 type Session = {
   id: string;
   name: string;
   startDate: any; // Use 'any' for now, or define a more specific type if needed
   endDate: any; // Use 'any' for now, or define a more specific type if needed
+  Session_Status: boolean; // Added Session_Status field
+  Created_At: any; // Added Created_At field
+  Updated_At: any; // Added Updated_At field
 };
-
-
 
 const SessionsContent: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // State to track loading status
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -23,10 +25,8 @@ const SessionsContent: React.FC = () => {
         const querySnapshot = await getDocs(collection(firestore, 'sessions'));
         const sessionsData = querySnapshot.docs.map((doc) => {
           const session: Session = {
-            id: doc.id, ...doc.data(),
-            name: '',
-            startDate: undefined,
-            endDate: undefined
+            id: doc.id,
+            ...doc.data(),
           };
           if (session.startDate && session.endDate) {
             session.startDate = session.startDate.toDate().toLocaleDateString();
@@ -37,6 +37,8 @@ const SessionsContent: React.FC = () => {
         setSessions(sessionsData);
       } catch (error) {
         console.error('Error fetching sessions:', error);
+      } finally {
+        setIsLoading(false); // Set loading to false after fetching
       }
     };
 
@@ -86,49 +88,68 @@ const SessionsContent: React.FC = () => {
         </div>
       </div>
 
+      {/* Loading Animation */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-4">
+          <svg
+            className="animate-spin h-5 w-5 border-4 border-blue-500 rounded-full border-t-transparent"
+            viewBox="0 0 24 24"
+          />
+          <span className="ml-2">Loading...</span>
+        </div>
+      )}
+
       {/* Table Section */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Starting Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ending Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {sessions.map((session) => (
-              <tr key={session.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{session.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{session.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{session.startDate}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{session.endDate}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {/* Action Icons - Replace with your preferred icons */}
-                  <a href="#" className="text-blue-500 hover:text-blue-700">
-                    Edit
-                  </a>
-                  <a href="#" className="text-red-500 hover:text-red-700 ml-2">
-                    Delete
-                  </a>
-                </td>
+      {!isLoading && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  #
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Starting Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ending Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Session Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {sessions.map((session, index) => (
+                <tr key={session.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{session.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{session.startDate}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{session.endDate}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {session.Session_Status ? 'Active' : 'Inactive'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Action Icons - Replace with your preferred icons */}
+                    <a href="#" className="text-blue-500 hover:text-blue-700">
+                      Edit
+                    </a>
+                    <a href="#" className="text-red-500 hover:text-red-700 ml-2">
+                      Delete
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination Section */}
       <div className="flex items-center justify-between mt-4">

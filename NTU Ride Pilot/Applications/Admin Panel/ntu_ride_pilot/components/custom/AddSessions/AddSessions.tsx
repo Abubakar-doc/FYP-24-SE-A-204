@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import AddSessionHeader from './AddSessionHeader';
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, query, getDocs } from 'firebase/firestore';
 
 type AddSessionFormProps = {
   onBack: () => void;
@@ -15,20 +15,62 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true); // Set processing state to true
+
     try {
       const startDateTimestamp = Timestamp.fromDate(new Date(startDate));
       const endDateTimestamp = Timestamp.fromDate(new Date(endDate));
+      const createdAt = Timestamp.now(); // Get current timestamp for Created_At
 
+      // Fetch existing sessions from Firestore
+      const sessionsRef = collection(firestore, 'sessions');
+      const sessionsQuery = query(sessionsRef);
+      const sessionsSnapshot = await getDocs(sessionsQuery);
+      const sessionsData = sessionsSnapshot.docs.map((doc) => doc.data());
+
+      // Check if the selected dates overlap with existing sessions
+      const isOverlapping = sessionsData.some((session) => {
+        const sessionStartDate = session.startDate.toDate();
+        const sessionEndDate = session.endDate.toDate();
+        const userStartDate = new Date(startDate);
+        const userEndDate = new Date(endDate);
+
+        // Check if user's selected dates overlap with any existing session
+        return (
+          (userStartDate >= sessionStartDate && userStartDate <= sessionEndDate) ||
+          (userEndDate >= sessionStartDate && userEndDate <= sessionEndDate) ||
+          (userStartDate <= sessionStartDate && userEndDate >= sessionEndDate)
+        );
+      });
+
+      if (isOverlapping) {
+        setSuccessMessage('The selected dates overlap with an existing session.');
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
+        setIsProcessing(false); // Reset processing state
+        return;
+      }
+
+      // If no overlap, proceed with adding the session
       await addDoc(collection(firestore, 'sessions'), {
         name,
         startDate: startDateTimestamp,
         endDate: endDateTimestamp,
+        Session_Status: true, // Set Session_Status to true by default
+        Created_At: createdAt,
+        Updated_At: createdAt, // Set Updated_At to the same as Created_At initially
       });
       console.log('Session added to Firestore');
       setSuccessMessage('The session has been successfully created!');
+      // Clear the form fields
+      setName('');
+      setStartDate('');
+      setEndDate('');
       // Clear the message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
@@ -39,6 +81,8 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
       setTimeout(() => {
         setSuccessMessage('');
       }, 3000);
+    } finally {
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -127,9 +171,21 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
           </button>
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            disabled={isProcessing} // Disable button while processing
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline
+              ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Add
+            {isProcessing ? (
+              <div className="flex items-center space-x-2">
+                <svg
+                  className="animate-spin h-5 w-5 border-4 border-blue-500 rounded-full border-t-transparent"
+                  viewBox="0 0 24 24"
+                />
+                <span>Adding...</span>
+              </div>
+            ) : (
+              <span>Add</span>
+            )}
           </button>
         </div>
       </form>

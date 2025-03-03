@@ -1,5 +1,3 @@
-// components/custom/sidebar/Sidebar.tsx
-import Link from 'next/link';
 import { FaHome, FaUsers, FaTruck, FaRoute, FaBus, FaBullhorn, FaExclamationTriangle, FaCar, FaFileAlt, FaCog, FaUser, FaMapMarkerAlt, FaGraduationCap } from 'react-icons/fa';
 import { FaChevronRight } from 'react-icons/fa';
 
@@ -12,9 +10,11 @@ interface SidebarItem {
 interface SidebarProps {
   activeItem: string;
   className?: string; // Add className prop
+  // Add a callback for handling clicks
+  onItemClick: (href: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeItem, className }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick }) => {
   const sidebarItems: SidebarItem[] = [
     { label: 'Dashboard', icon: <FaHome />, href: '/dashboard' },
     { label: 'Sessions', icon: <FaUsers />, href: '/dashboard/sessions' },
@@ -40,10 +40,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className }) => {
             key={item.label}
             className={`flex items-center space-x-3 p-2 rounded-md cursor-pointer hover:bg-[#0686CB] hover:text-white ${activeItem === item.href ? 'bg-[#0686CB] text-white' : ''}`}
           >
-            <Link href={item.href} className="flex items-center space-x-3 flex-nowrap">
+            <button
+              type="button"
+              className="flex items-center space-x-3 w-full flex-nowrap"
+              onClick={() => onItemClick(item.href)}
+            >
               <span>{item.icon}</span>
               <span>{item.label}</span>
-            </Link>
+            </button>
           </li>
         ))}
       </ul>
