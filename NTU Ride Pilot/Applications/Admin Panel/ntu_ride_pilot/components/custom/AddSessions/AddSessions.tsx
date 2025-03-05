@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import AddSessionHeader from "./AddSessionHeader";
 import { firestore } from "@/lib/firebase";
-import { collection, addDoc, Timestamp, query, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, addDoc, Timestamp, query, getDocs, orderBy, limit, where } from "firebase/firestore";
 
 type AddSessionFormProps = {
   onBack: () => void;
@@ -18,14 +18,21 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [showWarning, setShowWarning] = useState(false);
   const [minStartDate, setMinStartDate] = useState("");
   const [minEndDate, setMinEndDate] = useState("");
+  const [isFirstSession, setIsFirstSession] = useState(false);
+  const [activeSessionName, setActiveSessionName] = useState("");
 
   useEffect(() => {
     const fetchLatestSession = async () => {
       const sessionsRef = collection(firestore, "sessions");
       const sessionsQuery = query(sessionsRef, orderBy("start_date", "desc"), limit(1));
       const sessionsSnapshot = await getDocs(sessionsQuery);
-      
-      if (!sessionsSnapshot.empty) {
+
+      if (sessionsSnapshot.empty) {
+        // If no sessions exist, set the minimum start date to the current date
+        const currentDate = new Date();
+        setMinStartDate(currentDate.toISOString().split("T")[0]);
+        setIsFirstSession(true);
+      } else {
         const latestSession = sessionsSnapshot.docs[0].data();
         const latestEndDate = latestSession.end_date.toDate();
         latestEndDate.setDate(latestEndDate.getDate() + 1); // Set to the next day
@@ -52,6 +59,19 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
     setIsProcessing(true);
 
     try {
+      const sessionsRef = collection(firestore, "sessions");
+      const sessionsQuery = query(sessionsRef, where("session_status", "==", "active"));
+      const sessionsSnapshot = await getDocs(sessionsQuery);
+
+      if (!sessionsSnapshot.empty && !isFirstSession) {
+        const activeSession = sessionsSnapshot.docs[0].data();
+        setActiveSessionName(activeSession.name);
+        setSuccessMessage(`Please deactivate the current active session: ${activeSession.name}`);
+        setTimeout(() => setSuccessMessage(""), 3000);
+        setIsProcessing(false);
+        return;
+      }
+
       const startDateTimestamp = Timestamp.fromDate(new Date(startDate));
       const endDateTimestamp = Timestamp.fromDate(new Date(endDate));
       const createdAt = Timestamp.now();

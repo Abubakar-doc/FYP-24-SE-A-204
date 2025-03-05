@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { firestore } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import SessionsHeader from './SessionComponents/SessionsHeader';
 
 type Session = {
@@ -16,6 +16,7 @@ type Session = {
 
 const SessionsContent: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +35,9 @@ const SessionsContent: React.FC = () => {
             updated_at: data.updated_at,
           };
         });
-        setSessions(sessionsData);
+
+        setAllSessions(sessionsData);
+        setSessions(sessionsData); // Initially show all sessions
       } catch (error) {
         console.error('Error fetching sessions:', error);
       } finally {
@@ -45,11 +48,29 @@ const SessionsContent: React.FC = () => {
     fetchSessions();
   }, []);
 
+  const handleDeactivateSession = async (sessionId: string) => {
+    try {
+      const sessionRef = doc(firestore, 'sessions', sessionId);
+      await updateDoc(sessionRef, {
+        session_status: 'inactive',
+        updated_at: Timestamp.now(),
+      });
+      const updatedSessions = allSessions.map(session =>
+        session.id === sessionId ? { ...session, session_status: 'inactive' } : session
+      );
+      setAllSessions(updatedSessions);
+      setSessions(updatedSessions); // Update the displayed sessions
+    } catch (error) {
+      console.error('Error deactivating session:', error);
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-white ">
       {/* Header Section */}
       <div className="rounded-lg  mb-6">
-        <SessionsHeader onAddSession={() => {}} />
+        {/* Pass allSessions to SessionsHeader */}
+        <SessionsHeader onAddSession={() => {}} allSessions={allSessions} />
       </div>
 
       {/* Loading Animation */}
@@ -93,7 +114,12 @@ const SessionsContent: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap flex space-x-4">
                     <button className="text-blue-600 hover:underline">Edit</button>
-                    <button className="text-red-600 hover:underline">Delete</button>
+                    <button
+                      className="text-red-600 hover:underline"
+                      onClick={() => handleDeactivateSession(session.id)}
+                    >
+                      Deactivate
+                    </button>
                   </td>
                 </tr>
               ))}

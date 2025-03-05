@@ -1,12 +1,17 @@
 "use client";
 import Link from 'next/link';
 import HeaderIcons from '../../HeaderIcons/HeaderIcons';
+import SessionFilterDropdown from './SessionFilterDropdown';
+import { useState } from 'react';
 
 type SessionsHeaderProps = {
   onAddSession: () => void;
+  allSessions: any[];
 };
 
-const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession }) => {
+const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessions }) => {
+  const [sessions, setSessions] = useState<any[]>(allSessions); // State to manage filtered sessions
+
   return (
     <div className="w-full h-32 bg-[#F5F5F5] p-4">
       {/* Header Icons Row */}
@@ -40,27 +45,12 @@ const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession }) => {
             </button>
           </div>
 
-          {/* Filter Dropdown Styled to Match the Button */}
-          <div className="relative w-40">
-            <select className="w-full bg-blue-500 text-white px-4 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none">
-              <option>Filter by</option>
-            </select>
-            {/* Custom Dropdown Arrow */}
-            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 text-white"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-          </div>
+          {/* Pass the required props to SessionFilterDropdown */}
+          <SessionFilterDropdown
+            sessions={sessions}
+            allSessions={allSessions}
+            setSessions={setSessions}
+          />
 
           {/* Add Session Button with Same Width as Filter */}
           <Link href="/dashboard/sessions/add-session">
