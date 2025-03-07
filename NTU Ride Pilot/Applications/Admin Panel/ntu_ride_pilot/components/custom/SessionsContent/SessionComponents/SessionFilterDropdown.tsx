@@ -2,59 +2,66 @@
 import React, { useState } from 'react';
 
 type SessionFilterDropdownProps = {
-  sessions: any[];
   allSessions: any[];
   setSessions: (sessions: any[]) => void;
+  setFilterStatus: (filterStatus: string) => void;
 };
 
-const SessionFilterDropdown: React.FC<SessionFilterDropdownProps> = ({ sessions, allSessions, setSessions }) => {
-  const [filterStatus, setFilterStatus] = useState('');
+const SessionFilterDropdown: React.FC<SessionFilterDropdownProps> = ({ allSessions, setSessions, setFilterStatus }) => {
+  const [filterStatusState, setFilterStatusState] = useState('');
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedStatus = e.target.value;
+    setFilterStatusState(selectedStatus);
     setFilterStatus(selectedStatus);
 
-    if (selectedStatus === 'all') {
+    if (selectedStatus === '') {
+      // Reset filter to normal case (show only active sessions)
+      const activeSessions = allSessions.filter(session => session.session_status === 'active');
+      const sortedSessions = sortSessions(activeSessions);
+      setSessions(sortedSessions);
+    } else if (selectedStatus === 'all') {
       // Show all sessions
-      setSessions(allSessions);
+      const sortedSessions = sortSessions(allSessions);
+      setSessions(sortedSessions);
     } else if (selectedStatus === 'active') {
       // Show only active sessions
       const activeSessions = allSessions.filter(session => session.session_status === 'active');
-      setSessions(activeSessions);
+      const sortedSessions = sortSessions(activeSessions);
+      setSessions(sortedSessions);
     } else if (selectedStatus === 'suspended') {
       // Show only inactive sessions
       const inactiveSessions = allSessions.filter(session => session.session_status === 'inactive');
-      setSessions(inactiveSessions);
+      const sortedSessions = sortSessions(inactiveSessions);
+      setSessions(sortedSessions);
     }
   };
 
+  const sortSessions = (sessions: any[]) => {
+    return sessions.sort((a, b) => {
+      if (a.start_date === null) return 1;
+      if (b.start_date === null) return -1;
+      const dateA = new Date(a.start_date);
+      const dateB = new Date(b.start_date);
+      return dateB.getTime() - dateA.getTime(); // Descending order
+    });
+  };
+
   return (
-    <div className="relative w-40">
+    <div className="relative w-auto">
       <select
-        className="w-full bg-blue-500 text-white px-4 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none"
-        value={filterStatus}
+        value={filterStatusState}
         onChange={handleFilterChange}
+        className="w-full bg-blue-500 text-white px-4 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none"
       >
         <option value="">Filter by</option>
         <option value="all">All</option>
         <option value="active">Active</option>
         <option value="suspended">Suspended</option>
       </select>
+
       {/* Custom Dropdown Arrow */}
-      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-4 h-4 text-white"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </div>
+      {/* SVG for dropdown arrow goes here */}
     </div>
   );
 };

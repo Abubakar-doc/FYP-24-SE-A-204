@@ -7,11 +7,12 @@ import { useState } from 'react';
 type SessionsHeaderProps = {
   onAddSession: () => void;
   allSessions: any[];
+  setSessions: (sessions: any[]) => void; // Add this prop
+  setFilterStatus: (filterStatus: string) => void; // Add this prop
 };
 
-const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessions }) => {
-  const [sessions, setSessions] = useState<any[]>(allSessions); // State to manage filtered sessions
-
+const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessions, setSessions, setFilterStatus }) => {
+  
   return (
     <div className="w-full h-32 bg-[#F5F5F5] p-4">
       {/* Header Icons Row */}
@@ -30,26 +31,16 @@ const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessio
               className="w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
             />
             <button className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-500"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              {/* Search Icon */}
+              {/* SVG code goes here */}
             </button>
           </div>
 
           {/* Pass the required props to SessionFilterDropdown */}
           <SessionFilterDropdown
-            sessions={sessions}
             allSessions={allSessions}
             setSessions={setSessions}
+            setFilterStatus={setFilterStatus}
           />
 
           {/* Add Session Button with Same Width as Filter */}
