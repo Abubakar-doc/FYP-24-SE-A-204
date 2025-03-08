@@ -3,12 +3,14 @@ import React, { useState, useEffect } from "react";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs, doc, updateDoc, Timestamp } from "firebase/firestore";
 import SessionsHeader from "./SessionComponents/SessionsHeader";
+import ConfirmationModal from "./SessionComponents/ConfirmationModal"; 
+import { useRouter } from "next/navigation";
 
 type Session = {
   id: string;
   name: string;
-  start_date: Date | null; // Keep start_date as Date type
-  end_date: Date | null; // Keep end_date as Date type
+  start_date: Date | null;
+  end_date: Date | null;
   session_status: string;
   created_at: any;
   updated_at: any;
@@ -19,6 +21,9 @@ const SessionsContent: React.FC = () => {
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sessionToDeactivate, setSessionToDeactivate] = useState<Session | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -29,24 +34,22 @@ const SessionsContent: React.FC = () => {
           return {
             id: doc.id,
             name: data.name,
-            start_date: data.start_date ? data.start_date.toDate() : null, // Convert Firestore Timestamp to Date
-            end_date: data.end_date ? data.end_date.toDate() : null, // Convert Firestore Timestamp to Date
+            start_date: data.start_date?.toDate() || null,
+            end_date: data.end_date?.toDate() || null,
             session_status: data.session_status,
             created_at: data.created_at,
             updated_at: data.updated_at,
           };
         });
 
-        // Sort all sessions by start date in descending order
         const sortedSessions = sessionsData.sort((a, b) => {
-          if (a.start_date === null) return 1;
-          if (b.start_date === null) return -1;
-          return b.start_date.getTime() - a.start_date.getTime(); // Descending order
+          const aDate = a.start_date?.getTime() || 0;
+          const bDate = b.start_date?.getTime() || 0;
+          return bDate - aDate;
         });
 
         setAllSessions(sortedSessions);
-        // Initially show only active sessions
-        const activeSessions = sortedSessions.filter((session) => session.session_status === "active");
+        const activeSessions = sortedSessions.filter(session => session.session_status === "active");
         setSessions(activeSessions);
       } catch (error) {
         console.error("Error fetching sessions:", error);
@@ -54,43 +57,74 @@ const SessionsContent: React.FC = () => {
         setIsLoading(false);
       }
     };
-
     fetchSessions();
   }, []);
 
   const handleDeactivateSession = async (sessionId: string) => {
+    if (!sessionToDeactivate || sessionToDeactivate.id !== sessionId) return;
+    
     try {
       const sessionRef = doc(firestore, "sessions", sessionId);
       await updateDoc(sessionRef, {
         session_status: "inactive",
         updated_at: Timestamp.now(),
       });
-      const updatedSessions = allSessions.map((session) =>
+      
+      const updatedSessions = allSessions.map(session => 
         session.id === sessionId ? { ...session, session_status: "inactive" } : session
       );
-      // Sort updated sessions
+
       const sortedUpdatedSessions = updatedSessions.sort((a, b) => {
-        if (a.start_date === null) return 1;
-        if (b.start_date === null) return -1;
-        return b.start_date.getTime() - a.start_date.getTime(); // Descending order
+        const aDate = a.start_date?.getTime() || 0;
+        const bDate = b.start_date?.getTime() || 0;
+        return bDate - aDate;
       });
+      
       setAllSessions(sortedUpdatedSessions);
-      const updatedActiveSessions = sortedUpdatedSessions.filter((session) => session.session_status === "active");
-      setSessions(updatedActiveSessions); // Update the displayed sessions
+      const updatedActiveSessions = sortedUpdatedSessions.filter(session => session.session_status === "active");
+      setSessions(updatedActiveSessions);
     } catch (error) {
       console.error("Error deactivating session:", error);
+    } finally {
+      setIsModalOpen(false);
     }
   };
 
+  const openConfirmationModal = (session: Session) => {
+    if (session.session_status !== "active") return;
+    setSessionToDeactivate(session);
+    setIsModalOpen(true);
+  };
+
+  const handleEditSession = (session: Session) => {
+    if (session.session_status !== "active") return;
+  
+    // Construct URL with query parameters for the correct route
+    const queryParams = new URLSearchParams({
+      id: session.id,
+      name: session.name,
+      ...(session.start_date && { start_date: session.start_date.toISOString() }),
+      ...(session.end_date && { end_date: session.end_date.toISOString() }),
+    });
+  
+    // Navigate to the correct path
+    router.push(`/dashboard/sessions/add-session?${queryParams}`);
+  };
+  
+  
+  
+
   return (
-    <div className="w-full min-h-screen bg-white ">
-      {/* Header Section */}
+    <div className="w-full min-h-screen bg-white">
       <div className="rounded-lg mb-6">
-        {/* Pass allSessions to SessionsHeader */}
-        <SessionsHeader onAddSession={() => {}} allSessions={allSessions} setSessions={setSessions} setFilterStatus={setFilterStatus} />
+        <SessionsHeader 
+          onAddSession={() => {}} 
+          allSessions={allSessions} 
+          setSessions={setSessions} 
+          setFilterStatus={setFilterStatus} 
+        />
       </div>
 
-      {/* Loading Animation */}
       {isLoading ? (
         <div className="flex items-center justify-center py-6">
           <svg
@@ -101,7 +135,6 @@ const SessionsContent: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
-          {/* Table Section */}
           <table className="min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-50">
               <tr>
@@ -109,7 +142,7 @@ const SessionsContent: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Starting Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ending Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Session Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -118,23 +151,41 @@ const SessionsContent: React.FC = () => {
                 <tr key={session.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{session.name}</td>
-                  {/* Safely format dates for display */}
-                  <td className="px-6 py-4 whitespace-nowrap">{session.start_date ? session.start_date.toLocaleDateString() : "N/A"}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{session.end_date ? session.end_date.toLocaleDateString() : "N/A"}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                        session.session_status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                      }`}
-                    >
+                    {session.start_date?.toLocaleDateString() || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {session.end_date?.toLocaleDateString() || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                      session.session_status === "active" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-red-100 text-red-800"
+                    }`}>
                       {session.session_status === "active" ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap flex space-x-4">
-                    <button className="text-blue-600 hover:underline">Edit</button>
                     <button
-                      className="text-red-600 hover:underline"
-                      onClick={() => handleDeactivateSession(session.id)}
+                      className={`text-blue-600 ${
+                        session.session_status === "active" 
+                          ? "hover:underline" 
+                          : "opacity-50 cursor-not-allowed"
+                      }`}
+                      onClick={() => handleEditSession(session)}
+                      disabled={session.session_status !== "active"}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className={`text-red-600 ${
+                        session.session_status === "active" 
+                          ? "hover:underline" 
+                          : "opacity-50 cursor-not-allowed"
+                      }`}
+                      onClick={() => openConfirmationModal(session)}
+                      disabled={session.session_status !== "active"}
                     >
                       Deactivate
                     </button>
@@ -144,7 +195,6 @@ const SessionsContent: React.FC = () => {
             </tbody>
           </table>
 
-          {/* Pagination Section */}
           {(filterStatus === "all" || filterStatus === "suspended") && (
             <div className="flex items-center justify-between mt-6">
               <div className="flex items-center">
@@ -161,14 +211,23 @@ const SessionsContent: React.FC = () => {
                 </select>
               </div>
               <div className="flex items-center space-x-2">
-                <button className="px-3 py-1 border rounded-md hover:bg-gray-100 focus:outline-none focus:ring focus:border-blue-300">
+                <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
                   &lt;
                 </button>
-                <button className="px-3 py-1 border rounded-md hover:bg-gray-100 focus:outline-none focus:ring focus:border-blue-300">
+                <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
                   &gt;
                 </button>
               </div>
             </div>
+          )}
+
+          {sessionToDeactivate && (
+            <ConfirmationModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              onConfirm={() => handleDeactivateSession(sessionToDeactivate.id)}
+              sessionName={sessionToDeactivate.name}
+            />
           )}
         </div>
       )}

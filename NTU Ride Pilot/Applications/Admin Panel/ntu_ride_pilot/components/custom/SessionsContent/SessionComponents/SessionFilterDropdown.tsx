@@ -15,26 +15,18 @@ const SessionFilterDropdown: React.FC<SessionFilterDropdownProps> = ({ allSessio
     setFilterStatusState(selectedStatus);
     setFilterStatus(selectedStatus);
 
-    if (selectedStatus === '') {
-      // Reset filter to normal case (show only active sessions)
-      const activeSessions = allSessions.filter(session => session.session_status === 'active');
-      const sortedSessions = sortSessions(activeSessions);
-      setSessions(sortedSessions);
-    } else if (selectedStatus === 'all') {
-      // Show all sessions
-      const sortedSessions = sortSessions(allSessions);
-      setSessions(sortedSessions);
-    } else if (selectedStatus === 'active') {
-      // Show only active sessions
-      const activeSessions = allSessions.filter(session => session.session_status === 'active');
-      const sortedSessions = sortSessions(activeSessions);
-      setSessions(sortedSessions);
+    let filteredSessions = allSessions;
+    
+    if (selectedStatus === 'active') {
+      filteredSessions = allSessions.filter(session => session.session_status === 'active');
     } else if (selectedStatus === 'suspended') {
-      // Show only inactive sessions
-      const inactiveSessions = allSessions.filter(session => session.session_status === 'inactive');
-      const sortedSessions = sortSessions(inactiveSessions);
-      setSessions(sortedSessions);
+      filteredSessions = allSessions.filter(session => session.session_status === 'inactive');
+    } else if (selectedStatus === '') {
+      filteredSessions = allSessions.filter(session => session.session_status === 'active');
     }
+
+    const sortedSessions = sortSessions(filteredSessions);
+    setSessions(sortedSessions);
   };
 
   const sortSessions = (sessions: any[]) => {
@@ -59,9 +51,6 @@ const SessionFilterDropdown: React.FC<SessionFilterDropdownProps> = ({ allSessio
         <option value="active">Active</option>
         <option value="suspended">Suspended</option>
       </select>
-
-      {/* Custom Dropdown Arrow */}
-      {/* SVG for dropdown arrow goes here */}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+"use client"
 import React from 'react';
 import { FaCog, FaBell } from 'react-icons/fa'; // Import icons
 

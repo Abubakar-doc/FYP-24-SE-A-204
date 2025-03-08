@@ -1,3 +1,4 @@
+"use client"
 import React from 'react'
 import DashboardLayout from '../DashboardLayout';
 import SessionsContent from '@/components/custom/SessionsContent/SessionsContent';

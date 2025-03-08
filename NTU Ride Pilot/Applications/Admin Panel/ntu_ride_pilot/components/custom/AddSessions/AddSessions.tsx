@@ -1,102 +1,101 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import AddSessionHeader from "./AddSessionHeader";
+import { useSearchParams, useRouter } from "next/navigation";
 import { firestore } from "@/lib/firebase";
-import { collection, addDoc, Timestamp, query, getDocs, orderBy, limit, where } from "firebase/firestore";
+import { doc, updateDoc, addDoc, collection, Timestamp } from "firebase/firestore";
+import AddSessionHeader from "./AddSessionHeader";
 
 type AddSessionFormProps = {
   onBack: () => void;
 };
 
 const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Form state
+  const [id, setId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
-  const [minStartDate, setMinStartDate] = useState("");
-  const [minEndDate, setMinEndDate] = useState("");
-  const [isFirstSession, setIsFirstSession] = useState(false);
-  const [activeSessionName, setActiveSessionName] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [minStartDate, setMinStartDate] = useState(""); // State for restricting previous dates
 
+  // Pre-fill form fields if editing
   useEffect(() => {
-    const fetchLatestSession = async () => {
-      const sessionsRef = collection(firestore, "sessions");
-      const sessionsQuery = query(sessionsRef, orderBy("start_date", "desc"), limit(1));
-      const sessionsSnapshot = await getDocs(sessionsQuery);
+    const idParam = searchParams.get("id");
+    const nameParam = searchParams.get("name");
+    const startDateParam = searchParams.get("start_date");
+    const endDateParam = searchParams.get("end_date");
 
-      if (sessionsSnapshot.empty) {
-        // If no sessions exist, set the minimum start date to the current date
-        const currentDate = new Date();
-        setMinStartDate(currentDate.toISOString().split("T")[0]);
-        setIsFirstSession(true);
-      } else {
-        const latestSession = sessionsSnapshot.docs[0].data();
-        const latestEndDate = latestSession.end_date.toDate();
-        latestEndDate.setDate(latestEndDate.getDate() + 1); // Set to the next day
-        setMinStartDate(latestEndDate.toISOString().split("T")[0]);
+    if (idParam) {
+      setId(idParam);
+      setName(nameParam || "");
+      // Set the start and end dates correctly
+      if (startDateParam) {
+        const formattedStartDate = new Date(startDateParam).toISOString().split("T")[0];
+        setStartDate(formattedStartDate);
+        setMinStartDate(formattedStartDate); // Restrict previous dates
       }
-    };
-
-    fetchLatestSession();
-  }, []);
-
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedStartDate = e.target.value;
-    setStartDate(selectedStartDate);
-    if (selectedStartDate) {
-      const nextDay = new Date(selectedStartDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      setMinEndDate(nextDay.toISOString().split("T")[0]);
+      if (endDateParam) {
+        setEndDate(new Date(endDateParam).toISOString().split("T")[0]); // Format to YYYY-MM-DD
+      }
     }
-    setEndDate("");
-  };
+  }, [searchParams]);
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     try {
-      const sessionsRef = collection(firestore, "sessions");
-      const sessionsQuery = query(sessionsRef, where("session_status", "==", "active"));
-      const sessionsSnapshot = await getDocs(sessionsQuery);
-
-      if (!sessionsSnapshot.empty && !isFirstSession) {
-        const activeSession = sessionsSnapshot.docs[0].data();
-        setActiveSessionName(activeSession.name);
-        setSuccessMessage(`Please deactivate the current active session: ${activeSession.name}`);
-        setTimeout(() => setSuccessMessage(""), 3000);
-        setIsProcessing(false);
-        return;
-      }
-
       const startDateTimestamp = Timestamp.fromDate(new Date(startDate));
       const endDateTimestamp = Timestamp.fromDate(new Date(endDate));
       const createdAt = Timestamp.now();
 
-      await addDoc(collection(firestore, "sessions"), {
-        name,
-        start_date: startDateTimestamp,
-        end_date: endDateTimestamp,
-        session_status: "active",
-        created_at: createdAt,
-        updated_at: createdAt,
-      });
+      if (id) {
+        // Update existing session
+        const sessionRef = doc(firestore, "sessions", id);
+        await updateDoc(sessionRef, {
+          name,
+          start_date: startDateTimestamp,
+          end_date: endDateTimestamp,
+          updated_at: createdAt,
+        });
+        setSuccessMessage("Session updated successfully!");
+      } else {
+        // Create new session
+        await addDoc(collection(firestore, "sessions"), {
+          name,
+          start_date: startDateTimestamp,
+          end_date: endDateTimestamp,
+          session_status: "active",
+          created_at: createdAt,
+          updated_at: createdAt,
+        });
+        setSuccessMessage("Session created successfully!");
+      }
 
-      setSuccessMessage("The session has been successfully created!");
-      setName("");
-      setStartDate("");
-      setEndDate("");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      // Clear form and redirect back
+      setTimeout(() => router.push("/dashboard/sessions"), 2000); // Adjusted path to redirect correctly
     } catch (error) {
-      console.error("Error adding session:", error);
-      setSuccessMessage("Failed to create session");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      console.error("Error saving session:", error);
+      setSuccessMessage("Failed to save session.");
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Calculate minimum end date based on selected start date
+  const calculateMinEndDate = () => {
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setDate(start.getDate() + 1); // Set minimum end date to one day after the selected start date
+      return start.toISOString().split("T")[0]; // Format to YYYY-MM-DD
+    }
+    return ""; // No minimum if no start date is selected
   };
 
   return (
@@ -115,7 +114,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            disabled={isProcessing}
+            disabled={isProcessing} // Disable input during processing
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -128,10 +127,10 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
               id="startDate"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
               value={startDate}
-              onChange={handleStartDateChange}
-              min={minStartDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              min={minStartDate} // Restrict previous dates
               required
-              disabled={isProcessing}
+              disabled={isProcessing} // Disable input during processing
             />
           </div>
           <div>
@@ -144,20 +143,10 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              min={minEndDate}
+              min={calculateMinEndDate()} // Ensure end date is after starting date
               required
-              disabled={!startDate || isProcessing}
-              onClick={() => {
-                if (!startDate) {
-                  setShowWarning(true);
-                }
-              }}
+              disabled={!startDate || isProcessing} // Disable input during processing and if no start date is selected
             />
-            {showWarning && (
-              <div className="text-red-500 text-sm font-medium mt-2">
-                Please select a starting date first!
-              </div>
-            )}
           </div>
         </div>
         <div className="flex justify-end space-x-4">
@@ -165,21 +154,23 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             type="button"
             onClick={onBack}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            disabled={isProcessing}
+            disabled={isProcessing} // Disable button during processing
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isProcessing}
-            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={isProcessing} // Disable button during processing
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+              isProcessing ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            {isProcessing ? "Processing..." : "Add"}
+            {isProcessing ? "Processing..." : "Save"}
           </button>
         </div>
       </form>
       {successMessage && (
-        <div className="bg-green-500 text-white font-bold py-2 px-4 rounded mt-4">
+        <div className={`text-white font-bold py-2 px-4 rounded mt-4 ${successMessage.includes("successfully") ? "bg-green-500" : "bg-red-500"}`}>
           {successMessage}
         </div>
       )}
