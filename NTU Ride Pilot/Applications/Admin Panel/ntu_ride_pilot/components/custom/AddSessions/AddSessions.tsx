@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { firestore } from "@/lib/firebase";
-import { doc, updateDoc, addDoc, collection, Timestamp } from "firebase/firestore";
 import AddSessionHeader from "./AddSessionHeader";
+import { firestore } from "@/lib/firebase";
+import { collection, addDoc, Timestamp, query, getDocs, orderBy, limit, where, doc, updateDoc } from "firebase/firestore";
 
 type AddSessionFormProps = {
   onBack: () => void;
@@ -21,81 +21,112 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [endDate, setEndDate] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [minStartDate, setMinStartDate] = useState(""); // State for restricting previous dates
+  const [minStartDate, setMinStartDate] = useState("");
+  const [minEndDate, setMinEndDate] = useState("");
+  const [isFirstSession, setIsFirstSession] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [activeSessionName, setActiveSessionName] = useState("");
+  const [originalStartDate, setOriginalStartDate] = useState("");
 
-  // Pre-fill form fields if editing
   useEffect(() => {
     const idParam = searchParams.get("id");
     const nameParam = searchParams.get("name");
     const startDateParam = searchParams.get("start_date");
     const endDateParam = searchParams.get("end_date");
+    const editParam = searchParams.get("edit");
+
+    if (editParam === "true") setIsEdit(true);
 
     if (idParam) {
       setId(idParam);
       setName(nameParam || "");
-      // Set the start and end dates correctly
       if (startDateParam) {
-        const formattedStartDate = new Date(startDateParam).toISOString().split("T")[0];
-        setStartDate(formattedStartDate);
-        setMinStartDate(formattedStartDate); // Restrict previous dates
+        setStartDate(startDateParam);
+        setOriginalStartDate(startDateParam);
+        setMinStartDate(startDateParam);
       }
-      if (endDateParam) {
-        setEndDate(new Date(endDateParam).toISOString().split("T")[0]); // Format to YYYY-MM-DD
-      }
+      if (endDateParam) setEndDate(endDateParam);
     }
   }, [searchParams]);
 
-  // Handle form submission
+  useEffect(() => {
+    const fetchLatestSession = async () => {
+      if (isEdit) return;
+
+      const sessionsRef = collection(firestore, "sessions");
+      const sessionsQuery = query(sessionsRef, orderBy("start_date", "desc"), limit(1));
+      const sessionsSnapshot = await getDocs(sessionsQuery);
+
+      if (sessionsSnapshot.empty) {
+        const currentDate = new Date();
+        setMinStartDate(currentDate.toISOString().split("T")[0]);
+        setIsFirstSession(true);
+      } else {
+        const latestSession = sessionsSnapshot.docs[0].data();
+        const latestEndDate = latestSession.end_date.toDate();
+        latestEndDate.setDate(latestEndDate.getDate() + 1);
+        setMinStartDate(latestEndDate.toISOString().split("T")[0]);
+      }
+    };
+
+    fetchLatestSession();
+  }, [isEdit]);
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedStartDate = e.target.value;
+    setStartDate(selectedStartDate);
+    if (!isEdit) setEndDate("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     try {
-      const startDateTimestamp = Timestamp.fromDate(new Date(startDate));
-      const endDateTimestamp = Timestamp.fromDate(new Date(endDate));
-      const createdAt = Timestamp.now();
-
-      if (id) {
-        // Update existing session
-        const sessionRef = doc(firestore, "sessions", id);
+      if (isEdit) {
+        const sessionRef = doc(firestore, "sessions", id!);
         await updateDoc(sessionRef, {
           name,
-          start_date: startDateTimestamp,
-          end_date: endDateTimestamp,
-          updated_at: createdAt,
+          start_date: Timestamp.fromDate(new Date(startDate)),
+          end_date: Timestamp.fromDate(new Date(endDate)),
+          updated_at: Timestamp.now(),
         });
         setSuccessMessage("Session updated successfully!");
       } else {
-        // Create new session
+        const sessionsRef = collection(firestore, "sessions");
+        const sessionsQuery = query(sessionsRef, where("session_status", "==", "active"));
+        const sessionsSnapshot = await getDocs(sessionsQuery);
+
+        if (!sessionsSnapshot.empty && !isFirstSession) {
+          const activeSession = sessionsSnapshot.docs[0].data();
+          setActiveSessionName(activeSession.name);
+          setSuccessMessage(`Please deactivate the current active session: ${activeSession.name}`);
+          setTimeout(() => setSuccessMessage(""), 3000);
+          setIsProcessing(false);
+          return;
+        }
+
         await addDoc(collection(firestore, "sessions"), {
           name,
-          start_date: startDateTimestamp,
-          end_date: endDateTimestamp,
+          start_date: Timestamp.fromDate(new Date(startDate)),
+          end_date: Timestamp.fromDate(new Date(endDate)),
           session_status: "active",
-          created_at: createdAt,
-          updated_at: createdAt,
+          created_at: Timestamp.now(),
+          updated_at: Timestamp.now(),
         });
         setSuccessMessage("Session created successfully!");
+        setName("");
+        setStartDate("");
+        setEndDate("");
+        setTimeout(() => setSuccessMessage(""), 3000);
       }
-
-      // Clear form and redirect back
-      setTimeout(() => router.push("/dashboard/sessions"), 2000); // Adjusted path to redirect correctly
     } catch (error) {
       console.error("Error saving session:", error);
       setSuccessMessage("Failed to save session.");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  // Calculate minimum end date based on selected start date
-  const calculateMinEndDate = () => {
-    if (startDate) {
-      const start = new Date(startDate);
-      start.setDate(start.getDate() + 1); // Set minimum end date to one day after the selected start date
-      return start.toISOString().split("T")[0]; // Format to YYYY-MM-DD
-    }
-    return ""; // No minimum if no start date is selected
   };
 
   return (
@@ -114,7 +145,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            disabled={isProcessing} // Disable input during processing
+            disabled={isProcessing}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,14 +158,14 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
               id="startDate"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              min={minStartDate} // Restrict previous dates
+              onChange={handleStartDateChange}
+              min={isEdit ? originalStartDate : minStartDate}
               required
-              disabled={isProcessing} // Disable input during processing
+              disabled={isProcessing}
             />
           </div>
           <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="endDate" className="block text-sm font-medium text-gray-600">
               Ending Date *
             </label>
             <input
@@ -143,9 +174,9 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              min={calculateMinEndDate()} // Ensure end date is after starting date
               required
-              disabled={!startDate || isProcessing} // Disable input during processing and if no start date is selected
+              disabled={!startDate || isProcessing}
+              min={startDate ? getNextDate(startDate) : ""}
             />
           </div>
         </div>
@@ -154,18 +185,18 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             type="button"
             onClick={onBack}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            disabled={isProcessing} // Disable button during processing
+            disabled={isProcessing}
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isProcessing} // Disable button during processing
+            disabled={isProcessing}
             className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
               isProcessing ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {isProcessing ? "Processing..." : "Save"}
+            {isEdit ? "Save Changes" : "Add"}
           </button>
         </div>
       </form>
@@ -176,6 +207,13 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
       )}
     </div>
   );
+};
+
+// Function to get the next date
+const getNextDate = (dateString: string) => {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().split("T")[0];
 };
 
 export default AddSessionForm;
