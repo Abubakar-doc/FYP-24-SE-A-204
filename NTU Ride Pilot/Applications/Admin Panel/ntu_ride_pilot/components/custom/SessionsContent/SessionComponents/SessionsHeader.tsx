@@ -7,11 +7,13 @@ import { useState } from 'react';
 type SessionsHeaderProps = {
   onAddSession: () => void;
   allSessions: any[];
-  setSessions: (sessions: any[]) => void; // Add this prop
-  setFilterStatus: (filterStatus: string) => void; // Add this prop
+  setSessions: (sessions: any[]) => void; 
+  setFilterStatus: (filterStatus: string) => void; 
+  searchInput: string;
+  handleSearch: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessions, setSessions, setFilterStatus }) => {
+const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessions, setSessions, setFilterStatus, searchInput, handleSearch }) => {
   
   return (
     <div className="w-full h-32 bg-[#F5F5F5] p-4">
@@ -28,6 +30,8 @@ const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessio
             <input
               type="text"
               placeholder="Search"
+              value={searchInput}
+              onChange={handleSearch}
               className="w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
             />
             <button className="absolute right-2 top-1/2 transform -translate-y-1/2">

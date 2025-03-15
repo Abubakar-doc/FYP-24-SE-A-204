@@ -21,10 +21,12 @@ const SessionsContent: React.FC = () => {
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [allSessions, setAllSessions] = useState<Session[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionToDeactivate, setSessionToDeactivate] = useState<Session | null>(null);
+  const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -52,6 +54,7 @@ const SessionsContent: React.FC = () => {
         setAllSessions(sortedSessions);
         const activeSessions = sortedSessions.filter((session) => session.session_status === "active");
         setSessions(activeSessions);
+        setFilteredSessions(activeSessions);
       } catch (error) {
         console.error("Error fetching sessions:", error);
       } finally {
@@ -111,7 +114,84 @@ const SessionsContent: React.FC = () => {
     // Navigate to the correct path
     router.push(`/dashboard/sessions/add-session?${queryParams}`);
   };
-  
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value.toLowerCase();
+    setSearchInput(inputValue);
+
+    if (inputValue === '') {
+      setFilteredSessions(sessions);
+    } else {
+      if (filterStatus === 'all' || filterStatus === 'suspended') {
+        const filtered = allSessions.filter(session => {
+          const name = session.name?.toLowerCase() ?? '';
+          const startDate = session.start_date?.toLocaleDateString().toLowerCase() ?? '';
+          const endDate = session.end_date?.toLocaleDateString().toLowerCase() ?? '';
+          const status = session.session_status?.toLowerCase() ?? '';
+
+          return (
+            name.includes(inputValue) ||
+            startDate.includes(inputValue) ||
+            endDate.includes(inputValue) ||
+            status.includes(inputValue)
+          );
+        });
+
+        if (filterStatus === 'suspended') {
+          setFilteredSessions(filtered.filter(session => session.session_status === 'inactive'));
+        } else {
+          setFilteredSessions(filtered);
+        }
+      } else {
+        setFilteredSessions(sessions);
+      }
+    }
+  };
+
+  const handleFilterChange = (newFilterStatus: string) => {
+    setFilterStatus(newFilterStatus);
+
+    if (newFilterStatus === '') {
+      // Reset filter to normal case (show only active sessions)
+      const activeSessions = allSessions.filter(session => session.session_status === 'active');
+      const sortedSessions = activeSessions.sort((a, b) => {
+        if (a.start_date === null) return 1;
+        if (b.start_date === null) return -1;
+        return b.start_date.getTime() - a.start_date.getTime();
+      });
+      setSessions(sortedSessions);
+      setFilteredSessions(sortedSessions);
+    } else if (newFilterStatus === 'all') {
+      // Show all sessions
+      const sortedSessions = allSessions.sort((a, b) => {
+        if (a.start_date === null) return 1;
+        if (b.start_date === null) return -1;
+        return b.start_date.getTime() - a.start_date.getTime();
+      });
+      setSessions(sortedSessions);
+      setFilteredSessions(sortedSessions);
+    } else if (newFilterStatus === 'active') {
+      // Show only active sessions
+      const activeSessions = allSessions.filter(session => session.session_status === 'active');
+      const sortedSessions = activeSessions.sort((a, b) => {
+        if (a.start_date === null) return 1;
+        if (b.start_date === null) return -1;
+        return b.start_date.getTime() - a.start_date.getTime();
+      });
+      setSessions(sortedSessions);
+      setFilteredSessions(sortedSessions);
+    } else if (newFilterStatus === 'suspended') {
+      // Show only inactive sessions
+      const inactiveSessions = allSessions.filter(session => session.session_status === 'inactive');
+      const sortedSessions = inactiveSessions.sort((a, b) => {
+        if (a.start_date === null) return 1;
+        if (b.start_date === null) return -1;
+        return b.start_date.getTime() - a.start_date.getTime();
+      });
+      setSessions(sortedSessions);
+      setFilteredSessions(sortedSessions);
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-white">
@@ -120,7 +200,9 @@ const SessionsContent: React.FC = () => {
           onAddSession={() => {}}
           allSessions={allSessions}
           setSessions={setSessions}
-          setFilterStatus={setFilterStatus}
+          setFilterStatus={handleFilterChange}
+          searchInput={searchInput}
+          handleSearch={handleSearch}
         />
       </div>
 
@@ -137,16 +219,16 @@ const SessionsContent: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">#</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sr#</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Starting Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ending Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Session Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                <th className="px-20 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sessions.map((session, index) => (
+              {filteredSessions.map((session, index) => (
                 <tr key={session.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{session.name}</td>
@@ -156,23 +238,23 @@ const SessionsContent: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {session.end_date ? session.end_date.toLocaleDateString() : "N/A"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-9 py-4 whitespace-nowrap">
                     <span
                       className={`px-3 py-1 text-sm font-semibold rounded-full ${
                         session.session_status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-green-500 text-white"
+                          : "bg-red-600 text-white"
                       }`}
                     >
                       {session.session_status === "active" ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap flex space-x-4">
+                  <td className="px-6 py-4 whitespace-nowrap flex space-x-2">
                     <button
                       className={`${
                         session.session_status === "active"
-                          ? "text-blue-600 hover:underline"
-                          : "text-gray-400 opacity-50 cursor-not-allowed"
+                          ? "text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2 "
+                          : "text-white opacity-50 bg-blue-500 px-4 py-2 rounded-lg font-bold cursor-not-allowed"
                       }`}
                       onClick={() => handleEditSession(session)}
                       disabled={session.session_status !== "active"}
@@ -182,8 +264,8 @@ const SessionsContent: React.FC = () => {
                     <button
                       className={`${
                         session.session_status === "active"
-                          ? "text-red-600 hover:underline"
-                          : "text-gray-400 opacity-50 cursor-not-allowed"
+                          ? "text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
+                          : "text-white font-bold rounded-lg bg-slate-500 px-4 py-2 opacity-50 cursor-not-allowed"
                       }`}
                       onClick={() => openConfirmationModal(session)}
                       disabled={session.session_status !== "active"}
