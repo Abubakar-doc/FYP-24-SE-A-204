@@ -27,6 +27,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [isEdit, setIsEdit] = useState(false);
   const [activeSessionName, setActiveSessionName] = useState("");
   const [originalStartDate, setOriginalStartDate] = useState("");
+  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
     const idParam = searchParams.get("id");
@@ -129,18 +130,27 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
     }
   };
 
+  useEffect(() => {
+    if (successMessage) {
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    }
+  }, [successMessage]);
+
   return (
-    <div className="bg-white rounded-md shadow-md">
-      <AddSessionHeader onBackToSessions={onBack} />
-      <form onSubmit={handleSubmit} className="space-y-4 p-4">
+    <div className="bg-white w-full min-h-screen relative">
+      <div className="rounded-lg mb-2">
+        <AddSessionHeader onBackToSessions={onBack} />
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4 p-4 mx-6">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="name" className="block text-sm font-semibold text-[#202020]">
             Name *
           </label>
           <input
             type="text"
             id="name"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
             placeholder="Enter session name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -150,13 +160,13 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="startDate" className="block text-sm font-semibold text-[#202020]">
               Starting Date *
             </label>
             <input
               type="date"
               id="startDate"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
               value={startDate}
               onChange={handleStartDateChange}
               min={isEdit ? originalStartDate : minStartDate}
@@ -165,13 +175,13 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             />
           </div>
           <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-gray-600">
+            <label htmlFor="endDate" className="block text-sm font-semibold text-[#202020]">
               Ending Date *
             </label>
             <input
               type="date"
               id="endDate"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-3"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               required
@@ -184,7 +194,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
           <button
             type="button"
             onClick={onBack}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-10 rounded focus:outline-none focus:shadow-outline"
             disabled={isProcessing}
           >
             Cancel
@@ -192,7 +202,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
           <button
             type="submit"
             disabled={isProcessing}
-            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-16 rounded focus:outline-none focus:shadow-outline ${
               isProcessing ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
@@ -200,8 +210,12 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
           </button>
         </div>
       </form>
-      {successMessage && (
-        <div className={`text-white font-bold py-2 px-4 rounded mt-4 ${successMessage.includes("successfully") ? "bg-green-500" : "bg-red-500"}`}>
+      {showNotification && (
+        <div
+          className={`fixed bottom-4 right-4 z-50 p-8 rounded-lg shadow-lg ${
+            successMessage.includes("successfully") ? "bg-green-500" : "bg-red-500"
+          } text-white font-bold transition duration-600 animate-out`}
+        >
           {successMessage}
         </div>
       )}

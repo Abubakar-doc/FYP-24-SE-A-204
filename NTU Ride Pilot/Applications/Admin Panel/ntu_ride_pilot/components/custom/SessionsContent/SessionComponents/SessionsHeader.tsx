@@ -16,9 +16,9 @@ type SessionsHeaderProps = {
 const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessions, setSessions, setFilterStatus, searchInput, handleSearch }) => {
   
   return (
-    <div className="w-full h-32 bg-[#F5F5F5] p-4">
+    <div className="w-full h-32 bg-[#F5F5F5] p-4 rounded-md">
       {/* Header Icons Row */}
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-6 mr-4">
         <HeaderIcons />
       </div>
 
@@ -53,7 +53,7 @@ const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onAddSession, allSessio
               className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
               onClick={onAddSession}
             >
-              + Add Session
+              Add Session
             </button>
           </Link>
         </div>
