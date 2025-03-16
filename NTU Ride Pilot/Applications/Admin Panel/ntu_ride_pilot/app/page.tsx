@@ -37,8 +37,8 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div>
-      <h1>Redirecting to NTU-Ride-Pilot Admin Panel...</h1>
+    <div className="flex items-center justify-center w-full min-h-screen bg-[#023955]">
+      <h1 className="text-2xl text-white font-extrabold">Wellcome to NTU-Ride-Pilot Admin Panel...</h1>
     </div>
   );
 }
