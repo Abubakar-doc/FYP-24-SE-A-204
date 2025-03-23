@@ -1,5 +1,5 @@
 "use client"
-import AddStudentForm from '@/components/custom/Students/AddStudentForm';
+import AddStudentForm from '@/components/custom/AddStudents/AddStudentForm';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../DashboardLayout';
 

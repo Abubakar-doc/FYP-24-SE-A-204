@@ -29,6 +29,13 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [originalStartDate, setOriginalStartDate] = useState("");
   const [showNotification, setShowNotification] = useState(false);
 
+  // New state to store initial form values
+  const [initialFormValues, setInitialFormValues] = useState({
+    name: "",
+    startDate: "",
+    endDate: ""
+  });
+
   useEffect(() => {
     const idParam = searchParams.get("id");
     const nameParam = searchParams.get("name");
@@ -47,6 +54,13 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
         setMinStartDate(startDateParam);
       }
       if (endDateParam) setEndDate(endDateParam);
+
+      // Set initial form values
+      setInitialFormValues({
+        name: nameParam || "",
+        startDate: startDateParam || "",
+        endDate: endDateParam || ""
+      });
     }
   }, [searchParams]);
 
@@ -137,6 +151,13 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
     }
   }, [successMessage]);
 
+  // New function to handle form reset
+  const handleReset = () => {
+    setName(initialFormValues.name);
+    setStartDate(initialFormValues.startDate);
+    setEndDate(initialFormValues.endDate);
+  };
+
   return (
     <div className="bg-white w-full min-h-screen relative">
       <div className="rounded-lg mb-2">
@@ -193,11 +214,11 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
         <div className="flex justify-end space-x-4">
           <button
             type="button"
-            onClick={onBack}
+            onClick={handleReset}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-10 rounded focus:outline-none focus:shadow-outline"
             disabled={isProcessing}
           >
-            Cancel
+            Reset
           </button>
           <button
             type="submit"

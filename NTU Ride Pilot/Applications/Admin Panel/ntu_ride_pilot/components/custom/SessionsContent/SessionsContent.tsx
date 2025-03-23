@@ -24,8 +24,8 @@ const SessionsContent: React.FC = () => {
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDeactivating, setIsDeactivating] = useState(false); // New state for deactivation loading
-  const [filterStatus, setFilterStatus] = useState("");
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("active");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionToDeactivate, setSessionToDeactivate] = useState<Session | null>(null);
   const [searchInput, setSearchInput] = useState('');
@@ -68,7 +68,7 @@ const SessionsContent: React.FC = () => {
   }, []);
 
   const handleDeactivateSession = async (sessionId: string) => {
-    setIsDeactivating(true); // Show deactivation loading indicator
+    setIsDeactivating(true);
     try {
       const sessionRef = doc(firestore, "sessions", sessionId);
       await updateDoc(sessionRef, {
@@ -86,13 +86,13 @@ const SessionsContent: React.FC = () => {
       setAllSessions(sortedUpdatedSessions);
       const updatedActiveSessions = sortedUpdatedSessions.filter((session) => session.session_status === "active");
       setSessions(updatedActiveSessions);
-      setFilteredSessions(updatedActiveSessions); // Update filtered sessions
-      setFilterStatus(""); // Clear filter status
+      setFilteredSessions(updatedActiveSessions);
+      setFilterStatus("active");
     } catch (error) {
       console.error("Error deactivating session:", error);
     } finally {
-      setIsModalOpen(false); // Close the modal
-      setIsDeactivating(false); // Hide deactivation loading indicator
+      setIsModalOpen(false);
+      setIsDeactivating(false);
     }
   };
 
@@ -109,16 +109,14 @@ const SessionsContent: React.FC = () => {
       return;
     }
 
-    // Construct URL with query parameters for the correct route
     const queryParams = new URLSearchParams({
       id: session.id,
       name: session.name,
       start_date: session.start_date.toISOString().split("T")[0],
       end_date: session.end_date.toISOString().split("T")[0],
-      edit: "true", // Indicate this is an edit operation
+      edit: "true",
     });
 
-    // Navigate to the correct path
     router.push(`/dashboard/sessions/add-session?${queryParams}`);
   };
 
@@ -129,47 +127,32 @@ const SessionsContent: React.FC = () => {
     if (inputValue === '') {
       setFilteredSessions(sessions);
     } else {
-      if (filterStatus === 'all' || filterStatus === 'suspended') {
-        const filtered = allSessions.filter(session => {
-          const name = session.name?.toLowerCase() ?? '';
-          const startDate = session.start_date?.toLocaleDateString().toLowerCase() ?? '';
-          const endDate = session.end_date?.toLocaleDateString().toLowerCase() ?? '';
-          const status = session.session_status?.toLowerCase() ?? '';
+      const sessionsToFilter = filterStatus === 'all' ? allSessions : 
+                               filterStatus === 'suspended' ? allSessions.filter(session => session.session_status === 'inactive') :
+                               sessions;
 
-          return (
-            name.includes(inputValue) ||
-            startDate.includes(inputValue) ||
-            endDate.includes(inputValue) ||
-            status.includes(inputValue)
-          );
-        });
+      const filtered = sessionsToFilter.filter(session => {
+        const name = session.name?.toLowerCase() ?? '';
+        const startDate = session.start_date?.toLocaleDateString().toLowerCase() ?? '';
+        const endDate = session.end_date?.toLocaleDateString().toLowerCase() ?? '';
+        const status = session.session_status?.toLowerCase() ?? '';
 
-        if (filterStatus === 'suspended') {
-          setFilteredSessions(filtered.filter(session => session.session_status === 'inactive'));
-        } else {
-          setFilteredSessions(filtered);
-        }
-      } else {
-        setFilteredSessions(sessions);
-      }
+        return (
+          name.includes(inputValue) ||
+          startDate.includes(inputValue) ||
+          endDate.includes(inputValue) ||
+          status.includes(inputValue)
+        );
+      });
+
+      setFilteredSessions(filtered);
     }
   };
 
   const handleFilterChange = (newFilterStatus: string) => {
     setFilterStatus(newFilterStatus);
 
-    if (newFilterStatus === '') {
-      // Reset filter to normal case (show only active sessions)
-      const activeSessions = allSessions.filter(session => session.session_status === 'active');
-      const sortedSessions = activeSessions.sort((a, b) => {
-        if (a.start_date === null) return 1;
-        if (b.start_date === null) return -1;
-        return b.start_date.getTime() - a.start_date.getTime();
-      });
-      setSessions(sortedSessions);
-      setFilteredSessions(sortedSessions);
-    } else if (newFilterStatus === 'all') {
-      // Show all sessions
+    if (newFilterStatus === 'all') {
       const sortedSessions = allSessions.sort((a, b) => {
         if (a.start_date === null) return 1;
         if (b.start_date === null) return -1;
@@ -178,7 +161,6 @@ const SessionsContent: React.FC = () => {
       setSessions(sortedSessions);
       setFilteredSessions(sortedSessions);
     } else if (newFilterStatus === 'active') {
-      // Show only active sessions
       const activeSessions = allSessions.filter(session => session.session_status === 'active');
       const sortedSessions = activeSessions.sort((a, b) => {
         if (a.start_date === null) return 1;
@@ -188,7 +170,6 @@ const SessionsContent: React.FC = () => {
       setSessions(sortedSessions);
       setFilteredSessions(sortedSessions);
     } else if (newFilterStatus === 'suspended') {
-      // Show only inactive sessions
       const inactiveSessions = allSessions.filter(session => session.session_status === 'inactive');
       const sortedSessions = inactiveSessions.sort((a, b) => {
         if (a.start_date === null) return 1;
@@ -216,6 +197,7 @@ const SessionsContent: React.FC = () => {
           setFilterStatus={handleFilterChange}
           searchInput={searchInput}
           handleSearch={handleSearch}
+          isLoading={isLoading || isDeactivating} // Added isLoading prop
         />
       </div>
 

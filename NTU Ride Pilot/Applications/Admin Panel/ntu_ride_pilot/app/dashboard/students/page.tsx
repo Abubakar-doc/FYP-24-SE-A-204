@@ -1,5 +1,5 @@
 "use client"
-import StudentContent from '@/components/custom/Students/Students';
+import StudentsContent from '@/components/custom/StudentsContent/StudentsContent';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../DashboardLayout';
 
@@ -23,11 +23,7 @@ export default function StudentsPage() {
   return (
     <div>
       <DashboardLayout>
-      <StudentContent
-        onSearch={handleSearch}
-        onFilter={handleFilter}
-        onAddStudent={handleAddStudent}
-      />
+      <StudentsContent />
       </DashboardLayout>
     </div>
   );
