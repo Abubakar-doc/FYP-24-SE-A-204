@@ -24,14 +24,13 @@ const StudentsHeader: React.FC = () => {
             placeholder="Search"
             className="w-[496px] px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
           />
-
         </div>
 
         {/* Filter Dropdown */}
         <StudentFilterDropdown />
 
         {/* Add Students Button */}
-        <Link href="/dashboard/students/add-student">
+        <Link href="/dashboard/students/add-student?formType=simpleForm">
           <button
             className="w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
           >

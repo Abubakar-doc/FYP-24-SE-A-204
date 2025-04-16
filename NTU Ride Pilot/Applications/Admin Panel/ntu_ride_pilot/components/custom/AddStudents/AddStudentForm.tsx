@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import AddStudentHeader from './AddStudentHeader';
+import { useSearchParams } from 'next/navigation';
 
 type AddStudentFormProps = {
   onBack: () => void;
 };
 
 const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
+  const searchParams = useSearchParams();
+  const formType = searchParams.get('formType') || 'simpleForm';
+  
   const [rollNumber, setRollNumber] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -97,44 +101,45 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               required
             >
               <option>Yes</option>
-              <option>No</option>
+              
             </select>
           </div>
-          
         </div>
 
-        {/* Row 3: Bus Card Status and Bus Card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          <div>
-            <label htmlFor="busCardStatus" className="block text-sm font-semibold text-[#202020]">
-              Bus Card Status *
-            </label>
-            <select
-              id="busCardStatus"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
-              value={busCardStatus}
-              onChange={(e) => setBusCardStatus(e.target.value)}
-              required
-            >
-              <option>Yes</option>
-              <option>No</option>
-            </select>
+        {/* Row 3: Bus Card Status and Bus Card - Conditionally rendered */}
+        {formType === 'editForm' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="busCard" className="block text-sm font-semibold text-[#202020]">
+                Bus Card
+              </label>
+              <input
+                type="text"
+                id="busCard"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
+                placeholder="Tap here..."
+                value={busCard}
+                onChange={(e) => setBusCard(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="busCardStatus" className="block text-sm font-semibold text-[#202020]">
+                Bus Card Status *
+              </label>
+              <select
+                id="busCardStatus"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
+                value={busCardStatus}
+                onChange={(e) => setBusCardStatus(e.target.value)}
+                required
+              >
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label htmlFor="busCard" className="block text-sm font-semibold text-[#202020]">
-              Bus Card
-            </label>
-            <input
-              type="text"
-              id="busCard"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
-              placeholder="Tap here..."
-              value={busCard}
-              onChange={(e) => setBusCard(e.target.value)}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
@@ -149,7 +154,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             type="submit"
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-16 rounded focus:outline-none focus:shadow-outline"
           >
-            Add
+            {formType === 'editForm' ? 'Update' : 'Add'}
           </button>
         </div>
       </form>
