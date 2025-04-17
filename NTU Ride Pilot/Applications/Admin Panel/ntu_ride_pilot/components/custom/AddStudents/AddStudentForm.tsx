@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import AddStudentHeader from './AddStudentHeader';
 import { useSearchParams } from 'next/navigation';
@@ -6,36 +8,72 @@ type AddStudentFormProps = {
   onBack: () => void;
 };
 
+type Student = {
+  rollNo: string;
+  email: string;
+  name: string;
+  fee_paid: boolean;
+};
+
 const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const searchParams = useSearchParams();
   const formType = searchParams.get('formType') || 'simpleForm';
-  
-  const [rollNumber, setRollNumber] = useState('');
+
+  const [rollNumber, setRollNumber] = useState('00-NTU-AA-0000');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [feePaid, setFeePaid] = useState('Yes');
+  const [feePaid] = useState('Yes');
   const [busCardStatus, setBusCardStatus] = useState('Yes');
   const [busCard, setBusCard] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [studentsArray, setStudentsArray] = useState<Student[]>([]);
+
+  const validateInputs = () => {
+    const rollNoRegex = /^\d{2}-NTU-[A-Z]{2}-\d{4}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!rollNoRegex.test(rollNumber)) {
+      setErrorMessage('Invalid Roll Number Format (e.g., 23-NTU-CS-0001)');
+      return false;
+    }
+
+    if (!emailRegex.test(email)) {
+      setErrorMessage('Invalid Email Format');
+      return false;
+    }
+
+    if (!name || typeof name !== 'string' || name.length > 50) {
+      setErrorMessage('Name must be a string with a maximum of 50 characters');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission and response
-    if (rollNumber && name && email) {
+
+    if (validateInputs()) {
+      const newStudent: Student = {
+        rollNo: rollNumber,
+        email,
+        name,
+        fee_paid: feePaid === 'Yes',
+      };
+
+      setStudentsArray((prev) => {
+        const updated = [...prev, newStudent];
+        console.log('Updated Students Array:', updated);
+        return updated;
+      });
+
       setSuccessMessage('Student added successfully!');
       setErrorMessage('');
-      // Clear the message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
+      setTimeout(() => setSuccessMessage(''), 3000);
     } else {
-      setErrorMessage('Unknown Error Occurred');
-      setSuccessMessage('');
-      // Clear the message after 3 seconds
-      setTimeout(() => {
-        setErrorMessage('');
-      }, 3000);
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
@@ -47,18 +85,64 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
         {/* Row 1: Roll Number and Email */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="rollNumber" className="block text-sm font-semibold text-[#202020]">
+            <label htmlFor="rollNumber" className="block text-sm font-semibold text-[#202020] mb-1">
               Roll Number *
             </label>
-            <input
-              type="text"
-              id="rollNumber"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
-              value={rollNumber}
-              onChange={(e) => setRollNumber(e.target.value)}
-              required
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                maxLength={2}
+                pattern="\d{2}"
+                title="Enter 2 digits"
+                className="w-12 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
+                value={rollNumber.split('-')[0] || ''}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  const parts = rollNumber.split('-');
+                  parts[0] = val;
+                  setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+                }}
+                required
+              />
+
+              <span className="text-2xl font-bold">-NTU-</span>
+
+              <input
+                type="text"
+                maxLength={2}
+                pattern="[A-Za-z]{2}"
+                title="Enter 2 letters"
+                className="w-12 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3 uppercase"
+                value={rollNumber.split('-')[2] || ''}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
+                  const parts = rollNumber.split('-');
+                  parts[2] = val;
+                  setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+                }}
+                required
+              />
+
+              <span className="text-2xl font-bold">-</span>
+
+              <input
+                type="text"
+                maxLength={4}
+                pattern="\d{4}"
+                title="Enter 4 digits"
+                className="w-16 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
+                value={rollNumber.split('-')[3] || ''}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  const parts = rollNumber.split('-');
+                  parts[3] = val;
+                  setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+                }}
+                required
+              />
+            </div>
           </div>
+
           <div>
             <label htmlFor="email" className="block text-sm font-semibold text-[#202020]">
               Email *
@@ -83,6 +167,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             <input
               type="text"
               id="name"
+              maxLength={50}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -97,11 +182,9 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               id="feePaid"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
               value={feePaid}
-              onChange={(e) => setFeePaid(e.target.value)}
-              required
+              disabled
             >
               <option>Yes</option>
-              
             </select>
           </div>
         </div>
