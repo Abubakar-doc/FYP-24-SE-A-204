@@ -1,10 +1,7 @@
-// AddStudentHeader.tsx
 import React from 'react';
-import { FaCog, FaBell } from 'react-icons/fa'; // Import icons
-import Link from 'next/link';
+import HeaderIcons from '../HeaderIcons/HeaderIcons';
 import UploadFile from './UploadFile';
 import DownloadFile from './DownloadFile';
-import HeaderIcons from '../HeaderIcons/HeaderIcons';
 
 type AddStudentHeaderProps = {
   onBackToStudents: () => void;
@@ -13,8 +10,8 @@ type AddStudentHeaderProps = {
 const AddStudentHeader: React.FC<AddStudentHeaderProps> = ({ onBackToStudents }) => {
   return (
     <div className="w-full h-32 bg-[#F5F5F5] rounded-md p-4 mb-4">
-       {/* Header Icons Row */}
-       <div className="flex justify-end mb-2 mr-4">
+      {/* Header Icons Row */}
+      <div className="flex justify-end mb-2 mr-4">
         <HeaderIcons />
       </div>
 
@@ -26,8 +23,8 @@ const AddStudentHeader: React.FC<AddStudentHeaderProps> = ({ onBackToStudents })
             <button onClick={onBackToStudents} className="hover:text-gray-700">
               Students
             </button>
-            <span className='text-[#0686CB] font-semibold'> &gt; </span>
-            <span className='text-[#0686CB] font-semibold'>Add Student</span>
+            <span className="text-[#0686CB] font-semibold"> &gt; </span>
+            <span className="text-[#0686CB] font-semibold">Add Student</span>
           </div>
         </div>
 
