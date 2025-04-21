@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import AddStudentHeader from './AddStudentHeader';
 import { useSearchParams } from 'next/navigation';
@@ -20,11 +19,13 @@ type Student = {
   fee_paid: boolean;
   created_at: any;
   updated_at: any;
+  session_id: string;
 };
 
 const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const searchParams = useSearchParams();
   const formType = searchParams.get('formType') || 'simpleForm';
+  const sessionId = searchParams.get('sessionId');
 
   const [rollNumber, setRollNumber] = useState('00-NTU-AA-0000');
   const [name, setName] = useState('');
@@ -40,7 +41,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   const normalizeSpaces = (str: string) => str.trim().replace(/\s+/g, ' ');
 
-  // Fetch existing roll numbers on component mount
   useEffect(() => {
     const fetchRollNumbers = async () => {
       try {
@@ -97,6 +97,13 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!sessionId) {
+      setErrorMessage('No session selected');
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+      return;
+    }
+
     const normalizedName = normalizeSpaces(name);
     const normalizedEmail = normalizeSpaces(email);
 
@@ -116,7 +123,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       /^[A-Za-z\s]+$/.test(normalizedName) &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     ) {
-      // Check for duplicate roll number
       if (existingRollNumbers.includes(rollNumber)) {
         setErrorMessage(`${rollNumber} is already present!`);
         setSuccessMessage('');
@@ -142,11 +148,10 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           fee_paid: true,
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
+          session_id: sessionId
         };
 
         await setDoc(studentDocRef, studentData);
-
-        // Update local state with new roll number
         setExistingRollNumbers(prev => [...prev, rollNumber]);
 
         setSuccessMessage('Student added successfully!');

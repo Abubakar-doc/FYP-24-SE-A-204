@@ -15,6 +15,7 @@ interface Session {
 
 const StudentsHeader: React.FC = () => {
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
   useEffect(() => {
     const fetchActiveSessions = async () => {
@@ -29,7 +30,9 @@ const StudentsHeader: React.FC = () => {
         }));
 
         setActiveSessions(sessionsData);
-        console.log("Active Sessions:", sessionsData);
+        if (sessionsData.length > 0) {
+          setSelectedSessionId(sessionsData[0].id);
+        }
       } catch (error) {
         console.error("Error fetching active sessions:", error);
       }
@@ -46,7 +49,10 @@ const StudentsHeader: React.FC = () => {
       </div>
 
       {/* Row 2: Title and Select Box */}
-      <StudentsHeaderRow sessionNames={activeSessions.map(session => session.name)} />
+      <StudentsHeaderRow 
+        sessions={activeSessions}
+        onSessionSelect={(sessionId: string) => setSelectedSessionId(sessionId)}
+      />
 
       {/* Row 3: Search, Filter Dropdown, and Add Students Button */}
       <div className="flex justify-end items-center space-x-4 mb-4 mr-4">
@@ -63,7 +69,7 @@ const StudentsHeader: React.FC = () => {
         <StudentFilterDropdown />
 
         {/* Add Students Button */}
-        <Link href="/dashboard/students/add-student?formType=simpleForm">
+        <Link href={`/dashboard/students/add-student?formType=simpleForm&sessionId=${selectedSessionId}`}>
           <button
             className="w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
           >

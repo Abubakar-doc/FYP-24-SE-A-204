@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FaCheck, FaSpinner } from 'react-icons/fa';
-import { doc, setDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 interface ErrorReport {
@@ -159,17 +159,44 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
           break;
 
         case 4: // Add to Database
-          const studentsCollection = collection(firestore, 'students');
-          const batchPromises = jsonData.map((student) => {
-            const studentDoc = doc(studentsCollection, student['Roll No']);
-            return setDoc(studentDoc, {
-              rollNo: student['Roll No'],
+          // First, fetch all existing student roll numbers
+          const studentsCollection = collection(firestore, 'users', 'user_roles', 'students');
+          const snapshot = await getDocs(studentsCollection);
+          const existingRollNos = new Set(snapshot.docs.map(doc => doc.id));
+
+          // Filter out students that already exist
+          const newStudents = jsonData.filter(student => 
+            !existingRollNos.has(student['Roll No'])
+          );
+
+          if (newStudents.length === 0) {
+            setSuccessMessage('All students already exist in the database. No new records added.');
+            setProcessingComplete(true);
+            return;
+          }
+
+          // Only add new students that don't exist
+          const batchPromises = newStudents.map((student) => {
+            const studentDocRef = doc(
+              firestore,
+              'users',
+              'user_roles',
+              'students',
+              student['Roll No']
+            );
+            const timestamp = serverTimestamp();
+            return setDoc(studentDocRef, {
+              roll_no: student['Roll No'],
               email: student['Email'],
               name: student['Name'],
-              createdAt: new Date().toISOString()
+              fee_paid: true,
+              created_at: timestamp,
+              updated_at: timestamp
             });
           });
+
           await Promise.all(batchPromises);
+          setSuccessMessage(`Added ${newStudents.length} new student(s). ${jsonData.length - newStudents.length} student(s) already existed.`);
           break;
 
         default:
@@ -184,7 +211,11 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
       // If we get here, the step was successful
       const newProgress = ((currentStep + 1) / steps.length) * 100;
       setProgress(newProgress);
-      setSuccessMessage(`${steps[currentStep]} completed successfully!`);
+
+      // Only show step completion message if not the last step
+      if (currentStep < steps.length - 1) {
+        setSuccessMessage(`${steps[currentStep]} completed successfully!`);
+      }
 
       // Move to next step or complete
       if (currentStep < steps.length - 1) {
@@ -317,8 +348,6 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
         </div>
 
         {renderErrorReport()}
-
-       
       </div>
     </div>
   );

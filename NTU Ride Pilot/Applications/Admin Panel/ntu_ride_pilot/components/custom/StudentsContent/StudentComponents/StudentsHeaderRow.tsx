@@ -1,25 +1,43 @@
 "use client";
-import React from 'react';
+import React, { useEffect } from 'react';
 
-interface StudentsHeaderRowProps {
-  sessionNames: string[];
+interface Session {
+  id: string;
+  name: string;
 }
 
-const StudentsHeaderRow: React.FC<StudentsHeaderRowProps> = ({ sessionNames }) => {
-  
+interface StudentsHeaderRowProps {
+  sessions: Session[];
+  onSessionSelect: (sessionId: string) => void;
+}
+
+const StudentsHeaderRow: React.FC<StudentsHeaderRowProps> = ({ sessions, onSessionSelect }) => {
+  useEffect(() => {
+    // Set initial session selection
+    if (sessions.length > 0) {
+      onSessionSelect(sessions[0].id);
+    }
+  }, [sessions]);
+
+  const handleSessionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    onSessionSelect(selectedId);
+  };
+
   return (
     <div className="flex items-center justify-between mb-4 mr-4">
       <h2 className="text-2xl font-semibold">Students</h2>
       <div className="relative w-[800px]">
         <select
+          onChange={handleSessionChange}
           className="w-full bg-blue-500 text-white px-6 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none"
         >
-          {sessionNames.length === 0 ? (
+          {sessions.length === 0 ? (
             <option>Loading sessions...</option>
           ) : (
-            sessionNames.map((name, index) => (
-              <option key={index} value={name}>
-                {name}
+            sessions.map((session) => (
+              <option key={session.id} value={session.id}>
+                {session.name}
               </option>
             ))
           )}
