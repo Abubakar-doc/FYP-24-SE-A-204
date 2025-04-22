@@ -39,6 +39,11 @@ const StudentsContent: React.FC = () => {
     fetchStudents();
   };
 
+  // Optionally, if you have an edit modal or callback, call fetchStudents after edit as well
+  // const handleStudentEdited = () => {
+  //   fetchStudents();
+  // };
+
   return (
     <div className="w-full min-h-screen bg-white relative">
       {isLoading && (
@@ -87,7 +92,9 @@ const StudentsContent: React.FC = () => {
                   <td className="px-4 py-4 whitespace-nowrap w-[15%]">
                     {student.fee_paid ? "Paid" : "Not Paid"}
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap w-[10%]">-</td>
+                  <td className="px-4 py-4 whitespace-nowrap w-[10%]">
+                    {student.bus_card_status ? student.bus_card_status : "-"}
+                  </td>
                   <td className="px-20 py-4 flex items-center space-x-2 ">
                     <StudentEditButton rollNo={student.roll_no} />
                     <StudentDeleteButton

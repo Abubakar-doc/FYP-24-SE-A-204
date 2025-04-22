@@ -93,7 +93,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
           onChange={(e) => setEmail(normalizeSpaces(e.target.value))}
           onBlur={(e) => setEmail(normalizeSpaces(e.target.value.trim()))}
           required
-          disabled={disabled}
+          
         />
       </div>
     </div>
