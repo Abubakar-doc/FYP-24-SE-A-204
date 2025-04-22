@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { FaCheck, FaSpinner } from 'react-icons/fa';
-import { doc, setDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, collection, serverTimestamp, getDocs, query, where, updateDoc, arrayUnion } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
+import { useSearchParams } from 'next/navigation';
 
 interface ErrorReport {
   rowNumber: number;
@@ -27,6 +28,9 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   dataCount,
   jsonData
 }) => {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('sessionId');
+  
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -159,44 +163,83 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
           break;
 
         case 4: // Add to Database
-          // First, fetch all existing student roll numbers
           const studentsCollection = collection(firestore, 'users', 'user_roles', 'students');
           const snapshot = await getDocs(studentsCollection);
-          const existingRollNos = new Set(snapshot.docs.map(doc => doc.id));
+          const existingStudents = new Map(snapshot.docs.map(doc => [doc.id, doc.data()]));
 
-          // Filter out students that already exist
-          const newStudents = jsonData.filter(student => 
-            !existingRollNos.has(student['Roll No'])
-          );
+          let newStudents = 0;
+          let updatedStudents = 0;
+          let skippedStudents = 0;
+          const rollNosToAdd: string[] = [];
 
-          if (newStudents.length === 0) {
-            setSuccessMessage('All students already exist in the database. No new records added.');
-            setProcessingComplete(true);
-            return;
-          }
-
-          // Only add new students that don't exist
-          const batchPromises = newStudents.map((student) => {
-            const studentDocRef = doc(
-              firestore,
-              'users',
-              'user_roles',
-              'students',
-              student['Roll No']
-            );
-            const timestamp = serverTimestamp();
-            return setDoc(studentDocRef, {
-              roll_no: student['Roll No'],
-              email: student['Email'],
-              name: student['Name'],
-              fee_paid: true,
-              created_at: timestamp,
-              updated_at: timestamp
-            });
+          const batchPromises = jsonData.map(async (student) => {
+            const rollNo = student['Roll No'];
+            const email = student['Email'];
+            const name = student['Name'];
+            
+            const existingStudent = existingStudents.get(rollNo);
+            
+            if (existingStudent) {
+              // Student exists, check if details match
+              if (existingStudent.email !== email || existingStudent.name !== name) {
+                // Details don't match, update the student
+                const studentDocRef = doc(
+                  firestore,
+                  'users',
+                  'user_roles',
+                  'students',
+                  rollNo
+                );
+                await setDoc(studentDocRef, {
+                  ...existingStudent,
+                  email: email,
+                  name: name,
+                  updated_at: serverTimestamp()
+                }, { merge: true });
+                updatedStudents++;
+              } else {
+                // Details match exactly, skip
+                skippedStudents++;
+              }
+            } else {
+              // New student, add to database
+              const studentDocRef = doc(
+                firestore,
+                'users',
+                'user_roles',
+                'students',
+                rollNo
+              );
+              await setDoc(studentDocRef, {
+                roll_no: rollNo,
+                email: email,
+                name: name,
+                fee_paid: true,
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp()
+              });
+              newStudents++;
+              rollNosToAdd.push(rollNo);
+            }
           });
 
           await Promise.all(batchPromises);
-          setSuccessMessage(`Added ${newStudents.length} new student(s). ${jsonData.length - newStudents.length} student(s) already existed.`);
+
+          // Update session document if needed
+          if (sessionId && rollNosToAdd.length > 0) {
+            const sessionDocRef = doc(firestore, 'sessions', sessionId);
+            await updateDoc(sessionDocRef, {
+              roll_no: arrayUnion(...rollNosToAdd)
+            });
+          }
+
+          let successMsg = '';
+          if (newStudents > 0) successMsg += `Added ${newStudents} new student(s). `;
+          if (updatedStudents > 0) successMsg += `Updated ${updatedStudents} existing student(s). `;
+          if (skippedStudents > 0) successMsg += `Skipped ${skippedStudents} unchanged student(s). `;
+          if (sessionId) successMsg += `Students added to session.`;
+          
+          setSuccessMessage(successMsg.trim());
           break;
 
         default:
@@ -282,6 +325,9 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
         <div className="mb-6 bg-gray-50 p-3 rounded">
           <p className="font-medium">File: <span className="text-gray-700">{fileName}</span></p>
           <p className="font-medium">Records: <span className="text-gray-700">{dataCount}</span></p>
+          {sessionId && (
+            <p className="font-medium">Session ID: <span className="text-gray-700">{sessionId}</span></p>
+          )}
         </div>
 
         {/* Steps */}

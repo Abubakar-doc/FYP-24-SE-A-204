@@ -2,39 +2,42 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
 import StudentsHeader from "./StudentComponents/StudentsHeader";
-import { Pencil, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import StudentEditButton from "./StudentEditButton";
+import StudentDeleteButton from "./StudentDeleteButton";
 
 const StudentsContent: React.FC = () => {
-  const router = useRouter();
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch students from Firestore
+  const fetchStudents = async () => {
+    try {
+      const studentsCollection = collection(
+        firestore,
+        "users",
+        "user_roles",
+        "students"
+      );
+      const studentsSnapshot = await getDocs(studentsCollection);
+      const studentsList = studentsSnapshot.docs.map((doc) => doc.data());
+      setStudents(studentsList);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const studentsCollection = collection(
-          firestore,
-          "users",
-          "user_roles",
-          "students"
-        );
-        const studentsSnapshot = await getDocs(studentsCollection);
-        const studentsList = studentsSnapshot.docs.map((doc) => doc.data());
-
-        setStudents(studentsList);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchStudents();
   }, []);
+
+  // Refresh list after delete
+  const handleStudentDeleted = () => {
+    fetchStudents();
+  };
 
   return (
     <div className="w-full min-h-screen bg-white relative">
@@ -86,10 +89,11 @@ const StudentsContent: React.FC = () => {
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap w-[10%]">-</td>
                   <td className="px-20 py-4 flex items-center space-x-2 ">
-                    <Link href={`/dashboard/students/add-student?formType=editForm&studentId=${student.roll_no}`}>
-                      <Pencil className="w-4 h-4 cursor-pointer text-blue-500 hover:text-blue-700" />
-                    </Link>
-                    <Trash2 className="w-4 h-4 cursor-pointer text-red-500 hover:text-red-700" />
+                    <StudentEditButton rollNo={student.roll_no} />
+                    <StudentDeleteButton
+                      rollNo={student.roll_no}
+                      onDelete={handleStudentDeleted}
+                    />
                   </td>
                 </tr>
               ))}

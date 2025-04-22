@@ -6,7 +6,7 @@ import RollNumberEmailRow from './RollNumberEmailRow';
 import NameFeePaidRow from './NameFeePaidRow';
 import BusCardRow from './BusCardRow';
 import { firestore } from '@/lib/firebase';
-import { doc, setDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection, serverTimestamp, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 type AddStudentFormProps = {
   onBack: () => void;
@@ -19,13 +19,13 @@ type Student = {
   fee_paid: boolean;
   created_at: any;
   updated_at: any;
-  session_id: string;
 };
 
 const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const searchParams = useSearchParams();
   const formType = searchParams.get('formType') || 'simpleForm';
   const sessionId = searchParams.get('sessionId');
+  const studentId = searchParams.get('studentId'); // The roll_no for editing
 
   const [rollNumber, setRollNumber] = useState('00-NTU-AA-0000');
   const [name, setName] = useState('');
@@ -41,6 +41,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   const normalizeSpaces = (str: string) => str.trim().replace(/\s+/g, ' ');
 
+  // Fetch all roll numbers for validation
   useEffect(() => {
     const fetchRollNumbers = async () => {
       try {
@@ -55,6 +56,35 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
     fetchRollNumbers();
   }, []);
+
+  // Fetch student data for editing
+  useEffect(() => {
+    const fetchStudent = async () => {
+      if (formType === 'editForm' && studentId) {
+        try {
+          const studentDocRef = doc(firestore, 'users', 'user_roles', 'students', studentId);
+          const studentDoc = await getDoc(studentDocRef);
+          if (studentDoc.exists()) {
+            const data = studentDoc.data() as Student;
+            setRollNumber(data.roll_no);
+            setEmail(data.email);
+            setName(data.name);
+          } else {
+            setErrorMessage('Student not found.');
+            setShowNotification(true);
+            setTimeout(() => setShowNotification(false), 3000);
+          }
+        } catch (error) {
+          setErrorMessage('Failed to fetch student data.');
+          setShowNotification(true);
+          setTimeout(() => setShowNotification(false), 3000);
+        }
+      }
+    };
+
+    fetchStudent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formType, studentId]);
 
   const validateInputs = () => {
     const rollNoRegex = /^\d{2}-NTU-[A-Z]{2}-\d{4}$/;
@@ -75,7 +105,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       setErrorMessage('Name must be a string with a maximum of 50 characters');
       return false;
     }
-
     if (!nameRegex.test(name)) {
       setErrorMessage('Name must contain letters and spaces only');
       return false;
@@ -97,7 +126,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!sessionId) {
+    if (!sessionId && formType !== 'editForm') {
       setErrorMessage('No session selected');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
@@ -123,7 +152,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       /^[A-Za-z\s]+$/.test(normalizedName) &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     ) {
-      if (existingRollNumbers.includes(rollNumber)) {
+      if (formType !== 'editForm' && existingRollNumbers.includes(rollNumber)) {
         setErrorMessage(`${rollNumber} is already present!`);
         setSuccessMessage('');
         setShowNotification(true);
@@ -148,22 +177,51 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           fee_paid: true,
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
-          session_id: sessionId
         };
 
-        await setDoc(studentDocRef, studentData);
-        setExistingRollNumbers(prev => [...prev, rollNumber]);
+        if (formType === 'editForm') {
+          // Update existing student document
+          await updateDoc(studentDocRef, {
+            email: normalizedEmail,
+            name: normalizedName,
+            updated_at: serverTimestamp(),
+          });
+          setSuccessMessage('Student updated successfully!');
+        } else {
+          // Create new student document
+          await setDoc(studentDocRef, studentData);
 
-        setSuccessMessage('Student added successfully!');
+          // Update session document
+          const sessionDocRef = doc(firestore, 'sessions', sessionId!);
+          const sessionDocSnap = await getDoc(sessionDocRef);
+
+          if (sessionDocSnap.exists()) {
+            const sessionData = sessionDocSnap.data();
+            const rollNos: string[] = sessionData?.roll_no || [];
+            if (!rollNos.includes(rollNumber)) {
+              await updateDoc(sessionDocRef, {
+                roll_no: arrayUnion(rollNumber),
+              });
+            }
+          } else {
+            await setDoc(sessionDocRef, {
+              roll_no: [rollNumber],
+              status: 'active',
+              created_at: serverTimestamp(),
+            });
+          }
+        }
+
+        setExistingRollNumbers(prev => [...prev, rollNumber]);
         setErrorMessage('');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
-        
+
         resetForm();
 
       } catch (error) {
-        console.error('Error adding student:', error);
-        setErrorMessage('Failed to add student. Please try again.');
+        console.error('Error saving student:', error);
+        setErrorMessage('Failed to save student. Please try again.');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
       } finally {
@@ -193,7 +251,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           setRollNumber={setRollNumber}
           email={email}
           setEmail={setEmail}
-          disabled={loading}
+          disabled={loading || formType === 'editForm'} // roll_no should not be changed in edit mode
         />
 
         <NameFeePaidRow 
