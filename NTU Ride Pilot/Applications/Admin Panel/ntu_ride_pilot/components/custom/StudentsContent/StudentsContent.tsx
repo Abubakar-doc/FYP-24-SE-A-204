@@ -10,6 +10,8 @@ import StudentDeleteButton from "./StudentDeleteButton";
 const StudentsContent: React.FC = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [busCardFilter, setBusCardFilter] = useState<"Active" | "InActive" | "All">("Active");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Fetch students from Firestore
   const fetchStudents = async () => {
@@ -39,10 +41,27 @@ const StudentsContent: React.FC = () => {
     fetchStudents();
   };
 
-  // Optionally, if you have an edit modal or callback, call fetchStudents after edit as well
-  // const handleStudentEdited = () => {
-  //   fetchStudents();
-  // };
+  // Filtering logic based on bus card status
+  const filteredStudents = students.filter((student) => {
+    if (busCardFilter === "All") {
+      return (
+        student.bus_card_status === "Active" ||
+        student.bus_card_status === "InActive"
+      );
+    }
+    return student.bus_card_status === busCardFilter;
+  });
+
+  // Search logic (case-insensitive, on name, roll_no, bus_card_status)
+  const searchedStudents = filteredStudents.filter((student) => {
+    if (!searchTerm.trim()) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      (student.name && student.name.toLowerCase().includes(search)) ||
+      (student.roll_no && String(student.roll_no).toLowerCase().includes(search)) ||
+      (student.bus_card_status && student.bus_card_status.toLowerCase().includes(search))
+    );
+  });
 
   return (
     <div className="w-full min-h-screen bg-white relative">
@@ -53,7 +72,12 @@ const StudentsContent: React.FC = () => {
       )}
 
       <div className="rounded-lg mb-2">
-        <StudentsHeader />
+        <StudentsHeader
+          busCardFilter={busCardFilter}
+          setBusCardFilter={setBusCardFilter}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+        />
       </div>
 
       <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
@@ -82,7 +106,7 @@ const StudentsContent: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-300 text-center">
-              {students.map((student, index) => (
+              {searchedStudents.map((student, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-4 py-4 whitespace-nowrap w-[5%]">{index + 1}</td>
                   <td className="px-4 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">

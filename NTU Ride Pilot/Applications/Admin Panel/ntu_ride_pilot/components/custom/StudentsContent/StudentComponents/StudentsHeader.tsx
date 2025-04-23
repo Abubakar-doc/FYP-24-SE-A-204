@@ -13,7 +13,19 @@ interface Session {
   session_status: string;
 }
 
-const StudentsHeader: React.FC = () => {
+interface StudentsHeaderProps {
+  busCardFilter: "Active" | "InActive" | "All";
+  setBusCardFilter: (filter: "Active" | "InActive" | "All") => void;
+  searchTerm: string;
+  onSearchTermChange: (term: string) => void;
+}
+
+const StudentsHeader: React.FC<StudentsHeaderProps> = ({
+  busCardFilter,
+  setBusCardFilter,
+  searchTerm,
+  onSearchTermChange,
+}) => {
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
@@ -61,12 +73,17 @@ const StudentsHeader: React.FC = () => {
           <input
             type="text"
             placeholder="Search"
-            className="w-[496px] px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
+            className="w-[520px] px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
+            value={searchTerm}
+            onChange={e => onSearchTermChange(e.target.value)}
           />
         </div>
 
         {/* Filter Dropdown */}
-        <StudentFilterDropdown />
+        <StudentFilterDropdown
+          value={busCardFilter}
+          onChange={setBusCardFilter}
+        />
 
         {/* Add Students Button */}
         <Link href={`/dashboard/students/add-student?formType=simpleForm&sessionId=${selectedSessionId}`}>
