@@ -1,12 +1,17 @@
-import React from 'react'
-import DashboardLayout from '../DashboardLayout'
+"use client"
 
-function page() {
+import { useRouter } from 'next/navigation';
+import DashboardLayout from '../DashboardLayout';
+import RoutesContent from '@/components/custom/RoutesContent/RoutesContent';
+
+export default function RoutesPage() {
+  const router = useRouter();
+
   return (
-    <DashboardLayout>
-          <div>Routes Content</div>
-    </DashboardLayout>
-  )
+    <div>
+      <DashboardLayout>
+      <RoutesContent />
+      </DashboardLayout>
+    </div>
+  );
 }
-
-export default page

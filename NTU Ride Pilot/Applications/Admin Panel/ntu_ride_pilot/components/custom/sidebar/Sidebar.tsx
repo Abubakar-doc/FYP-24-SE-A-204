@@ -31,10 +31,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick })
 
   return (
     <div className={`${className} flex flex-col h-screen justify-between bg-[#023955] text-white`}>
-      <div className="p-4">
+      <div className="p-2">
         <h1 className="text-lg font-bold">NTU RIDE PILOT</h1>
       </div>
-      <ul className="flex-1 px-4 py-2 space-y-2">
+      <ul className="flex-1 px-1 py-2 space-y-1">
         {sidebarItems.map((item) => (
           <li
             key={item.label}
@@ -53,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick })
       </ul>
 
       {/* Updated Admin Profile Section */}
-      <div className="p-4">
+      <div className="p-2">
         <div className="flex items-center justify-between bg-[#054C72] rounded-md p-1 cursor-pointer">
           <div className="flex items-center space-x-2">
             <span className=' bg-[#0686CB] p-3 rounded-full'><FaUser /></span>
