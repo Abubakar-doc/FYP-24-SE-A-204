@@ -84,7 +84,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
     try {
       RideModel? newRide = await _rideService.createNewRide(
         bus: selectedBus!,
-        route: selectedRoute!,
+        route: selectedRoute!, context: context,
       );
 
       if (newRide != null) {
@@ -226,7 +226,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
                         title: "Route",
                         selectedValue: selectedRoute,
                         items: routes,
-                        displayItem: (route) => "Route-${route.name}",
+                        displayItem: (route) => route.name,
                         onChanged: (value) {
                           setState(() {
                             selectedRoute = value;

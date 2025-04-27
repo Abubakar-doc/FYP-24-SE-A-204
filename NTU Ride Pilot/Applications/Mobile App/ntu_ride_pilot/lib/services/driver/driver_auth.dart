@@ -11,11 +11,17 @@ class DriverAuthService extends GetxController {
   Future<void> signIn(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      await _driverService.saveDriverToHive(email);
-      Get.off(() => DriverHomeScreen(),
-          transition: Transition.rightToLeft);
+
+      final found = await _driverService.saveDriverToHive(email);
+      if (found) {
+        Get.off(() => DriverHomeScreen(), transition: Transition.rightToLeft);
+      } else {
+        // Roll back the auth state since we don't have a driver record
+        await _auth.signOut();
+      }
     } catch (e) {
       SnackbarUtil.showError("Authentication Error", e.toString());
     }
   }
+
 }

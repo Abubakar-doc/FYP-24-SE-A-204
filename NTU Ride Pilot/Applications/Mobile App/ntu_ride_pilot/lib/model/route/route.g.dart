@@ -19,20 +19,25 @@ class RouteModelAdapter extends TypeAdapter<RouteModel> {
     return RouteModel(
       routeId: fields[0] as String,
       name: fields[1] as String,
-      busStopId: (fields[2] as Map).cast<String, String>(),
+      busStops: (fields[2] as List)
+          .map((dynamic e) => (e as Map).cast<String, dynamic>())
+          .toList(),
+      createdAt: fields[3] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, RouteModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.routeId)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.busStopId);
+      ..write(obj.busStops)
+      ..writeByte(3)
+      ..write(obj.createdAt);
   }
 
   @override

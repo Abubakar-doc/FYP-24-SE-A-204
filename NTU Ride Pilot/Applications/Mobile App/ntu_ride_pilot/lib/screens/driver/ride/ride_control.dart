@@ -107,7 +107,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
         setState(() {
           _buttonProgressText = 'Starting Ride...';
         });
-        await _rideService.startRide(_currentRide!);
+        await _rideService.startRide(_currentRide!, _currentRoute!, context);
         SnackbarUtil.showSuccess("Success", "Ride started successfully.");
       }
     } catch (e) {
@@ -210,7 +210,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
               Skeletonizer(
                 enabled: _isLoading,
                 child: Text(
-                  'Bus ${_currentRide?.busId ?? 'N/A'} - Route ${_currentRoute?.name ?? 'N/A'}',
+                  'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
                 ),
               ),
               IconButton(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:ntu_ride_pilot/model/bus/bus.dart';
@@ -10,12 +11,16 @@ import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
+import 'package:ntu_ride_pilot/utils/utils.dart';
+import 'package:geolocator/geolocator.dart' as geo;
+
+import 'live_location.dart';
 
 class RideService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // Use InternetConnectionChecker for reliable connectivity status.
   final InternetConnectionChecker _connectionChecker =
-  InternetConnectionChecker.createInstance();
+      InternetConnectionChecker.createInstance();
   bool _isOnline = true;
   // Queue to hold onboard tasks for later uploading to Firestore.
   final Queue<Map<String, dynamic>> _uploadQueue = Queue();
@@ -46,8 +51,42 @@ class RideService {
   /// Ride Status Updates
   /// ─────────────────────────────────────────────────────────────────────────
 
-  /// Start the ride: update Firestore, update local Hive, etc.
-  Future<void> startRide(RideModel ride) async {
+  // Future<void> startRide(RideModel ride, RouteModel route, BuildContext context) async {
+  //   try {
+  //     // Update local ride status.
+  //     ride.rideStatus = 'inProgress';
+  //
+  //     // Update Hive.
+  //     final rideBox = await Hive.openBox<RideModel>('rides');
+  //     await rideBox.put('currentRide', ride);
+  //
+  //     // Update Firestore.
+  //     await _firestore
+  //         .collection('rides')
+  //         .doc(ride.rideId)
+  //         .update({'ride_status': 'inProgress'});
+  //
+  //     // Log to check if the periodic updates are being triggered
+  //     print("Starting periodic location updates for ride: ${ride.rideId}");
+  //
+  //     // Start periodic location updates and ETA calculations for the ride
+  //     LiveLocationService liveLocationService = LiveLocationService(context);
+  //
+  //     // Call updateRideWithETA immediately to calculate the ETA
+  //     await liveLocationService.updateRideWithETA(ride, route, context);
+  //
+  //     // Start periodic updates for ETA calculations
+  //     liveLocationService.startPeriodicLocationUpdates(
+  //       ride: ride,
+  //       route: route,
+  //       context: context,
+  //     );
+  //   } catch (e) {
+  //     print("Error in startRide: $e");  // Log error in starting ride
+  //     rethrow; // Let the caller handle errors/logging.
+  //   }
+  // }
+  Future<void> startRide(RideModel ride, RouteModel route, BuildContext context) async {
     try {
       // Update local ride status.
       ride.rideStatus = 'inProgress';
@@ -61,10 +100,29 @@ class RideService {
           .collection('rides')
           .doc(ride.rideId)
           .update({'ride_status': 'inProgress'});
+
+      // Log to check if the periodic updates are being triggered
+      print("Starting periodic location updates for ride: ${ride.rideId}");
+
+      // Start periodic location updates and ETA calculations for the ride
+      LiveLocationService liveLocationService = LiveLocationService(context);
+
+      // Call updateRideWithETA immediately to calculate the ETA and update location
+      await liveLocationService.updateRideWithETA(ride, route, context);
+
+      // Start periodic updates for ETA calculations
+      liveLocationService.startPeriodicLocationUpdates(
+        ride: ride,
+        route: route,
+        context: context,
+      );
     } catch (e) {
+      print("Error in startRide: $e");  // Log error in starting ride
       rethrow; // Let the caller handle errors/logging.
     }
   }
+
+
 
   /// End the ride: update Firestore, clear local ride box, etc.
   Future<void> endRide(RideModel ride) async {
@@ -116,7 +174,7 @@ class RideService {
 
       // 2. Look up matching bus card.
       BusCardModel? matchingCard = busCardBox.values.firstWhereOrNull(
-            (card) => card.busCardId == input,
+        (card) => card.busCardId == input,
       );
 
       if (matchingCard == null) {
@@ -164,10 +222,12 @@ class RideService {
         if (onlineSnapshot.docs.isNotEmpty || offlineSnapshot.docs.isNotEmpty) {
           String busId = '';
           if (onlineSnapshot.docs.isNotEmpty) {
-            var docData = onlineSnapshot.docs.first.data() as Map<String, dynamic>;
+            var docData =
+                onlineSnapshot.docs.first.data() as Map<String, dynamic>;
             busId = docData['bus_id'] ?? '';
           } else if (offlineSnapshot.docs.isNotEmpty) {
-            var docData = offlineSnapshot.docs.first.data() as Map<String, dynamic>;
+            var docData =
+                offlineSnapshot.docs.first.data() as Map<String, dynamic>;
             busId = docData['bus_id'] ?? '';
           }
           return RideServiceResponse(
@@ -178,7 +238,6 @@ class RideService {
           );
         }
       }
-
 
       String processingMode = _isOnline ? 'online' : 'offline';
       String timestamp = DateTime.now().toIso8601String();
@@ -241,7 +300,8 @@ class RideService {
           ride: currentRide,
         );
       } catch (e) {
-        print("Error processing upload queue task for rollNo ${task['rollNo']}: $e");
+        print(
+            "Error processing upload queue task for rollNo ${task['rollNo']}: $e");
         _uploadQueue.add(task);
         break;
       }
@@ -254,7 +314,8 @@ class RideService {
     required String timestamp,
     required RideModel ride,
   }) async {
-    DocumentReference rideDocRef = _firestore.collection("rides").doc(ride.rideId);
+    DocumentReference rideDocRef =
+        _firestore.collection("rides").doc(ride.rideId);
 
     // Update the appropriate onboard array using FieldValue.arrayUnion.
     if (processingMode == 'online') {
@@ -267,7 +328,6 @@ class RideService {
       }, SetOptions(merge: true));
     }
   }
-
 
   /// ─────────────────────────────────────────────────────────────────────────
   /// Firestore Sync Utility Methods
@@ -332,12 +392,35 @@ class RideService {
   Future<List<RouteModel>> fetchRoutes() async {
     try {
       QuerySnapshot routeSnapshot = await _firestore.collection('routes').get();
+
       return routeSnapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
+
+        // Ensure busStops is converted correctly from the Firestore array to the expected format
+        var busStopsList = data['busStops'] as List<dynamic>?;
+        List<Map<String, dynamic>> busStops = [];
+        if (busStopsList != null) {
+          busStops = busStopsList
+              .map((busStop) => Map<String, dynamic>.from(busStop))
+              .toList();
+        }
+
+        // Convert createdAt field from Timestamp to DateTime
+        DateTime createdAt;
+        if (data['createdAt'] is Timestamp) {
+          createdAt = (data['createdAt'] as Timestamp)
+              .toDate(); // Convert Timestamp to DateTime
+        } else {
+          createdAt = DateTime.parse(data['createdAt'] ??
+              DateTime.now().toIso8601String()); // Fallback to current time
+        }
+
+        // Use the RouteModel and pass the parsed data
         return RouteModel(
-          routeId: doc.id, // Use document ID as the route ID.
+          routeId: doc.id, // Use document ID as the route ID
           name: data['name'] ?? 'Unnamed Route',
-          busStopId: Map<String, String>.from(data['bus_stop_id'] ?? {}),
+          busStops: busStops, // Correctly parsed busStops
+          createdAt: createdAt, // Correctly parsed createdAt
         );
       }).toList();
     } catch (e) {
@@ -349,6 +432,7 @@ class RideService {
   Future<RideModel?> createNewRide({
     required BusModel bus,
     required RouteModel route,
+    required BuildContext context,
   }) async {
     try {
       // Fetch the current driver.
@@ -356,7 +440,6 @@ class RideService {
       DriverModel? currentDriver = driverService.getCurrentDriver();
 
       if (currentDriver == null) {
-        // print("Error: No current driver found in Hive.");
         return null;
       }
 
@@ -385,20 +468,39 @@ class RideService {
               .get();
           String driverName = "Unknown Driver";
           if (driverSnapshot.exists) {
-            driverName = (driverSnapshot.data() as Map<String, dynamic>)['name'] ?? "Unknown Driver";
+            driverName =
+                (driverSnapshot.data() as Map<String, dynamic>)['name'] ??
+                    "Unknown Driver";
           }
 
           DocumentSnapshot routeSnapshot =
-          await _firestore.collection('routes').doc(existingRouteId).get();
+              await _firestore.collection('routes').doc(existingRouteId).get();
           String routeName = "Unknown Route";
           if (routeSnapshot.exists) {
-            routeName = (routeSnapshot.data() as Map<String, dynamic>)['name'] ?? "Unknown Route";
+            routeName =
+                (routeSnapshot.data() as Map<String, dynamic>)['name'] ??
+                    "Unknown Route";
           }
 
           // Throw custom exception.
           throw BusInUseException(driverName, routeName);
         }
       }
+
+      // Get live location from LiveLocationService
+      LiveLocationService liveLocationService = LiveLocationService(context);
+      geo.Position? position = await liveLocationService.getCurrentLocation();
+
+      if (position == null) {
+        SnackbarUtil.showError('Error', 'Unable to fetch current location');
+        return null;
+      }
+
+      // Prepare currentLocation map
+      Map<String, String> currentLocation = {
+        'longitude': position.longitude.toString(),
+        'latitude': position.latitude.toString(),
+      };
 
       // Bus is not in use; proceed to create a new ride.
       DocumentReference docRef = await _firestore.collection('rides').add({
@@ -409,9 +511,10 @@ class RideService {
         'created_at': FieldValue.serverTimestamp(),
         'onlineOnBoard': [],
         'offlineOnBoard': [],
+        'currentLocation': currentLocation, // Add currentLocation here
       });
 
-      // Create local RideModel.
+      // Create local RideModel with currentLocation
       RideModel ride = RideModel(
         rideId: docRef.id,
         routeId: route.routeId,
@@ -422,9 +525,10 @@ class RideService {
         offlineOnBoard: [],
         etaNextStop: DateTime.now().add(const Duration(minutes: 15)),
         createdAt: DateTime.now(),
+        currentLocation: currentLocation, // Add currentLocation here
       );
 
-      // Store in Hive.
+      // Store in Hive
       var rideBox = await Hive.openBox<RideModel>('rides');
       await rideBox.put('currentRide', ride);
 
@@ -434,13 +538,9 @@ class RideService {
       if (e is BusInUseException) {
         rethrow;
       }
-      // print("Error creating new ride: $e");
       return null;
     }
   }
-
-
-
 }
 
 class RideServiceResponse {
@@ -456,7 +556,6 @@ class RideServiceResponse {
     this.rollNo,
   });
 }
-
 
 class BusInUseException implements Exception {
   static const String BUS_IN_USE = "BUS_IN_USE";

@@ -1,6 +1,6 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.9 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="26.0.9">
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.2.15 Chrome/134.0.6998.205 Electron/35.2.1 Safari/537.36" version="26.2.15">
   <diagram name="Page-1" id="2ca16b54-16f6-2749-3443-fa8db7711227">
-    <mxGraphModel dx="794" dy="1319" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+    <mxGraphModel dx="679" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -29,16 +29,16 @@
           <mxGeometry y="50" width="160" height="50" as="geometry" />
         </mxCell>
         <mxCell id="bIs_711gEDYV-41N-jUM-28" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="810" y="-110" width="160" height="210" as="geometry" />
+          <mxGeometry x="810" y="-110" width="160" height="290" as="geometry" />
         </mxCell>
-        <mxCell id="bIs_711gEDYV-41N-jUM-29" value="&lt;div&gt;+rideId: string&lt;/div&gt;&lt;div&gt;+routeId: string&lt;/div&gt;&lt;div&gt;+rideStatus: string&lt;br&gt;      +busId: string&lt;br&gt;      +driverId: string&lt;br&gt;      +onboard: &lt;span class=&quot;hljs-keyword&quot;&gt;map(rollNo,&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span class=&quot;hljs-keyword&quot;&gt;processingMode, timestamp)&lt;/span&gt;&lt;br&gt;      +etaNextStop: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;      +createdAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;+endedAt:&amp;nbsp;&lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="bIs_711gEDYV-41N-jUM-28" vertex="1">
-          <mxGeometry y="50" width="160" height="160" as="geometry" />
+        <mxCell id="bIs_711gEDYV-41N-jUM-29" value="&lt;div&gt;+rideId: string&lt;/div&gt;&lt;div&gt;+routeId: string&lt;/div&gt;&lt;div&gt;+rideStatus: string&lt;br&gt;      +busId: string&lt;br&gt;      +driverId: string&lt;br&gt;      +onboard: &lt;span class=&quot;hljs-keyword&quot;&gt;map(rollNo,&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span class=&quot;hljs-keyword&quot;&gt;processingMode, timestamp)&lt;/span&gt;&lt;br&gt;      +etaNextStop: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span class=&quot;hljs-type&quot;&gt;+nextStopName: string&lt;/span&gt;&lt;/div&gt;&lt;div&gt;+currentLocation: map(&lt;/div&gt;&lt;div&gt;longitude: string&lt;/div&gt;&lt;div&gt;latitude:&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;string&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;)&lt;/span&gt;&lt;/div&gt;&lt;div&gt;      +createdAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;+endedAt:&amp;nbsp;&lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="bIs_711gEDYV-41N-jUM-28" vertex="1">
+          <mxGeometry y="50" width="160" height="240" as="geometry" />
         </mxCell>
         <mxCell id="bIs_711gEDYV-41N-jUM-30" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="250" y="-110" width="160" height="170" as="geometry" />
+          <mxGeometry x="250" y="-110" width="160" height="190" as="geometry" />
         </mxCell>
-        <mxCell id="bIs_711gEDYV-41N-jUM-31" value="&lt;div&gt;&lt;div&gt;+routeId: string&lt;/div&gt;&lt;div&gt;&lt;div&gt;+name: string&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;+busStop: map[sequenceid,&lt;/div&gt;&lt;div&gt;busStopName, Longitude,&lt;/div&gt;&lt;div&gt;&amp;nbsp;Latitude ]&lt;/div&gt;&lt;div&gt;      +createdAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="bIs_711gEDYV-41N-jUM-30" vertex="1">
-          <mxGeometry y="50" width="160" height="120" as="geometry" />
+        <mxCell id="bIs_711gEDYV-41N-jUM-31" value="&lt;div&gt;&lt;div&gt;+routeId: string&lt;/div&gt;&lt;div&gt;&lt;div&gt;+name: string&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;+busStops: map[ sequenceid&amp;nbsp;&lt;/div&gt;&lt;div&gt;(number),&lt;/div&gt;&lt;div&gt;busStopName (string),&amp;nbsp;&lt;/div&gt;&lt;div&gt;longitude (string),&lt;/div&gt;&lt;div&gt;&amp;nbsp;latitude&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(string)&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;]&lt;/span&gt;&lt;/div&gt;&lt;div&gt;      +createdAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="bIs_711gEDYV-41N-jUM-30" vertex="1">
+          <mxGeometry y="50" width="160" height="140" as="geometry" />
         </mxCell>
         <mxCell id="bIs_711gEDYV-41N-jUM-32" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="990" y="-110" width="160" height="140" as="geometry" />
@@ -94,16 +94,6 @@
               <mxPoint x="1180" y="-280" />
               <mxPoint x="1180" y="60" />
               <mxPoint x="1070" y="60" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="JLN9xQqa1sDBcbOhvhft-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="bIs_711gEDYV-41N-jUM-46" target="JLN9xQqa1sDBcbOhvhft-4" edge="1">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="610" y="-280" />
-              <mxPoint x="40" y="-280" />
-              <mxPoint x="40" y="70" />
-              <mxPoint x="150" y="70" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -278,21 +268,6 @@
         </mxCell>
         <mxCell id="iMbP7FaxJdQBUMleInDl-6" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;+busCardId: string&lt;/span&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;      +isActive: boolean&lt;/div&gt;+rollNo: string&amp;nbsp;&lt;div&gt;+name: string&lt;/div&gt;&lt;div&gt;+createdAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;br&gt;      +updatedAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="iMbP7FaxJdQBUMleInDl-5" vertex="1">
           <mxGeometry y="50" width="160" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="JLN9xQqa1sDBcbOhvhft-2" value="(Documents)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=0;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="70" y="230" width="160" height="140" as="geometry" />
-        </mxCell>
-        <mxCell id="JLN9xQqa1sDBcbOhvhft-3" value="&lt;div&gt;&lt;div&gt;+busStopId: string&lt;/div&gt;&lt;div&gt;&lt;div&gt;+stopName: string&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;+&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;coordinates: map[longitude&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;, latitude]&lt;/span&gt;&lt;/div&gt;&lt;div&gt;      +createdAt: &lt;span class=&quot;hljs-type&quot;&gt;timestamp&lt;/span&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;rounded=0;" parent="JLN9xQqa1sDBcbOhvhft-2" vertex="1">
-          <mxGeometry y="50" width="160" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="JLN9xQqa1sDBcbOhvhft-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="JLN9xQqa1sDBcbOhvhft-4" target="JLN9xQqa1sDBcbOhvhft-2" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="JLN9xQqa1sDBcbOhvhft-4" value="BusStops (Collection)" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=110;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="70" y="100" width="160" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="JLN9xQqa1sDBcbOhvhft-5" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="JLN9xQqa1sDBcbOhvhft-4" vertex="1">
-          <mxGeometry y="80" width="160" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

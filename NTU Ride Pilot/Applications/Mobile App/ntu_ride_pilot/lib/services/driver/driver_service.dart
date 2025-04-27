@@ -23,8 +23,8 @@ class DriverService {
           driverId: doc.id,
           email: data['email'] ?? email,
           name: data['name'] ?? '',
-          contactNo: data['contact_no'] ?? '',
-          profilePicLink: data['profile_pic'],
+          contactNo: data['contactNo'] ?? '',
+          profilePicLink: data['profilePicLink'],
         );
       }
     } catch (e) {
@@ -33,19 +33,24 @@ class DriverService {
     return null;
   }
 
-  Future<void> saveDriverToHive(String email) async {
+  Future<bool> saveDriverToHive(String email) async {
     try {
-      var driverDoc = await getDriverByEmail(email);
+      final driverDoc = await getDriverByEmail(email);
       if (driverDoc != null) {
         final box = Hive.box<DriverModel>('driverBox');
         box.put('current_driver', driverDoc);
+        return true;
       } else {
-        SnackbarUtil.showError("Sign-in Failed", "Driver not found.");
+        // No such driver in Firestore
+        SnackbarUtil.showError("Sign-in Failed", "No record found.");
+        return false;
       }
     } catch (e) {
       SnackbarUtil.showError("Error Saving Driver", e.toString());
+      return false;
     }
   }
+
 
   DriverModel? getCurrentDriver() {
     final box = Hive.box<DriverModel>('driverBox');
