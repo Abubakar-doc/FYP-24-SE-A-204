@@ -5,6 +5,7 @@ import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import DriversHeader from "./DriversHeader";
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
+import Image from "next/image";
 
 const DriversContent: React.FC = () => {
   const router = useRouter();
@@ -38,6 +39,7 @@ const DriversContent: React.FC = () => {
       setIsLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchDrivers();
@@ -97,7 +99,9 @@ const DriversContent: React.FC = () => {
       <div className="rounded-lg mb-2">
         <DriversHeader />
       </div>
-
+      <div>
+        
+      </div>
       <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
         <div className="rounded-lg border border-gray-300 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
@@ -189,6 +193,8 @@ const DriversContent: React.FC = () => {
           </div>
         </div>
       )}
+      <div>
+      </div>
     </div>
   );
 };

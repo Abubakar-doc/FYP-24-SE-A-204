@@ -1,109 +1,141 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import Map, { Marker, Source, Layer } from 'react-map-gl/maplibre';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { FaMapMarkerAlt } from "react-icons/fa";
+import React, { useRef, useEffect, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
-type Stop = {
-  name: string;
-  latitude: number;
-  longitude: number;
-  sequence_no: number;
+// Set Mapbox token (workaround for Next.js 14+)
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+
+const isWebGLSupported = () => {
+  if (typeof window === "undefined") return false; // SSR check
+  
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
+  }
 };
 
-type RouteMapProps = {
-  stops: Stop[];
-  onLocationSelect: (lat: number, lng: number, place_name?: string) => void;
-};
+const RouteMap: React.FC = () => {
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const [webGLError, setWebGLError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
-type GeoJSONFeature = {
-  type: "Feature";
-  properties: {};
-  geometry: {
-    type: "LineString";
-    coordinates: number[][];
-  };
-};
-
-const RouteMap: React.FC<RouteMapProps> = ({ stops, onLocationSelect }) => {
   const [viewport, setViewport] = useState({
-    latitude: 40.7128,
-    longitude: -74.006,
-    zoom: 2,
+    latitude: 31.4619,
+    longitude: 73.1485,
+    zoom: 12,
     bearing: 0,
     pitch: 0,
   });
-  const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    if (stops.length > 0) {
-      const lastStop = stops[stops.length - 1];
-      setViewport(prev => ({
-        ...prev,
-        latitude: lastStop.latitude,
-        longitude: lastStop.longitude,
-        zoom: 12
-      }));
-    }
-  }, [stops]);
-
-  const getRouteGeoJSON = (): GeoJSONFeature | null => {
-    if (stops.length < 2) return null;
-
-    return {
-      type: "Feature",
-      properties: {},
-      geometry: {
-        type: "LineString",
-        coordinates: stops.map(stop => [stop.longitude, stop.latitude]),
-      },
+    setIsMounted(true);
+    
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
-  };
+  }, []);
 
-  const routeGeoJSON = getRouteGeoJSON();
+  useEffect(() => {
+    if (!isMounted) return;
+    if (!mapContainer.current) return;
+    if (map.current) return;
+
+    if (!isWebGLSupported()) {
+      setWebGLError("Your browser doesn't support WebGL, which is required for the map to work properly.");
+      return;
+    }
+
+    try {
+      // Double check token availability
+      if (!mapboxgl.accessToken) {
+        throw new Error("Mapbox access token is not configured");
+      }
+
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: "mapbox://styles/mapbox/streets-v11",
+        center: [viewport.longitude, viewport.latitude],
+        zoom: viewport.zoom,
+        bearing: viewport.bearing,
+        pitch: viewport.pitch,
+        antialias: true,
+        failIfMajorPerformanceCaveat: false, // Changed to false for better compatibility
+      });
+
+      map.current.on("load", () => {
+        map.current?.addControl(new mapboxgl.NavigationControl(), "top-right");
+      });
+
+      map.current.on("move", () => {
+        if (!map.current) return;
+        const center = map.current.getCenter();
+        setViewport({
+          latitude: center.lat,
+          longitude: center.lng,
+          zoom: map.current.getZoom(),
+          bearing: map.current.getBearing(),
+          pitch: map.current.getPitch(),
+        });
+      });
+
+      map.current.on("error", (e) => {
+        console.error("Mapbox error:", e.error);
+        setWebGLError(`Map error: ${e.error?.message || "Unknown error"}`);
+      });
+
+    } catch (error) {
+      console.error("Map initialization error:", error);
+      setWebGLError(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to initialize the map. Please check your console for details."
+      );
+    }
+  }, [isMounted, viewport.latitude, viewport.longitude]);
+
+  if (!isMounted) {
+    return (
+      <div className="h-[400px] w-full rounded-lg overflow-hidden shadow-md bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-500">Loading map...</p>
+      </div>
+    );
+  }
+
+  if (webGLError) {
+    return (
+      <div className="h-[400px] w-full rounded-lg overflow-hidden shadow-md bg-gray-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-red-500 font-medium">{webGLError}</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Try these solutions:
+          </p>
+          <ul className="text-xs text-gray-500 mt-1 list-disc list-inside">
+            <li>Check your Mapbox token is valid</li>
+            <li>Disable browser extensions that might block WebGL</li>
+            <li>Update your graphics drivers</li>
+            <li>Try Chrome or Firefox</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-[400px] w-full rounded-lg overflow-hidden shadow-md relative">
-      <Map
-        {...viewport}
-        ref={mapRef}
-        onMove={(evt) => setViewport(evt.viewState)}
-        mapStyle="https://demotiles.maplibre.org/style.json"
-        style={{ width: '100%', height: '100%' }}
-      >
-        {/* Markers for stops */}
-        {stops.map((stop) => (
-          <Marker
-            key={stop.sequence_no}
-            longitude={stop.longitude}
-            latitude={stop.latitude}
-            anchor="bottom"
-          >
-            <div className="bg-blue-500 text-white rounded-full p-2 flex items-center justify-center w-8 h-8">
-              {stop.sequence_no}
-            </div>
-            <div className="bg-white text-black px-2 py-1 rounded text-xs mt-1 whitespace-nowrap">
-              {stop.name}
-            </div>
-          </Marker>
-        ))}
-
-        {/* Route path */}
-        {routeGeoJSON && (
-          <Source id="route" type="geojson" data={routeGeoJSON}>
-            <Layer
-              id="route"
-              type="line"
-              paint={{
-                "line-color": "#3b82f6",
-                "line-width": 3,
-              }}
-            />
-          </Source>
-        )}
-      </Map>
-    </div>
+    <div
+      ref={mapContainer}
+      className="h-[400px] w-full rounded-lg overflow-hidden shadow-md bg-gray-100"
+    />
   );
 };
 

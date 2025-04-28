@@ -7,7 +7,7 @@ const nextConfig = {
     };
     return config;
   },
-  transpilePackages: ['react-map-gl', 'mapbox-gl'],
+  transpilePackages: ['mapbox-gl'],
 };
 
 module.exports = nextConfig;
