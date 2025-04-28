@@ -5,6 +5,7 @@ import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_control.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/start_ride.dart';
+import 'package:ntu_ride_pilot/services/ride/live_location.dart';
 import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
@@ -13,6 +14,7 @@ import 'package:ntu_ride_pilot/widget/detail_row/detail_row.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:ntu_ride_pilot/services/route/route_service.dart';
 import 'widget/bus_card_verification_widget.dart';
+import 'package:intl/intl.dart';
 
 class RideControlScreen extends StatefulWidget {
   const RideControlScreen({super.key});
@@ -31,7 +33,8 @@ class _RideControlScreenState extends State<RideControlScreen> {
   bool _isLoading = true;
 
   bool _isProcessing = false;
-  String _buttonProgressText = ''; // "Starting Ride...", "Ending Ride...", or "Cancelling Ride..."
+  String _buttonProgressText =
+      ''; // "Starting Ride...", "Ending Ride...", or "Cancelling Ride..."
 
   @override
   void initState() {
@@ -74,17 +77,18 @@ class _RideControlScreenState extends State<RideControlScreen> {
 
     // Show the confirmation dialog using the CustomAlertDialog widget.
     final bool confirm = (await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return CustomAlertDialog(
-          title: '$action Ride?',
-          message: 'Are you sure you want to $action this ride?',
-          onCancel: () => Navigator.of(context).pop(false),
-          onConfirm: () => Navigator.of(context).pop(true),
-          yesColor: Colors.blue,
-        );
-      },
-    )) ?? false;
+          context: context,
+          builder: (context) {
+            return CustomAlertDialog(
+              title: '$action Ride?',
+              message: 'Are you sure you want to $action this ride?',
+              onCancel: () => Navigator.of(context).pop(false),
+              onConfirm: () => Navigator.of(context).pop(true),
+              yesColor: Colors.blue,
+            );
+          },
+        )) ??
+        false;
 
     if (!confirm) return;
 
@@ -120,8 +124,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
     }
   }
 
-
-  /// Cancels the ride by deleting the Firestore doc and clearing the local Hive box.
   Future<void> _cancelRide() async {
     if (_currentRide == null) return;
 
@@ -131,9 +133,14 @@ class _RideControlScreenState extends State<RideControlScreen> {
     });
 
     try {
+      // Cancel the ride in Firestore and clear local Hive storage
       await _rideService.cancelRide(_currentRide!, context);
-      // Pop the screen
-      // Navigator.of(context).pop(true);
+
+      // Stop live location updates
+      LiveLocationService liveLocationService = LiveLocationService(context);
+      liveLocationService.stopPeriodicLocationUpdates();
+
+      // Navigate to the StartRideScreen after the ride is canceled
       Get.off(StartRideScreen());
     } catch (e) {
       print('Error cancelling ride: $e');
@@ -143,20 +150,208 @@ class _RideControlScreenState extends State<RideControlScreen> {
     }
   }
 
+
+
   /// Displays a confirmation dialog for canceling the ride.
   Future<bool> _showCancelConfirmationDialog() async {
     return (await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return CustomAlertDialog(
-          onCancel: () => Navigator.of(context).pop(false),
-          onConfirm: () => Navigator.of(context).pop(true), title: 'Cancel Ride?', message: 'Are you sure you want to cancel this ride?',
-        );
-      },
-    )) ??
+          context: context,
+          builder: (context) {
+            return CustomAlertDialog(
+              onCancel: () => Navigator.of(context).pop(false),
+              onConfirm: () => Navigator.of(context).pop(true),
+              title: 'Cancel Ride?',
+              message: 'Are you sure you want to cancel this ride?',
+            );
+          },
+        )) ??
         false;
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final rawStatus = _currentRide?.rideStatus ?? 'idle';
+  //   String rideStatusDisplay;
+  //   switch (rawStatus) {
+  //     case 'inProgress':
+  //       rideStatusDisplay = 'In Progress';
+  //       break;
+  //     case 'completed':
+  //       rideStatusDisplay = 'Completed';
+  //       break;
+  //     default:
+  //       rideStatusDisplay = 'Idle';
+  //       break;
+  //   }
+  //
+  //   final bool isRideInProgress = (rawStatus == 'inProgress');
+  //
+  //   // If we're processing, show the progress text in the button
+  //   // otherwise show Start Ride or End Ride
+  //   String buttonText;
+  //   if (_isProcessing) {
+  //     buttonText = _buttonProgressText;
+  //   } else {
+  //     buttonText = isRideInProgress ? 'End Ride' : 'Start Ride';
+  //   }
+  //   final theme = Theme.of(context);
+  //
+  //   // Wrap entire UI in WillPopScope to intercept back button
+  //   return WillPopScope(
+  //     onWillPop: () async {
+  //       // If there's no ride or if we're already processing, just pop
+  //       if (_currentRide == null || _isProcessing) {
+  //         return true;
+  //       }
+  //       // Otherwise, ask user if they want to cancel
+  //       final confirm = await _showCancelConfirmationDialog();
+  //       if (confirm) {
+  //         await _cancelRide();
+  //         // Return false so we don't do a double-pop,
+  //         // because _cancelRide() already called pop()
+  //         return false;
+  //       } else {
+  //         return false; // user pressed "No"
+  //       }
+  //     },
+  //     child: Scaffold(
+  //       body: SafeArea(
+  //         child: LayoutBuilder(
+  //           builder: (context, constraints) {
+  //             final screenHeight = constraints.maxHeight;
+  //
+  //             return Padding(
+  //               padding: const EdgeInsets.all(16.0),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.stretch,
+  //                 children: [
+  //                   Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       IconButton(
+  //                         onPressed: () async {
+  //                           final confirm =
+  //                               await _showCancelConfirmationDialog();
+  //                           if (confirm) {
+  //                             await _cancelRide();
+  //                           }
+  //                         },
+  //                         icon: Icon(Icons.arrow_back),
+  //                       ),
+  //                       Skeletonizer(
+  //                         enabled: _isLoading,
+  //                         child: Expanded(
+  //                           child: Text(
+  //                             'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
+  //                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  //                             overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
+  //                             maxLines: 1, // Ensure the text doesn't occupy more than one line
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       const SizedBox(width: 5,),
+  //                       IconButton(
+  //                         icon: const Icon(Icons.help_outline),
+  //                         onPressed: () {
+  //                           Get.to(const DriverRideControlHelpScreen());
+  //                         },
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   const SizedBox(height: 10),
+  //                   const Text(
+  //                     'Bus Card Verification',
+  //                     style: TextStyle(
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 16),
+  //                   SizedBox(
+  //                     height: screenHeight * 0.4,
+  //                     width: double.infinity,
+  //                     child: BusCardVerificationWidget(
+  //                       controller: controller,
+  //                       rideService: _rideService,
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 32),
+  //                   Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       const Text(
+  //                         'Ride Details',
+  //                         style: TextStyle(
+  //                           fontSize: 18,
+  //                           fontWeight: FontWeight.bold,
+  //                         ),
+  //                       ),
+  //                       GestureDetector(
+  //                         onTap: () {
+  //                           // handle show more if needed
+  //                         },
+  //                         child: const Text(
+  //                           'show more',
+  //                           style: TextStyle(
+  //                             color: Colors.blue,
+  //                             fontWeight: FontWeight.w600,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   const SizedBox(height: 16),
+  //                   Skeletonizer(
+  //                     enabled: _isLoading,
+  //                     child: Container(
+  //                       width: double.infinity,
+  //                       padding: const EdgeInsets.all(16.0),
+  //                       decoration: BoxDecoration(
+  //                         color: theme.brightness == Brightness.dark
+  //                             ? DarkInputFieldFillColor
+  //                             : LightInputFieldFillColor,
+  //                         borderRadius: BorderRadius.circular(12),
+  //                       ),
+  //                       child: Column(
+  //                         crossAxisAlignment: CrossAxisAlignment.start,
+  //                         children: [
+  //                           DetailRow(
+  //                             title: 'Ride Status',
+  //                             value: rideStatusDisplay,
+  //                           ),
+  //                           const Divider(color: Colors.grey),
+  //                           const DetailRow(
+  //                             title: 'Next Stop',
+  //                             value: 'Central Park',
+  //                           ),
+  //                           const Divider(color: Colors.grey),
+  //                           const DetailRow(
+  //                             title: 'Next Stop ETA ',
+  //                             value: '9:20 AM',
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   const Spacer(),
+  //                   TextButton(
+  //                     onPressed: _isProcessing ? null : _toggleRideStatus,
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor:
+  //                           isRideInProgress ? Colors.red : Colors.blue,
+  //                       disabledBackgroundColor: Colors.grey,
+  //                     ),
+  //                     child: Text(buttonText),
+  //                   ),
+  //                 ],
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
   @override
   Widget build(BuildContext context) {
     final rawStatus = _currentRide?.rideStatus ?? 'idle';
@@ -184,6 +379,11 @@ class _RideControlScreenState extends State<RideControlScreen> {
       buttonText = isRideInProgress ? 'End Ride' : 'Start Ride';
     }
     final theme = Theme.of(context);
+
+    // Format the ETA in AM/PM format
+    String formattedETA = _currentRide?.etaNextStop != null
+        ? DateFormat.jm().format(_currentRide!.etaNextStop) // AM/PM format
+        : 'N/A';
 
     // Wrap entire UI in WillPopScope to intercept back button
     return WillPopScope(
@@ -219,7 +419,8 @@ class _RideControlScreenState extends State<RideControlScreen> {
                       children: [
                         IconButton(
                           onPressed: () async {
-                            final confirm = await _showCancelConfirmationDialog();
+                            final confirm =
+                            await _showCancelConfirmationDialog();
                             if (confirm) {
                               await _cancelRide();
                             }
@@ -228,11 +429,16 @@ class _RideControlScreenState extends State<RideControlScreen> {
                         ),
                         Skeletonizer(
                           enabled: _isLoading,
-                          child: Text(
-                            'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          child: Expanded(
+                            child: Text(
+                              'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
+                              maxLines: 1, // Ensure the text doesn't occupy more than one line
+                            ),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 5,),
                         IconButton(
                           icon: const Icon(Icons.help_outline),
                           onPressed: () {
@@ -303,14 +509,14 @@ class _RideControlScreenState extends State<RideControlScreen> {
                               value: rideStatusDisplay,
                             ),
                             const Divider(color: Colors.grey),
-                            const DetailRow(
+                            DetailRow(
                               title: 'Next Stop',
-                              value: 'Central Park',
+                              value: _currentRide?.nextStopName ?? 'N/A',
                             ),
                             const Divider(color: Colors.grey),
-                            const DetailRow(
-                              title: 'ETA',
-                              value: '9:20 AM',
+                            DetailRow(
+                              title: 'Next Stop ETA',
+                              value: formattedETA,
                             ),
                           ],
                         ),
@@ -335,4 +541,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
       ),
     );
   }
+
+
 }

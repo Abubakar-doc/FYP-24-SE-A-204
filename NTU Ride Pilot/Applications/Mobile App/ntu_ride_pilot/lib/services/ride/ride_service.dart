@@ -123,25 +123,7 @@ class RideService {
   }
 
 
-
-  // /// End the ride: update Firestore, clear local ride box, etc.
-  // Future<void> endRide(RideModel ride) async {
-  //   try {
-  //     // Update Firestore.
-  //     await _firestore.collection('rides').doc(ride.rideId).update({
-  //       'ride_status': 'completed',
-  //       'ended_at': FieldValue.serverTimestamp(),
-  //     });
-  //
-  //     // Clear Hive box.
-  //     final rideBox = await Hive.openBox<RideModel>('rides');
-  //     await rideBox.clear();
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
-  //
-  // /// Cancel the ride: delete the Firestore doc, clear local ride box.
+  /// Cancel the ride: delete the Firestore doc, clear local ride box.
   // Future<void> cancelRide(RideModel ride) async {
   //   try {
   //     await _firestore.collection('rides').doc(ride.rideId).delete();
@@ -151,6 +133,26 @@ class RideService {
   //     rethrow;
   //   }
   // }
+  // Future<void> endRide(RideModel ride, BuildContext context) async {
+  //   try {
+  //     // Update Firestore.
+  //     await _firestore.collection('rides').doc(ride.rideId).update({
+  //       'ride_status': 'completed',
+  //       'ended_at': FieldValue.serverTimestamp(),
+  //     });
+  //
+  //     // Stop the periodic location updates if the ride is completed
+  //     LiveLocationService liveLocationService = LiveLocationService(context);
+  //     liveLocationService.stopPeriodicLocationUpdates();
+  //
+  //     // Clear Hive box.
+  //     final rideBox = await Hive.openBox<RideModel>('rides');
+  //     await rideBox.clear();
+  //   } catch (e) {
+  //     rethrow;
+  //   }
+  // }
+
   Future<void> endRide(RideModel ride, BuildContext context) async {
     try {
       // Update Firestore.
@@ -161,7 +163,7 @@ class RideService {
 
       // Stop the periodic location updates if the ride is completed
       LiveLocationService liveLocationService = LiveLocationService(context);
-      liveLocationService.stopPeriodicLocationUpdates();
+      await liveLocationService.stopPeriodicLocationUpdates();
 
       // Clear Hive box.
       final rideBox = await Hive.openBox<RideModel>('rides');
@@ -170,13 +172,14 @@ class RideService {
       rethrow;
     }
   }
+
   Future<void> cancelRide(RideModel ride, BuildContext context) async {
     try {
       await _firestore.collection('rides').doc(ride.rideId).delete();
 
       // Stop the periodic location updates if the ride is cancelled
       LiveLocationService liveLocationService = LiveLocationService(context);
-      liveLocationService.stopPeriodicLocationUpdates();
+      await liveLocationService.stopPeriodicLocationUpdates();
 
       final rideBox = await Hive.openBox<RideModel>('rides');
       await rideBox.clear();
@@ -184,6 +187,7 @@ class RideService {
       rethrow;
     }
   }
+
 
 
   /// Retrieve the current ride from Hive (if any).

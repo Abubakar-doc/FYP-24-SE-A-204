@@ -20,6 +20,7 @@ class LiveLocationService {
   LiveLocationService(this.context);
   // Timer for periodic updates
   Timer? _etaUpdateTimer;
+  bool isLocationUpdating = false;
   // Set periodic update interval to 2 minutes
   static const Duration PERIODIC_UPDATE_INTERVAL = Duration(minutes: 1);
 
@@ -169,19 +170,32 @@ class LiveLocationService {
     required RouteModel route,
     required BuildContext context,
   }) async {
-    // Only start periodic updates if the ride is in progress
+    // Check if the ride exists and is in progress before starting periodic updates
     if (ride.rideStatus == 'inProgress') {
-      print("Starting periodic ETA updates..."); // Debug log
       // Start the periodic updates if not already started
-      _etaUpdateTimer ??= Timer.periodic(PERIODIC_UPDATE_INTERVAL, (_) {
-        updateRideWithETA(ride, route, context);
-      });
+      if (_etaUpdateTimer == null || !_etaUpdateTimer!.isActive) {
+        _etaUpdateTimer = Timer.periodic(PERIODIC_UPDATE_INTERVAL, (_) async {
+          // Fetch ride status from Hive to ensure it's still in progress
+          var rideBox = await Hive.openBox<RideModel>('rides');
+          var currentRide = rideBox.get('currentRide');
+
+          if (currentRide?.rideStatus != 'inProgress') {
+            stopPeriodicLocationUpdates(); // Stop the periodic updates if ride is not in progress
+          } else {
+            updateRideWithETA(currentRide!, route,
+                context); // Proceed with ETA update if ride is in progress
+          }
+        });
+      }
     }
   }
 
-  void stopPeriodicLocationUpdates() {
-    _etaUpdateTimer?.cancel();
-    _etaUpdateTimer = null;
+  Future<void> stopPeriodicLocationUpdates() async {
+    if (_etaUpdateTimer != null) {
+      _etaUpdateTimer?.cancel();
+      _etaUpdateTimer = null;
+      isLocationUpdating = false;
+    }
   }
 
   Future<void> updateRideWithETA(
@@ -206,7 +220,7 @@ class LiveLocationService {
 
     // Ensure next bus stop has a valid busStopName
     String nextStopName = nextBusStop['busStopName'] ?? 'Unknown';
-    print("Next stop name: $nextStopName");  // Debugging log
+    print("Next stop name: $nextStopName"); // Debugging log
 
     // Calculate the ETA to the next bus stop using Mapbox API
     double etaMinutes = await _calculateETAToNextStop(currentPosition, nextBusStop);
@@ -344,7 +358,7 @@ class LiveLocationService {
     try {
       await FirebaseFirestore.instance.collection('rides').doc(rideId).update({
         'eta_next_stop': etaMinutes,
-        'nextStopName': nextStopName,  // Update next stop name in Firestore
+        'nextStopName': nextStopName, // Update next stop name in Firestore
       });
       print("Updated ETA and next stop in Firestore for rideId: $rideId");
     } catch (e) {
@@ -359,7 +373,7 @@ class LiveLocationService {
       ) async {
     try {
       ride.etaNextStop = DateTime.now().add(Duration(minutes: etaMinutes.toInt()));
-      ride.nextStopName = nextStopName;  // Update next stop name in Hive
+      ride.nextStopName = nextStopName; // Update next stop name in Hive
       var rideBox = await Hive.openBox<RideModel>('rides');
       await rideBox.put('currentRide', ride);
       print("Updated ETA and next stop in Hive for ride: ${ride.rideId}");
@@ -367,6 +381,5 @@ class LiveLocationService {
       print("Error updating ETA in Hive: $e");
     }
   }
-
 
 }
