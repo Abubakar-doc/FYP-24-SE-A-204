@@ -16,7 +16,7 @@ class BottomUserInfo extends StatelessWidget {
     bool isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: () => Get.to(ProfileScreen()),
+      onTap: () => Get.to(ProfileScreen(),transition: Transition.rightToLeft),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         height: isCollapsed ? 70 : 100,

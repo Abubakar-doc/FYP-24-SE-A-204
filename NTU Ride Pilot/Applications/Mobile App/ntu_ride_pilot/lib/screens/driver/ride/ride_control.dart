@@ -98,7 +98,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
         setState(() {
           _buttonProgressText = 'Ending Ride...';
         });
-        await _rideService.endRide(_currentRide!);
+        await _rideService.endRide(_currentRide!, context);
         SnackbarUtil.showSuccess("Success", "Ride ended successfully.");
         // After ending the ride, navigate back to the StartRideScreen.
         Get.off(StartRideScreen());
@@ -131,9 +131,10 @@ class _RideControlScreenState extends State<RideControlScreen> {
     });
 
     try {
-      await _rideService.cancelRide(_currentRide!);
+      await _rideService.cancelRide(_currentRide!, context);
       // Pop the screen
-      Navigator.of(context).pop(true);
+      // Navigator.of(context).pop(true);
+      Get.off(StartRideScreen());
     } catch (e) {
       print('Error cancelling ride: $e');
       setState(() {
@@ -203,25 +204,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Skeletonizer(
-                enabled: _isLoading,
-                child: Text(
-                  'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                onPressed: () {
-                  Get.to(const DriverRideControlHelpScreen());
-                },
-              ),
-            ],
-          ),
-        ),
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -232,6 +214,34 @@ class _RideControlScreenState extends State<RideControlScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: () async {
+                            final confirm = await _showCancelConfirmationDialog();
+                            if (confirm) {
+                              await _cancelRide();
+                            }
+                          },
+                          icon: Icon(Icons.arrow_back),
+                        ),
+                        Skeletonizer(
+                          enabled: _isLoading,
+                          child: Text(
+                            'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.help_outline),
+                          onPressed: () {
+                            Get.to(const DriverRideControlHelpScreen());
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     const Text(
                       'Bus Card Verification',
                       style: TextStyle(
