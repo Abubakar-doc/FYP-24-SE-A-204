@@ -257,10 +257,8 @@ const SessionsContent: React.FC = () => {
               ))}
             </tbody>
           </table>
-        </div>
-
-        {(filterStatus === "all" || filterStatus === "suspended") && (
-          <div className="flex items-center justify-between mt-6">
+          {(filterStatus === "all" || filterStatus === "suspended") && (
+          <div className="flex items-center justify-between m-6">
             <div className="flex items-center">
               <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
                 Rows per page:
@@ -284,6 +282,9 @@ const SessionsContent: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
+
+     
       </div>
 
       {sessionToDeactivate && (

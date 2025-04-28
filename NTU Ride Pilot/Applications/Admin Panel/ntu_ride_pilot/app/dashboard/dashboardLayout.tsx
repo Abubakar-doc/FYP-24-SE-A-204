@@ -1,6 +1,8 @@
 "use client"
 import Sidebar from '@/components/custom/sidebar/Sidebar';
 import { useRouter, usePathname } from 'next/navigation';
+// import 'mapbox-gl/dist/mapbox-gl.css';
+
 
 export default function DashboardLayout({
   children,

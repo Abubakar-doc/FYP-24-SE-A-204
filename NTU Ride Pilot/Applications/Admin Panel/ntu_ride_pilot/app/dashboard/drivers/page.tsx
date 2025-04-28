@@ -1,11 +1,14 @@
+"use client"
 import React from 'react'
-import DashboardLayout from '../DashboardLayout'
+import DashboardLayout from '../DashboardLayout';
+import DriversContent from '@/components/custom/DriversContent/DriversContent';
 
 function page() {
   return (
     <DashboardLayout>
-          <div>Drivers Content</div>
+      <DriversContent/>
     </DashboardLayout>
+
   )
 }
 

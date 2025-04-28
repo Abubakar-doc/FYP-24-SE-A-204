@@ -1,7 +1,13 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  webpack: (config:any) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'mapbox-gl': 'maplibre-gl'
+    };
+    return config;
+  },
+  transpilePackages: ['react-map-gl', 'mapbox-gl'],
 };
 
-export default nextConfig;
+module.exports = nextConfig;

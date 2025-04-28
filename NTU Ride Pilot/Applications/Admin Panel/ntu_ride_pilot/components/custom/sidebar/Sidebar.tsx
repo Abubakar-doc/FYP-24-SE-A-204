@@ -21,7 +21,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick })
     { label: 'Students', icon: <FaGraduationCap />, href: '/dashboard/students' },
     { label: 'Drivers', icon: <FaTruck />, href: '/dashboard/drivers' },
     { label: 'Routes', icon: <FaRoute />, href: '/dashboard/routes' },
-    { label: 'Bus Stops', icon: <FaMapMarkerAlt />, href: '/dashboard/bus-stops' },
     { label: 'Buses', icon: <FaBus />, href: '/dashboard/buses' },
     { label: 'Announcements', icon: <FaBullhorn />, href: '/dashboard/announcements' },
     { label: 'Complaints', icon: <FaExclamationTriangle />, href: '/dashboard/complaints' },
@@ -31,10 +30,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick })
 
   return (
     <div className={`${className} flex flex-col h-screen justify-between bg-[#023955] text-white`}>
-      <div className="p-2">
+      <div className="p-3">
         <h1 className="text-lg font-bold">NTU RIDE PILOT</h1>
       </div>
-      <ul className="flex-1 px-1 py-2 space-y-1">
+      <ul className="flex-1 px-1 py-2 space-y-2">
         {sidebarItems.map((item) => (
           <li
             key={item.label}
