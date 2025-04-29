@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useState, useRef, useEffect } from 'react';
 import AddDriverHeader from './AddDriverHeader';
 import { firestore } from '@/lib/firebase';
@@ -117,7 +117,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
           if (nameRef.current) nameRef.current.value = driver.name || '';
           if (emailRef.current) emailRef.current.value = driver.email || '';
 
-          let contactNumber = driver.contact_no || '';
+          let contactNumber = driver.contactNo || ''; // Updated field name
           if (contactNumber.startsWith(PAKISTAN_COUNTRY_CODE)) {
             contactNumber = contactNumber.slice(PAKISTAN_COUNTRY_CODE.length);
           } else if (contactNumber.startsWith('+')) {
@@ -125,7 +125,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
           }
           if (contactRef.current) contactRef.current.value = contactNumber;
 
-          setExistingProfilePic(driver.profile_pic_link || '');
+          setExistingProfilePic(driver.profilePicLink || ''); // Updated field name
         }
       } catch (error) {
         console.error('Failed to parse driver data:', error);
@@ -192,18 +192,32 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
       const userRolesDocRef = doc(firestore, 'users', 'user_roles');
       const driversCollectionRef = collection(userRolesDocRef, 'drivers');
 
-      // Check for duplicate name except current driver in edit mode
+      // Fetch all existing drivers for duplicate checks
       const q = query(driversCollectionRef);
       const querySnapshot = await getDocs(q);
 
-      const existingDriver = querySnapshot.docs.find(doc => {
+      // Check for duplicate name except current driver in edit mode
+      const existingDriverWithName = querySnapshot.docs.find(doc => {
         const data = doc.data();
         if (isEditMode && doc.id === driverId) return false;
         return data.name?.toLowerCase() === name.toLowerCase();
       });
 
-      if (existingDriver) {
+      if (existingDriverWithName) {
         showNotification(`Driver name "${name}" already exists!`, 'warning');
+        setLoading(false);
+        return;
+      }
+
+      // Check for duplicate email except current driver in edit mode
+      const existingDriverWithEmail = querySnapshot.docs.find(doc => {
+        const data = doc.data();
+        if (isEditMode && doc.id === driverId) return false;
+        return data.email?.toLowerCase() === email.toLowerCase();
+      });
+
+      if (existingDriverWithEmail) {
+        showNotification(`Email "${email}" already assigned to "${existingDriverWithEmail.data().name}"!`, 'warning');
         setLoading(false);
         return;
       }
@@ -214,12 +228,12 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
         profilePicUrl = await uploadImageToCloudinary(profilePicFile);
       }
 
-      // Prepare data with profile_pic_link
+      // Prepare data with updated field names
       const driverData = {
         name,
         email,
-        contact_no: selectedCode + contact,
-        profile_pic_link: profilePicUrl,
+        contactNo: selectedCode + contact, // updated field name
+        profilePicLink: profilePicUrl, // updated field name
         updated_at: serverTimestamp(),
         ...(isEditMode ? {} : { created_at: serverTimestamp() }),
       };
@@ -306,7 +320,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
             />
           </div>
         </div>
-
         {/* Contact and Profile Picture Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

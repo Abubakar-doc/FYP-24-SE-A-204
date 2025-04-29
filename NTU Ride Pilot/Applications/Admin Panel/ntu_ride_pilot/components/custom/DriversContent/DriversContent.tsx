@@ -1,16 +1,17 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from "react";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import DriversHeader from "./DriversHeader";
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
-import Image from "next/image";
 
 const DriversContent: React.FC = () => {
   const router = useRouter();
   const [drivers, setDrivers] = useState<any[]>([]);
+  const [filteredDrivers, setFilteredDrivers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -30,24 +31,47 @@ const DriversContent: React.FC = () => {
       const driversSnapshot = await getDocs(driversCollection);
       const driversList = driversSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
       setDrivers(driversList);
+      setFilteredDrivers(driversList);
     } catch (error) {
       console.error("Error fetching drivers:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   useEffect(() => {
     fetchDrivers();
   }, []);
 
+  // Filter drivers based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredDrivers(drivers);
+      return;
+    }
+    const lowerQuery = searchQuery.toLowerCase();
+    const filtered = drivers.filter((driver) => {
+      return (
+        (driver.name?.toLowerCase().includes(lowerQuery)) ||
+        (driver.contactNo?.toLowerCase().includes(lowerQuery)) ||
+        (driver.email?.toLowerCase().includes(lowerQuery))
+      );
+    });
+    setFilteredDrivers(filtered);
+  }, [searchQuery, drivers]);
+
   // Navigate to /dashboard/drivers/add-driver with driver data for editing
   const handleEdit = (driver: any) => {
-    const encodedDriver = encodeURIComponent(JSON.stringify(driver));
+    // Map new field names back to old ones for compatibility with AddDriverForm URL param
+    const driverDataForEdit = {
+      ...driver,
+      contact_no: driver.contactNo,
+      profile_pic_link: driver.profilePicLink,
+    };
+    const encodedDriver = encodeURIComponent(JSON.stringify(driverDataForEdit));
     router.push(`/dashboard/drivers/add-driver?driver=${encodedDriver}`);
   };
 
@@ -96,33 +120,41 @@ const DriversContent: React.FC = () => {
         </div>
       )}
 
+      {/* Pass searchQuery and setSearchQuery to DriversHeader */}
       <div className="rounded-lg mb-2">
-        <DriversHeader />
+        <DriversHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       </div>
-      <div>
-        
-      </div>
+
       <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
         <div className="rounded-lg border border-gray-300 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%] border-b border-gray-300">ID</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[35%] border-b border-gray-300">Name</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%] border-b border-gray-300">Contact</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%] border-b border-gray-300">Email</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%] border-b border-gray-300">Actions</th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%] border-b border-gray-300">
+                  ID
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[35%] border-b border-gray-300">
+                  Name
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%] border-b border-gray-300">
+                  Contact
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%] border-b border-gray-300">
+                  Email
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%] border-b border-gray-300">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-300 text-center">
-              {drivers.map((driver, index) => (
+              {filteredDrivers.map((driver, index) => (
                 <tr key={driver.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 whitespace-nowrap w-[5%]">{index + 1}</td>
-                  <td className="px-4 py-4 whitespace-nowrap w-[35%] overflow-hidden text-ellipsis">{driver.name}</td>
-                  <td className="px-4 py-4 whitespace-nowrap w-[20%]">{driver.contact_no}</td>
-                  <td className="px-4 py-4 whitespace-nowrap w-[25%]">{driver.email}</td>
-                 
-                  <td className="px-20 py-4 flex items-center space-x-2 w-[15%] justify-center bg-red-500">
+                  <td className="px-4 py-4 whitespace-nowrap">{index + 1}</td>
+                  <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis">{driver.name}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{driver.contactNo}</td>
+                  <td className="px-4 py-4 whitespace-nowrap w-[40%]">{driver.email}</td>
+                  <td className="px-20 py-4 flex items-center space-x-2 justify-center">
                     <button
                       className="text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2"
                       onClick={() => handleEdit(driver)}
@@ -138,6 +170,13 @@ const DriversContent: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {filteredDrivers.length === 0 && !isLoading && (
+                <tr>
+                  <td colSpan={5} className="text-center py-6 text-gray-500">
+                    No drivers found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
@@ -187,14 +226,12 @@ const DriversContent: React.FC = () => {
                 disabled={isDeleting}
                 className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 focus:outline-none"
               >
-                {isDeleting ? 'Deleting...' : 'Ok'}
+                {isDeleting ? "Deleting..." : "Ok"}
               </button>
             </div>
           </div>
         </div>
       )}
-      <div>
-      </div>
     </div>
   );
 };

@@ -1,57 +1,59 @@
-"use client"
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { firestore } from "@/lib/firebase";
-import { collection, getDocs, doc, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import RoutesHeader from './RoutesHeader';
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
 import { FaEye, FaTrashAlt } from 'react-icons/fa'; // Import required icons
 
+type RouteData = {
+  id: string;
+  name: string;
+  busStops: { busStopName: string; latitude: number; longitude: number }[];
+};
+
 const RoutesContent: React.FC = () => {
   const router = useRouter();
 
-  const routes = [
-    {
-      "routeName": "Route 101",
-      "numberOfStops": 10
-    },
-    {
-      "routeName": "Route 102",
-      "numberOfStops": 8
-    },
-    {
-      "routeName": "Route 103",
-      "numberOfStops": 12
-    },
-    {
-      "routeName": "Route 104",
-      "numberOfStops": 9
-    },
-    {
-      "routeName": "Route 105",
-      "numberOfStops": 11
-    },
-    {
-      "routeName": "Route 106",
-      "numberOfStops": 7
-    },
-    {
-      "routeName": "Route 107",
-      "numberOfStops": 13
-    },
-    {
-      "routeName": "Route 108",
-      "numberOfStops": 10
-    },
-    {
-      "routeName": "Route 109",
-      "numberOfStops": 8
-    },
-    {
-      "routeName": "Route 110",
-      "numberOfStops": 9
-    }
-  ]
+  const [routes, setRoutes] = useState<RouteData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      setLoading(true);
+      try {
+        const routesCollection = collection(firestore, "routes");
+        const snapshot = await getDocs(routesCollection);
+
+        const fetchedRoutes: RouteData[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || "Unnamed Route",
+            busStops: data.busStops || [],
+          };
+        });
+
+        setRoutes(fetchedRoutes);
+      } catch (error) {
+        console.error("Error fetching routes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoutes();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
+        <LoadingIndicator />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-white relative">
@@ -71,29 +73,39 @@ const RoutesContent: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {routes.map((route, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap w-[10%] border-b border-gray-300">{index + 1}</td>
-                  <td className="px-6 py-4 whitespace-nowrap w-[45%] overflow-hidden text-ellipsis border-b border-gray-300">{route.routeName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap w-[30%] border-b border-gray-300">{route.numberOfStops}</td>
-                  <td className="px-6 py-4 whitespace-nowrap w-[15%] border-b border-gray-300">
-                    <div className="flex justify-center space-x-0">
-                      <button
-                        className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-100 transition-colors duration-200"
-                        title="View Route"
-                      >
-                        <FaEye className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-100 transition-colors duration-200"
-                        title="Delete Route"
-                      >
-                        <FaTrashAlt className="w-4 h-4" />
-                      </button>
-                    </div>
+              {routes.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-6 text-gray-500">
+                    No routes found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                routes.map((route, index) => (
+                  <tr key={route.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-[10%] border-b border-gray-300">{index + 1}</td>
+                    <td className="px-6 py-4 whitespace-nowrap w-[45%] overflow-hidden text-ellipsis border-b border-gray-300">{route.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap w-[30%] border-b border-gray-300">{route.busStops.length}</td>
+                    <td className="px-6 py-4 whitespace-nowrap w-[15%] border-b border-gray-300">
+                      <div className="flex justify-center space-x-0">
+                        <button
+                          className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-100 transition-colors duration-200"
+                          title="View Route"
+                          // Add your view handler here
+                        >
+                          <FaEye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-100 transition-colors duration-200"
+                          title="Delete Route"
+                          // Add your delete handler here
+                        >
+                          <FaTrashAlt className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           <div>
