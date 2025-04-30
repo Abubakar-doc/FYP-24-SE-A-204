@@ -27,14 +27,11 @@ class _RideControlScreenState extends State<RideControlScreen> {
   final RideControlController controller = Get.put(RideControlController());
   final RideService _rideService = RideService();
   final RouteService _routeService = RouteService();
-
   RideModel? _currentRide;
   RouteModel? _currentRoute;
   bool _isLoading = true;
-
   bool _isProcessing = false;
-  String _buttonProgressText =
-      ''; // "Starting Ride...", "Ending Ride...", or "Cancelling Ride..."
+  String _buttonProgressText = '';
 
   @override
   void initState() {
@@ -150,8 +147,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
     }
   }
 
-
-
   /// Displays a confirmation dialog for canceling the ride.
   Future<bool> _showCancelConfirmationDialog() async {
     return (await showDialog<bool>(
@@ -168,190 +163,13 @@ class _RideControlScreenState extends State<RideControlScreen> {
         false;
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   final rawStatus = _currentRide?.rideStatus ?? 'idle';
-  //   String rideStatusDisplay;
-  //   switch (rawStatus) {
-  //     case 'inProgress':
-  //       rideStatusDisplay = 'In Progress';
-  //       break;
-  //     case 'completed':
-  //       rideStatusDisplay = 'Completed';
-  //       break;
-  //     default:
-  //       rideStatusDisplay = 'Idle';
-  //       break;
-  //   }
-  //
-  //   final bool isRideInProgress = (rawStatus == 'inProgress');
-  //
-  //   // If we're processing, show the progress text in the button
-  //   // otherwise show Start Ride or End Ride
-  //   String buttonText;
-  //   if (_isProcessing) {
-  //     buttonText = _buttonProgressText;
-  //   } else {
-  //     buttonText = isRideInProgress ? 'End Ride' : 'Start Ride';
-  //   }
-  //   final theme = Theme.of(context);
-  //
-  //   // Wrap entire UI in WillPopScope to intercept back button
-  //   return WillPopScope(
-  //     onWillPop: () async {
-  //       // If there's no ride or if we're already processing, just pop
-  //       if (_currentRide == null || _isProcessing) {
-  //         return true;
-  //       }
-  //       // Otherwise, ask user if they want to cancel
-  //       final confirm = await _showCancelConfirmationDialog();
-  //       if (confirm) {
-  //         await _cancelRide();
-  //         // Return false so we don't do a double-pop,
-  //         // because _cancelRide() already called pop()
-  //         return false;
-  //       } else {
-  //         return false; // user pressed "No"
-  //       }
-  //     },
-  //     child: Scaffold(
-  //       body: SafeArea(
-  //         child: LayoutBuilder(
-  //           builder: (context, constraints) {
-  //             final screenHeight = constraints.maxHeight;
-  //
-  //             return Padding(
-  //               padding: const EdgeInsets.all(16.0),
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.stretch,
-  //                 children: [
-  //                   Row(
-  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                     children: [
-  //                       IconButton(
-  //                         onPressed: () async {
-  //                           final confirm =
-  //                               await _showCancelConfirmationDialog();
-  //                           if (confirm) {
-  //                             await _cancelRide();
-  //                           }
-  //                         },
-  //                         icon: Icon(Icons.arrow_back),
-  //                       ),
-  //                       Skeletonizer(
-  //                         enabled: _isLoading,
-  //                         child: Expanded(
-  //                           child: Text(
-  //                             'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
-  //                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-  //                             overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
-  //                             maxLines: 1, // Ensure the text doesn't occupy more than one line
-  //                           ),
-  //                         ),
-  //                       ),
-  //                       const SizedBox(width: 5,),
-  //                       IconButton(
-  //                         icon: const Icon(Icons.help_outline),
-  //                         onPressed: () {
-  //                           Get.to(const DriverRideControlHelpScreen());
-  //                         },
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   const SizedBox(height: 10),
-  //                   const Text(
-  //                     'Bus Card Verification',
-  //                     style: TextStyle(
-  //                       fontSize: 18,
-  //                       fontWeight: FontWeight.bold,
-  //                     ),
-  //                   ),
-  //                   const SizedBox(height: 16),
-  //                   SizedBox(
-  //                     height: screenHeight * 0.4,
-  //                     width: double.infinity,
-  //                     child: BusCardVerificationWidget(
-  //                       controller: controller,
-  //                       rideService: _rideService,
-  //                     ),
-  //                   ),
-  //                   const SizedBox(height: 32),
-  //                   Row(
-  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                     children: [
-  //                       const Text(
-  //                         'Ride Details',
-  //                         style: TextStyle(
-  //                           fontSize: 18,
-  //                           fontWeight: FontWeight.bold,
-  //                         ),
-  //                       ),
-  //                       GestureDetector(
-  //                         onTap: () {
-  //                           // handle show more if needed
-  //                         },
-  //                         child: const Text(
-  //                           'show more',
-  //                           style: TextStyle(
-  //                             color: Colors.blue,
-  //                             fontWeight: FontWeight.w600,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   const SizedBox(height: 16),
-  //                   Skeletonizer(
-  //                     enabled: _isLoading,
-  //                     child: Container(
-  //                       width: double.infinity,
-  //                       padding: const EdgeInsets.all(16.0),
-  //                       decoration: BoxDecoration(
-  //                         color: theme.brightness == Brightness.dark
-  //                             ? DarkInputFieldFillColor
-  //                             : LightInputFieldFillColor,
-  //                         borderRadius: BorderRadius.circular(12),
-  //                       ),
-  //                       child: Column(
-  //                         crossAxisAlignment: CrossAxisAlignment.start,
-  //                         children: [
-  //                           DetailRow(
-  //                             title: 'Ride Status',
-  //                             value: rideStatusDisplay,
-  //                           ),
-  //                           const Divider(color: Colors.grey),
-  //                           const DetailRow(
-  //                             title: 'Next Stop',
-  //                             value: 'Central Park',
-  //                           ),
-  //                           const Divider(color: Colors.grey),
-  //                           const DetailRow(
-  //                             title: 'Next Stop ETA ',
-  //                             value: '9:20 AM',
-  //                           ),
-  //                         ],
-  //                       ),
-  //                     ),
-  //                   ),
-  //                   const Spacer(),
-  //                   TextButton(
-  //                     onPressed: _isProcessing ? null : _toggleRideStatus,
-  //                     style: ElevatedButton.styleFrom(
-  //                       backgroundColor:
-  //                           isRideInProgress ? Colors.red : Colors.blue,
-  //                       disabledBackgroundColor: Colors.grey,
-  //                     ),
-  //                     child: Text(buttonText),
-  //                   ),
-  //                 ],
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
+  String formatETA(DateTime? etaTime) {
+    if (etaTime == null) return 'N/A';
+
+    final format = DateFormat.jm();
+    return format.format(etaTime);
+  }
+
   @override
   Widget build(BuildContext context) {
     final rawStatus = _currentRide?.rideStatus ?? 'idle';
@@ -380,11 +198,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
     }
     final theme = Theme.of(context);
 
-    // Format the ETA in AM/PM format
-    String formattedETA = _currentRide?.etaNextStop != null
-        ? DateFormat.jm().format(_currentRide!.etaNextStop) // AM/PM format
-        : 'N/A';
-
     // Wrap entire UI in WillPopScope to intercept back button
     return WillPopScope(
       onWillPop: () async {
@@ -404,6 +217,43 @@ class _RideControlScreenState extends State<RideControlScreen> {
         }
       },
       child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            onPressed: () async {
+              // Show the cancel confirmation dialog
+              final confirm = await _showCancelConfirmationDialog();
+              if (confirm) {
+                await _cancelRide();
+              }
+            },
+            icon: Icon(Icons.arrow_back),
+          ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Skeletonizer(
+                enabled: _isLoading,
+                child: Text(
+                  'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  overflow:
+                      TextOverflow.ellipsis, // Handle overflow with ellipsis
+                  maxLines:
+                      1, // Ensure the text doesn't occupy more than one line
+                ),
+              ),
+              const SizedBox(
+                width: 5,
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                onPressed: () {
+                  Get.to(const DriverRideControlHelpScreen());
+                },
+              ),
+            ],
+          ),
+        ),
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -414,40 +264,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          onPressed: () async {
-                            final confirm =
-                            await _showCancelConfirmationDialog();
-                            if (confirm) {
-                              await _cancelRide();
-                            }
-                          },
-                          icon: Icon(Icons.arrow_back),
-                        ),
-                        Skeletonizer(
-                          enabled: _isLoading,
-                          child: Expanded(
-                            child: Text(
-                              'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
-                              maxLines: 1, // Ensure the text doesn't occupy more than one line
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 5,),
-                        IconButton(
-                          icon: const Icon(Icons.help_outline),
-                          onPressed: () {
-                            Get.to(const DriverRideControlHelpScreen());
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
                     const Text(
                       'Bus Card Verification',
                       style: TextStyle(
@@ -516,7 +332,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
                             const Divider(color: Colors.grey),
                             DetailRow(
                               title: 'Next Stop ETA',
-                              value: formattedETA,
+                              value: formatETA(_currentRide?.etaNextStop),
                             ),
                           ],
                         ),
@@ -527,7 +343,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
                       onPressed: _isProcessing ? null : _toggleRideStatus,
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
-                        isRideInProgress ? Colors.red : Colors.blue,
+                            isRideInProgress ? Colors.red : Colors.blue,
                         disabledBackgroundColor: Colors.grey,
                       ),
                       child: Text(buttonText),
@@ -541,6 +357,4 @@ class _RideControlScreenState extends State<RideControlScreen> {
       ),
     );
   }
-
-
 }

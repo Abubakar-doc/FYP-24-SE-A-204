@@ -16,13 +16,10 @@ import 'dart:convert';
 
 class LiveLocationService {
   final BuildContext context;
-
   LiveLocationService(this.context);
-  // Timer for periodic updates
   Timer? _etaUpdateTimer;
   bool isLocationUpdating = false;
-  // Set periodic update interval to 2 minutes
-  static const Duration PERIODIC_UPDATE_INTERVAL = Duration(minutes: 1);
+  static const Duration PERIODIC_UPDATE_INTERVAL = Duration(seconds: 15);
 
   Future<bool> checkLocationPermission() async {
     bool isLocationServiceEnabled =
@@ -165,31 +162,6 @@ class LiveLocationService {
     );
   }
 
-  Future<void> startPeriodicLocationUpdates({
-    required RideModel ride,
-    required RouteModel route,
-    required BuildContext context,
-  }) async {
-    // Check if the ride exists and is in progress before starting periodic updates
-    if (ride.rideStatus == 'inProgress') {
-      // Start the periodic updates if not already started
-      if (_etaUpdateTimer == null || !_etaUpdateTimer!.isActive) {
-        _etaUpdateTimer = Timer.periodic(PERIODIC_UPDATE_INTERVAL, (_) async {
-          // Fetch ride status from Hive to ensure it's still in progress
-          var rideBox = await Hive.openBox<RideModel>('rides');
-          var currentRide = rideBox.get('currentRide');
-
-          if (currentRide?.rideStatus != 'inProgress') {
-            stopPeriodicLocationUpdates(); // Stop the periodic updates if ride is not in progress
-          } else {
-            updateRideWithETA(currentRide!, route,
-                context); // Proceed with ETA update if ride is in progress
-          }
-        });
-      }
-    }
-  }
-
   Future<void> stopPeriodicLocationUpdates() async {
     if (_etaUpdateTimer != null) {
       _etaUpdateTimer?.cancel();
@@ -199,10 +171,10 @@ class LiveLocationService {
   }
 
   Future<void> updateRideWithETA(
-      RideModel ride,
-      RouteModel route,
-      BuildContext context,
-      ) async {
+    RideModel ride,
+    RouteModel route,
+    BuildContext context,
+  ) async {
     // Get the bus's current location
     geo.Position? currentPosition = await getCurrentLocation();
 
@@ -213,8 +185,24 @@ class LiveLocationService {
 
     // Find the next bus stop based on the current position
     var nextBusStop = _findNextBusStop(route.busStops, currentPosition);
+
+    // If it's the last stop, we should handle it differently
+    if (nextBusStop != null &&
+        nextBusStop['busStopName'] == 'Last Stop (Continued ETA)') {
+      // Continue giving ETA updates at the last stop
+      double etaMinutes =
+          await _calculateETAToNextStop(currentPosition, nextBusStop);
+
+      // Update ETA and next stop name in Firestore
+      await _updateRideETAInFirestore(
+          ride.rideId!, etaMinutes, nextBusStop['busStopName']);
+      await _updateRideETAInHive(ride, etaMinutes, nextBusStop['busStopName']);
+
+      return; // Continue ETA updates without looking for the next stop
+    }
+
     if (nextBusStop == null) {
-      SnackbarUtil.showError("Error", "No next bus stop found.");
+      // SnackbarUtil.showError("Error", "No next bus stop found.");
       return;
     }
 
@@ -223,7 +211,8 @@ class LiveLocationService {
     print("Next stop name: $nextStopName"); // Debugging log
 
     // Calculate the ETA to the next bus stop using Mapbox API
-    double etaMinutes = await _calculateETAToNextStop(currentPosition, nextBusStop);
+    double etaMinutes =
+        await _calculateETAToNextStop(currentPosition, nextBusStop);
     print("Calculated ETA: $etaMinutes minutes"); // Debug log
 
     // Update ETA and nextStopName in Firestore
@@ -231,6 +220,63 @@ class LiveLocationService {
 
     // Update ETA and nextStopName in Hive
     await _updateRideETAInHive(ride, etaMinutes, nextStopName);
+  }
+
+  Future<void> startPeriodicLocationUpdates({
+    required RideModel ride,
+    required RouteModel route,
+    required BuildContext context,
+  }) async {
+    geo.Position? currentPosition = await getCurrentLocation();
+
+    if (currentPosition == null) {
+      SnackbarUtil.showError("Error", "Failed to fetch current location.");
+      return;
+    }
+
+    // Get the last bus stop
+    var lastBusStop = route.busStops.last;
+    double lastStopLat = lastBusStop['latitude'];
+    double lastStopLon = lastBusStop['longitude'];
+    double distanceToLastStop = _calculateDistance(
+      currentPosition.latitude,
+      currentPosition.longitude,
+      lastStopLat,
+      lastStopLon,
+    );
+
+    // If the bus is near the last stop, continue updating ETA and location
+    if (distanceToLastStop <= 100.0) {
+      // Calculate the ETA for the last bus stop
+      double etaMinutes =
+          await _calculateETAToNextStop(currentPosition, lastBusStop);
+
+      // Update ETA and location in Firestore and Hive
+      await _updateRideETAInFirestore(
+          ride.rideId!, etaMinutes, lastBusStop['busStopName']);
+      await _updateRideETAInHive(ride, etaMinutes, lastBusStop['busStopName']);
+
+      SnackbarUtil.showSuccess("You are at your destination",
+          "Continuing ETA updates for the last stop.");
+      return; // Stop looking for the next stop and just continue updating the last stop
+    }
+
+    // Proceed with periodic updates if it's not near the last stop
+    if (ride.rideStatus == 'inProgress') {
+      if (_etaUpdateTimer == null || !_etaUpdateTimer!.isActive) {
+        _etaUpdateTimer = Timer.periodic(PERIODIC_UPDATE_INTERVAL, (_) async {
+          var rideBox = await Hive.openBox<RideModel>('rides');
+          var currentRide = rideBox.get('currentRide');
+
+          if (currentRide?.rideStatus != 'inProgress') {
+            stopPeriodicLocationUpdates(); // Stop updates if ride isn't in progress
+          } else {
+            updateRideWithETA(
+                currentRide!, route, context); // Continue updating ETA
+          }
+        });
+      }
+    }
   }
 
   Map<String, dynamic>? _findNextBusStop(
@@ -241,18 +287,12 @@ class LiveLocationService {
     Map<String, dynamic>? closestBusStop;
     int closestBusStopIndex = -1;
 
-    // Step 1: Find the closest bus stop based on current position
     for (int i = 0; i < busStops.length; i++) {
       var busStop = busStops[i];
 
-      // Print out the bus stop details for debugging
-      print("Checking bus stop: ${busStop['busStopName']}");
+      double stopLat = busStop['latitude'];
+      double stopLon = busStop['longitude'];
 
-      // Convert latitude and longitude to doubles if they are stored as strings in Firestore
-      double stopLat = double.tryParse(busStop['latitude'].toString()) ?? 0.0;
-      double stopLon = double.tryParse(busStop['longitude'].toString()) ?? 0.0;
-
-      // Ensure they are valid double values before calculating distance
       if (stopLat != 0.0 && stopLon != 0.0) {
         double distance = _calculateDistance(
           currentPosition.latitude,
@@ -264,30 +304,33 @@ class LiveLocationService {
         if (distance < closestDistance) {
           closestDistance = distance;
           closestBusStop = busStop;
-          closestBusStopIndex = i; // Track index of the closest bus stop
+          closestBusStopIndex = i;
         }
       }
     }
 
-    // Step 2: If we are near the first bus stop, skip it and return the next one
-    if (closestBusStopIndex != -1 &&
-        closestBusStopIndex < busStops.length - 1) {
-      // Return the next bus stop in the sequence
-      return busStops[closestBusStopIndex + 1];
+    // If it's near the last bus stop, return it as the next bus stop
+    if (closestBusStopIndex != -1) {
+      if (closestBusStopIndex == busStops.length - 1 &&
+          closestDistance <= 100.0) {
+        // We're at the last stop; continue ETA updates
+        return {'busStopName': 'Last Stop (Continued ETA)'};
+      } else if (closestBusStopIndex < busStops.length - 1) {
+        // Return the next bus stop if not at the last stop
+        return busStops[closestBusStopIndex + 1];
+      }
     }
 
-    // If we have no next stop or we're at the last stop, return null
-    return null;
+    return null; // If no next stop or destination reached
   }
 
   Future<double> _calculateETAToNextStop(
     geo.Position currentPosition,
     Map<String, dynamic> nextBusStop,
   ) async {
-    double nextStopLat =
-        double.tryParse(nextBusStop['latitude'].toString()) ?? 0.0;
-    double nextStopLon =
-        double.tryParse(nextBusStop['longitude'].toString()) ?? 0.0;
+    // Directly access latitude and longitude as numbers (no parsing)
+    double nextStopLat = nextBusStop['latitude']; // Latitude as a number
+    double nextStopLon = nextBusStop['longitude']; // Longitude as a number
 
     // Check if the latitude and longitude are valid
     if (nextStopLat == 0.0 || nextStopLon == 0.0) {
@@ -303,27 +346,18 @@ class LiveLocationService {
         'https://api.mapbox.com/directions/v5/mapbox/driving/${currentPosition.longitude},${currentPosition.latitude};$nextStopLon,$nextStopLat?alternatives=false&geometries=geojson&steps=true&access_token=$accessToken';
 
     try {
-      // Send request to Mapbox Directions API
       final response = await http.get(Uri.parse(directionsUrl));
 
       if (response.statusCode == 200) {
-        // Parse the response from Mapbox Directions API
         final data = json.decode(response.body);
-
-        // Extract the duration from the response (in seconds)
         double durationInSeconds = data['routes'][0]['duration'] ?? 0.0;
-
-        // Convert the duration from seconds to minutes
         double etaInMinutes = durationInSeconds / 60;
-
         return etaInMinutes;
       } else {
-        // Handle API error
         SnackbarUtil.showError("Error", "Failed to fetch ETA from Mapbox.");
         return 0.0;
       }
     } catch (e) {
-      // Handle any network or parsing errors
       SnackbarUtil.showError("Error", "Failed to fetch ETA.");
       return 0.0;
     }
@@ -351,10 +385,10 @@ class LiveLocationService {
   }
 
   Future<void> _updateRideETAInFirestore(
-      String rideId,
-      double etaMinutes,
-      String nextStopName,
-      ) async {
+    String rideId,
+    double etaMinutes,
+    String nextStopName,
+  ) async {
     try {
       await FirebaseFirestore.instance.collection('rides').doc(rideId).update({
         'eta_next_stop': etaMinutes,
@@ -367,12 +401,13 @@ class LiveLocationService {
   }
 
   Future<void> _updateRideETAInHive(
-      RideModel ride,
-      double etaMinutes,
-      String nextStopName,
-      ) async {
+    RideModel ride,
+    double etaMinutes,
+    String nextStopName,
+  ) async {
     try {
-      ride.etaNextStop = DateTime.now().add(Duration(minutes: etaMinutes.toInt()));
+      ride.etaNextStop =
+          DateTime.now().add(Duration(minutes: etaMinutes.toInt()));
       ride.nextStopName = nextStopName; // Update next stop name in Hive
       var rideBox = await Hive.openBox<RideModel>('rides');
       await rideBox.put('currentRide', ride);
