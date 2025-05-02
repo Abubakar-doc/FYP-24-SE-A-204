@@ -416,5 +416,4 @@ class LiveLocationService {
       print("Error updating ETA in Hive: $e");
     }
   }
-
 }

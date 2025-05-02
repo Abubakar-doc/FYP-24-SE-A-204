@@ -18,15 +18,18 @@ class BusModelAdapter extends TypeAdapter<BusModel> {
     };
     return BusModel(
       busId: fields[0] as String,
+      seatCapacity: fields[1] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, BusModel obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.busId);
+      ..write(obj.busId)
+      ..writeByte(1)
+      ..write(obj.seatCapacity);
   }
 
   @override

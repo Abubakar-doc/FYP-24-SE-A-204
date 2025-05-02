@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
+import 'package:intl/intl.dart';
 import 'package:ntu_ride_pilot/controllers/ride_control_controller.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_control.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/start_ride.dart';
+import 'package:ntu_ride_pilot/screens/driver/ride/widget/ride_details_modal.dart';
 import 'package:ntu_ride_pilot/services/ride/live_location.dart';
 import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
@@ -13,8 +16,8 @@ import 'package:ntu_ride_pilot/widget/alert_dialog/alert_dialog.dart';
 import 'package:ntu_ride_pilot/widget/detail_row/detail_row.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:ntu_ride_pilot/services/route/route_service.dart';
+import '../../../model/bus_card/bus_card.dart';
 import 'widget/bus_card_verification_widget.dart';
-import 'package:intl/intl.dart';
 
 class RideControlScreen extends StatefulWidget {
   const RideControlScreen({super.key});
@@ -32,14 +35,41 @@ class _RideControlScreenState extends State<RideControlScreen> {
   bool _isLoading = true;
   bool _isProcessing = false;
   String _buttonProgressText = '';
+  String _formattedETA = 'N/A';
+  String _nextStopName = 'N/A';
 
   @override
   void initState() {
     super.initState();
     _loadRideData();
+    _startRideETAStream();
   }
 
-  /// Loads the current ride from Hive, and fetches the associated route.
+  void _startRideETAStream() {
+    final rideBox = Hive.box<RideModel>('rides');
+
+    // Listen to changes for the 'currentRide' key
+    rideBox.watch(key: 'currentRide').listen((event) {
+      if (event.value is RideModel) {
+        final updatedRide = event.value as RideModel;
+        final eta = updatedRide.etaNextStop;
+        final stopName = updatedRide.nextStopName ?? 'N/A';
+
+        // Format ETA as 8:00 AM/PM
+        final DateFormat formatter = DateFormat('h:mm a');
+        final formattedETA = eta != null ? formatter.format(eta) : 'N/A';
+
+        // Update the state with the new values to refresh the UI
+        setState(() {
+          _formattedETA = formattedETA;
+          _nextStopName = stopName;
+        });
+      } else {
+        print('No ride data found in the box!');
+      }
+    });
+  }
+
   Future<void> _loadRideData() async {
     try {
       final ride = await _rideService.fetchRideFromHive();
@@ -64,7 +94,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
     }
   }
 
-  /// Toggles the ride's status between 'inProgress' and 'idle'/'completed'.
   Future<void> _toggleRideStatus() async {
     if (_currentRide == null) return;
 
@@ -147,7 +176,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
     }
   }
 
-  /// Displays a confirmation dialog for canceling the ride.
   Future<bool> _showCancelConfirmationDialog() async {
     return (await showDialog<bool>(
           context: context,
@@ -161,13 +189,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
           },
         )) ??
         false;
-  }
-
-  String formatETA(DateTime? etaTime) {
-    if (etaTime == null) return 'N/A';
-
-    final format = DateFormat.jm();
-    return format.format(etaTime);
   }
 
   @override
@@ -234,12 +255,12 @@ class _RideControlScreenState extends State<RideControlScreen> {
               Skeletonizer(
                 enabled: _isLoading,
                 child: Text(
-                  'Bus ${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
+                  '${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}'.length > 25
+                      ? '${'${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}'.substring(0, 22)}...'
+                      : '${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  overflow:
-                      TextOverflow.ellipsis, // Handle overflow with ellipsis
-                  maxLines:
-                      1, // Ensure the text doesn't occupy more than one line
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
               const SizedBox(
@@ -295,13 +316,38 @@ class _RideControlScreenState extends State<RideControlScreen> {
                           onTap: () {
                             // handle show more if needed
                           },
-                          child: const Text(
-                            'show more',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w600,
+// Inside your widget
+                          child: GestureDetector(
+                            onTap: () async {
+                              // Open both boxes up front
+                              final rideBox = await Hive.openBox<RideModel>('rides');
+                              final busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
+
+                              // Show the modal when the button is tapped
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                ),
+                                builder: (_) {
+                                  return RideDetailsModal(
+                                    rideBox: rideBox,
+                                    busCardBox: busCardBox,
+                                  );
+                                },
+                              );
+                            },
+                            child: const Text(
+                              'show more',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
+
                         ),
                       ],
                     ),
@@ -327,12 +373,12 @@ class _RideControlScreenState extends State<RideControlScreen> {
                             const Divider(color: Colors.grey),
                             DetailRow(
                               title: 'Next Stop',
-                              value: _currentRide?.nextStopName ?? 'N/A',
+                              value: _nextStopName,
                             ),
                             const Divider(color: Colors.grey),
                             DetailRow(
                               title: 'Next Stop ETA',
-                              value: formatETA(_currentRide?.etaNextStop),
+                              value: _formattedETA,
                             ),
                           ],
                         ),

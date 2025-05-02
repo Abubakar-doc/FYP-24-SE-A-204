@@ -51,42 +51,8 @@ class RideService {
   /// Ride Status Updates
   /// ─────────────────────────────────────────────────────────────────────────
 
-  // Future<void> startRide(RideModel ride, RouteModel route, BuildContext context) async {
-  //   try {
-  //     // Update local ride status.
-  //     ride.rideStatus = 'inProgress';
-  //
-  //     // Update Hive.
-  //     final rideBox = await Hive.openBox<RideModel>('rides');
-  //     await rideBox.put('currentRide', ride);
-  //
-  //     // Update Firestore.
-  //     await _firestore
-  //         .collection('rides')
-  //         .doc(ride.rideId)
-  //         .update({'ride_status': 'inProgress'});
-  //
-  //     // Log to check if the periodic updates are being triggered
-  //     print("Starting periodic location updates for ride: ${ride.rideId}");
-  //
-  //     // Start periodic location updates and ETA calculations for the ride
-  //     LiveLocationService liveLocationService = LiveLocationService(context);
-  //
-  //     // Call updateRideWithETA immediately to calculate the ETA
-  //     await liveLocationService.updateRideWithETA(ride, route, context);
-  //
-  //     // Start periodic updates for ETA calculations
-  //     liveLocationService.startPeriodicLocationUpdates(
-  //       ride: ride,
-  //       route: route,
-  //       context: context,
-  //     );
-  //   } catch (e) {
-  //     print("Error in startRide: $e");  // Log error in starting ride
-  //     rethrow; // Let the caller handle errors/logging.
-  //   }
-  // }
-  Future<void> startRide(RideModel ride, RouteModel route, BuildContext context) async {
+  Future<void> startRide(
+      RideModel ride, RouteModel route, BuildContext context) async {
     try {
       // Update local ride status.
       ride.rideStatus = 'inProgress';
@@ -117,41 +83,12 @@ class RideService {
         context: context,
       );
     } catch (e) {
-      print("Error in startRide: $e");  // Log error in starting ride
+      print("Error in startRide: $e"); // Log error in starting ride
       rethrow; // Let the caller handle errors/logging.
     }
   }
 
-
   /// Cancel the ride: delete the Firestore doc, clear local ride box.
-  // Future<void> cancelRide(RideModel ride) async {
-  //   try {
-  //     await _firestore.collection('rides').doc(ride.rideId).delete();
-  //     final rideBox = await Hive.openBox<RideModel>('rides');
-  //     await rideBox.clear();
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
-  // Future<void> endRide(RideModel ride, BuildContext context) async {
-  //   try {
-  //     // Update Firestore.
-  //     await _firestore.collection('rides').doc(ride.rideId).update({
-  //       'ride_status': 'completed',
-  //       'ended_at': FieldValue.serverTimestamp(),
-  //     });
-  //
-  //     // Stop the periodic location updates if the ride is completed
-  //     LiveLocationService liveLocationService = LiveLocationService(context);
-  //     liveLocationService.stopPeriodicLocationUpdates();
-  //
-  //     // Clear Hive box.
-  //     final rideBox = await Hive.openBox<RideModel>('rides');
-  //     await rideBox.clear();
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
 
   Future<void> endRide(RideModel ride, BuildContext context) async {
     try {
@@ -188,8 +125,6 @@ class RideService {
     }
   }
 
-
-
   /// Retrieve the current ride from Hive (if any).
   Future<RideModel?> fetchRideFromHive() async {
     try {
@@ -199,10 +134,6 @@ class RideService {
       return null;
     }
   }
-
-  /// ─────────────────────────────────────────────────────────────────────────
-  /// Card Input / Onboard Logic
-  /// ─────────────────────────────────────────────────────────────────────────
 
   Future<RideServiceResponse> handleCardInput(String input) async {
     try {
@@ -317,10 +248,6 @@ class RideService {
     }
   }
 
-  /// ─────────────────────────────────────────────────────────────────────────
-  /// Background Queue Processing
-  /// ─────────────────────────────────────────────────────────────────────────
-
   Future<void> _processQueue() async {
     if (!_isOnline) return;
 
@@ -367,9 +294,6 @@ class RideService {
     }
   }
 
-  /// ─────────────────────────────────────────────────────────────────────────
-  /// Firestore Sync Utility Methods
-  /// ─────────────────────────────────────────────────────────────────────────
   Future<void> fetchAndStoreBusCards() async {
     try {
       // Open the persistent bus cards box and temporary boxes.
@@ -418,6 +342,7 @@ class RideService {
         // Merge the document ID as the busId into the data map.
         return BusModel.fromMap({
           'bus_id': doc.id,
+          'seatCapacity': data['SeatCapacity'],
           ...data,
         });
       }).toList();

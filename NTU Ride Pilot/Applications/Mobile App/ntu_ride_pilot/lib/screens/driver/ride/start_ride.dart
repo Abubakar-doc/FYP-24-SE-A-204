@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/controllers/profile_controller.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
+import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_start.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/widget/live_location.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/model/bus/bus.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/ride_control.dart';
-import 'package:ntu_ride_pilot/screens/driver/ride/test_data.dart';
 import 'package:ntu_ride_pilot/services/ride/ride_service.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/widget/drawer/custom_drawer.dart';
@@ -22,9 +23,9 @@ class StartRideScreen extends StatefulWidget {
 }
 
 class _StartRideScreenState extends State<StartRideScreen> {
+  Future<void> Function()? _centerCamera;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final RideService _rideService = RideService();
-
   bool _isLoading = false;
   BusModel? selectedBus;
   String errorMessageBus = "";
@@ -82,13 +83,23 @@ class _StartRideScreenState extends State<StartRideScreen> {
     }
 
     try {
+      // Create the new ride using the selected bus and route
       RideModel? newRide = await _rideService.createNewRide(
         bus: selectedBus!,
-        route: selectedRoute!, context: context,
+        route: selectedRoute!,
+        context: context,
       );
 
       if (newRide != null) {
+        // Store the selected bus's seating capacity in the ride
+        final rideBox = await Hive.openBox<RideModel>('rides');
+        newRide.seatCapacity = selectedBus!.seatCapacity;
+        await rideBox.put('currentRide', newRide);
+
+        // Fetch and store bus cards
         await _rideService.fetchAndStoreBusCards();
+
+        // Navigate to the RideControlScreen
         Get.to(() => RideControlScreen());
       }
     } on BusInUseException catch (e) {
@@ -123,12 +134,17 @@ class _StartRideScreenState extends State<StartRideScreen> {
                   children: [
                     Expanded(
                       flex: 6,
-                      child: LiveLocation(),
+                      child: LiveLocation(
+                        onMapReady: (cameraFunction) {
+                          setState(() {
+                            _centerCamera = cameraFunction;
+                          });
+                        },
+                      ),
                     ),
                     Expanded(
-                      flex: 4,
-                      child: Container(
-                      ),
+                      flex: 3,
+                      child: Container(),
                     ),
                   ],
                 ),
@@ -158,108 +174,128 @@ class _StartRideScreenState extends State<StartRideScreen> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.brightness == Brightness.dark
-                      ? darkBackgroundColor
-                      : lightBackgroundColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 5.0, right: 16),
+                    child: FloatingActionButton(
+                      onPressed: _centerCamera != null
+                          ? () async {
+                              await _centerCamera!(); // Trigger camera movement
+                            }
+                          : null,
+                      tooltip: 'Center on my location',
+                      child: Icon(Icons.my_location),
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header with title and help button.
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "New Ride",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.brightness == Brightness.dark
+                          ? darkBackgroundColor
+                          : lightBackgroundColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header with title and help button.
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "New Ride",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.help_outline),
+                                onPressed: () {
+                                  Get.to(DriverRideStartHelpScreen());
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Bus dropdown wrapped in CustomDropdown.
+                        CustomDropdown<BusModel>(
+                          title: "Bus",
+                          selectedValue: selectedBus,
+                          items: buses,
+                          displayItem: (bus) => "Bus-${bus.busId}",
+                          onChanged: (value) {
+                            setState(() {
+                              selectedBus = value;
+                              errorMessageBus = "";
+                            });
+                          },
+                        ),
+                        // Inline error message for Bus.
+                        if (errorMessageBus.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              errorMessageBus,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 14),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.help_outline),
-                            onPressed: () {
-                              Get.to(TestDataScreen());
+                        const SizedBox(height: 10),
+                        // Route dropdown wrapped in Skeletonizer.
+                        Skeletonizer(
+                          enabled: routes.isEmpty,
+                          child: CustomDropdown<RouteModel>(
+                            title: "Route",
+                            selectedValue: selectedRoute,
+                            items: routes,
+                            displayItem: (route) => route.name,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedRoute = value;
+                                errorMessageRoute = "";
+                              });
                             },
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Bus dropdown wrapped in CustomDropdown.
-                    CustomDropdown<BusModel>(
-                      title: "Bus",
-                      selectedValue: selectedBus,
-                      items: buses,
-                      displayItem: (bus) => "Bus-${bus.busId}",
-                      onChanged: (value) {
-                        setState(() {
-                          selectedBus = value;
-                          errorMessageBus = "";
-                        });
-                      },
-                    ),
-                    // Inline error message for Bus.
-                    if (errorMessageBus.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          errorMessageBus,
-                          style: const TextStyle(color: Colors.red, fontSize: 14),
                         ),
-                      ),
-                    const SizedBox(height: 10),
-                    // Route dropdown wrapped in Skeletonizer.
-                    Skeletonizer(
-                      enabled: routes.isEmpty,
-                      child: CustomDropdown<RouteModel>(
-                        title: "Route",
-                        selectedValue: selectedRoute,
-                        items: routes,
-                        displayItem: (route) => route.name,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRoute = value;
-                            errorMessageRoute = "";
-                          });
-                        },
-                      ),
+                        // Inline error message for Route.
+                        if (errorMessageRoute.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              errorMessageRoute,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 14),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        // Next button.
+                        TextButton(
+                          onPressed: _isLoading ? null : validateAndNavigate,
+                          style: ElevatedButton.styleFrom(
+                            disabledBackgroundColor: Colors.grey,
+                          ),
+                          child: Text(
+                            _isLoading ? "Getting things ready..." : "Next",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        )
+                      ],
                     ),
-                    // Inline error message for Route.
-                    if (errorMessageRoute.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          errorMessageRoute,
-                          style: const TextStyle(color: Colors.red, fontSize: 14),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    // Next button.
-                    TextButton(
-                      onPressed: _isLoading ? null : validateAndNavigate,
-                      style: ElevatedButton.styleFrom(
-                        disabledBackgroundColor: Colors.grey,
-                      ),
-                      child: Text(
-                        _isLoading
-                            ? "Getting things ready..."
-                            : "Next",
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    )
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -268,5 +304,3 @@ class _StartRideScreenState extends State<StartRideScreen> {
     );
   }
 }
-
-

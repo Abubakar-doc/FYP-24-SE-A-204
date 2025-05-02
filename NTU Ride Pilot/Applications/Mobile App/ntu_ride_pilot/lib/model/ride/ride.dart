@@ -28,7 +28,7 @@ class RideModel {
   final List<String> offlineOnBoard;
 
   @HiveField(7)
-  late final DateTime etaNextStop;
+  DateTime? etaNextStop; // Make nullable
 
   @HiveField(8)
   final DateTime createdAt;
@@ -38,11 +38,14 @@ class RideModel {
 
   // Current location (longitude and latitude)
   @HiveField(10)
-  late final Map<String, String> currentLocation;
+  Map<String, String>? currentLocation; // Make nullable
 
   // The name of the next stop
   @HiveField(11)
   String? nextStopName;
+
+  @HiveField(12)
+  int? seatCapacity; // Changed to nullable int
 
   RideModel({
     this.rideId,
@@ -52,9 +55,10 @@ class RideModel {
     required this.driverId,
     required this.onlineOnBoard,
     required this.offlineOnBoard,
-    required this.etaNextStop,
-    required this.currentLocation,
-    this.nextStopName, // Add nextStopName here
+    this.etaNextStop, // Make it nullable
+    this.currentLocation, // Make it nullable
+    this.nextStopName,
+    this.seatCapacity, // Allow nullable seating capacity
     DateTime? createdAt,
     this.endedAt,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -69,11 +73,12 @@ class RideModel {
       'driver_id': driverId,
       'onlineOnBoard': onlineOnBoard,
       'offlineOnBoard': offlineOnBoard,
-      'eta': etaNextStop.toIso8601String(),
+      'eta': etaNextStop?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'ended_at': endedAt?.toIso8601String(),
-      'currentLocation': currentLocation, // Add currentLocation to the map
-      'nextStopName': nextStopName, // Add nextStopName to the map
+      'currentLocation': currentLocation,
+      'nextStopName': nextStopName,
+      'seatCapacity': seatCapacity, // Allow nullable seating capacity
     };
   }
 
@@ -87,11 +92,12 @@ class RideModel {
       driverId: map['driver_id'] ?? '',
       onlineOnBoard: List<String>.from(map['onlineOnBoard'] ?? []),
       offlineOnBoard: List<String>.from(map['offlineOnBoard'] ?? []),
-      etaNextStop: DateTime.parse(map['eta'] ?? DateTime.now().toIso8601String()),
+      etaNextStop: map['eta'] != null ? DateTime.parse(map['eta']) : null,
       createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
       endedAt: map['ended_at'] != null ? DateTime.parse(map['ended_at']) : null,
-      currentLocation: Map<String, String>.from(map['currentLocation'] ?? {}),
-      nextStopName: map['nextStopName'], // Parse nextStopName from map
+      currentLocation: map['currentLocation'] != null ? Map<String, String>.from(map['currentLocation']) : null,
+      nextStopName: map['nextStopName'],
+      seatCapacity: map['seatCapacity'] != null ? map['seatCapacity'] as int? : null, // Handle nullable int
     );
   }
 }
