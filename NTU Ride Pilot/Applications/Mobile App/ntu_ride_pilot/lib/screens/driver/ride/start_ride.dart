@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/controllers/profile_controller.dart';
@@ -33,13 +34,35 @@ class _StartRideScreenState extends State<StartRideScreen> {
   List<BusModel> buses = [];
   List<RouteModel> routes = [];
   RouteModel? selectedRoute;
+  List<Map<String, dynamic>> busStops = [];
+  ByteData? defaultMarkerBytes;
+  ByteData? firstMarkerBytes;
+  ByteData? lastMarkerBytes;
 
   @override
   void initState() {
     super.initState();
     fetchBusesAndRoutes();
     Get.put(DriverProfileController());
+    _loadMarkerImages();
   }
+
+  Future<void> _loadMarkerImages() async {
+    try {
+      defaultMarkerBytes = await rootBundle.load('assets/pictures/marker.png');
+      firstMarkerBytes =
+          await rootBundle.load('assets/pictures/first_marker.png');
+      lastMarkerBytes =
+          await rootBundle.load('assets/pictures/last_marker.png');
+    } catch (e) {
+      debugPrint('Error loading marker images: $e');
+    }
+  }
+
+
+  Uint8List? get defaultMarkerImage => defaultMarkerBytes?.buffer.asUint8List();
+  Uint8List? get firstMarkerImage => firstMarkerBytes?.buffer.asUint8List();
+  Uint8List? get lastMarkerImage => lastMarkerBytes?.buffer.asUint8List();
 
   void fetchBusesAndRoutes() async {
     List<BusModel> fetchedBuses = await _rideService.fetchBuses();
@@ -117,6 +140,16 @@ class _StartRideScreenState extends State<StartRideScreen> {
     setLoading(false);
   }
 
+  // This function will fetch the bus stops based on the selected route
+  void updateBusStopsForSelectedRoute() {
+    if (selectedRoute != null) {
+      // Assuming that each RouteModel has a property called 'busStops'
+      setState(() {
+        busStops = selectedRoute!.busStops ?? [];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -135,6 +168,10 @@ class _StartRideScreenState extends State<StartRideScreen> {
                     Expanded(
                       flex: 6,
                       child: LiveLocation(
+                        busStops: busStops,
+                        defaultMarkerBytes: defaultMarkerBytes,
+                        firstMarkerBytes: firstMarkerBytes,
+                        lastMarkerBytes: lastMarkerBytes,
                         onMapReady: (cameraFunction) {
                           setState(() {
                             _centerCamera = cameraFunction;
@@ -266,6 +303,8 @@ class _StartRideScreenState extends State<StartRideScreen> {
                               setState(() {
                                 selectedRoute = value;
                                 errorMessageRoute = "";
+                                // Update bus stops whenever route is selected
+                                updateBusStopsForSelectedRoute();
                               });
                             },
                           ),
