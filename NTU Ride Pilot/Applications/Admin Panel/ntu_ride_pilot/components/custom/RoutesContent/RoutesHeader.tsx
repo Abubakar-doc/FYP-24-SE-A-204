@@ -1,12 +1,16 @@
 "use client";
+
 import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
 import RouteFilterDropdown from './RouteFilterDropdown';
-import { useState } from 'react';
+import React from 'react';
 
+type RoutesHeaderProps = {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+};
 
-
-const SessionsHeader: React.FC = () => {
+const RoutesHeader: React.FC<RoutesHeaderProps> = ({ searchQuery, onSearchChange }) => {
   
   return (
     <div className="w-full h-32 bg-[#F5F5F5] p-4 rounded-md">
@@ -24,10 +28,12 @@ const SessionsHeader: React.FC = () => {
               type="text"
               placeholder="Search"
               className='w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
+              value={searchQuery ?? ""}
+              onChange={(e) => onSearchChange(e.target.value)}
             />
-            <button className="absolute right-2 top-1/2 transform -translate-y-1/2">
+            <button className="absolute right-2 top-1/2 transform -translate-y-1/2" type="button" aria-label="Search">
               {/* Search Icon */}
-              {/* SVG code goes here */}
+              {/* You can add SVG icon here if needed */}
             </button>
           </div>
 
@@ -39,17 +45,16 @@ const SessionsHeader: React.FC = () => {
           />
           
           <Link href="/dashboard/routes/add-route">
-              <button
-                className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
-                
-              >
-                Add Route
-              </button>
-            </Link>
+            <button
+              className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+            >
+              Add Route
+            </button>
+          </Link>
         </div>
       </div>
     </div>
   );
 };
 
-export default SessionsHeader;
+export default RoutesHeader;

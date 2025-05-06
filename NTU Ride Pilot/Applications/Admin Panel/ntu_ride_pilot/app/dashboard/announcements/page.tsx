@@ -1,12 +1,15 @@
+"use client"
 import React from 'react'
-import DashboardLayout from '../DashboardLayout'
+import DashboardLayout from '../DashboardLayout';
+import AnnouncementsContent from '@/components/custom/AnnouncementsContent/AnnouncementsContent';
 
 function page() {
   return (
     <DashboardLayout>
-          <div>Announcements Content</div>
+      <AnnouncementsContent/>
     </DashboardLayout>
+
   )
 }
 
-export default page
+export default page;

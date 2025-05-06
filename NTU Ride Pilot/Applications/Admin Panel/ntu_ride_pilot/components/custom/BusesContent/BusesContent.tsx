@@ -1,86 +1,150 @@
-"use client"
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { firestore } from "@/lib/firebase";
-import { collection, getDocs, doc, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import BusesHeader from "./BusesHeader";
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
 
-
+type BusData = {
+  id: string;
+  busId: string;
+  seatCapacity: number;
+  created_at: any;
+};
 
 const BusesContent: React.FC = () => {
   const router = useRouter();
 
-  const buses = [
-    {
-      "reg_no": "FDY-1808",
-    },
-    {
-      "reg_no": "FDJ-102",
-    },
-    {
-      "reg_no": "FDJ-21",
-    },
-    {
-      "reg_no": "FDJ-101",
-    },
-    {
-      "reg_no": "FDJ-125",
-    },
-    {
-      "reg_no": "FDJ-124",
-    },
-    {
-      "reg_no": "FDJ-221",
-    },
-    {
-      "reg_no": "FDJ-24",
-    },
-    {
-      "reg_no": "FDJ-25",
-    },
-    {
-      "reg_no": "FDJ-1022",
+  const [buses, setBuses] = useState<BusData[]>([]);
+  const [filteredBuses, setFilteredBuses] = useState<BusData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [busToDelete, setBusToDelete] = useState<BusData | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const fetchBuses = async () => {
+      setLoading(true);
+      try {
+        const busesCollection = collection(firestore, "buses");
+        const snapshot = await getDocs(busesCollection);
+
+        const fetchedBuses: BusData[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            busId: data.busId || "Unknown",
+            seatCapacity: data.seatCapacity || 0,
+            created_at: data.created_at || null,
+          };
+        });
+        setBuses(fetchedBuses);
+        setFilteredBuses(fetchedBuses);
+      } catch (error) {
+        console.error("Error fetching buses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBuses();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredBuses(buses);
+    } else {
+      const filtered = buses.filter(bus => 
+        bus.busId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bus.seatCapacity.toString().includes(searchTerm)
+      );
+      setFilteredBuses(filtered);
     }
-  ]
+  }, [searchTerm, buses]);
 
+  const handleDeleteClick = (bus: BusData) => {
+    setBusToDelete(bus);
+    setDeleteModalOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!busToDelete) return;
+    
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(firestore, "buses", busToDelete.id));
+      setBuses(prev => prev.filter(b => b.id !== busToDelete.id));
+      setFilteredBuses(prev => prev.filter(b => b.id !== busToDelete.id));
+      setDeleteModalOpen(false);
+      setBusToDelete(null);
+    } catch (error) {
+      console.error("Error deleting bus:", error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setBusToDelete(null);
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
+        <LoadingIndicator />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-white relative">
-
-
       <div className="rounded-lg mb-2">
-        <BusesHeader />
+        <BusesHeader onSearch={handleSearch} />
       </div>
 
       <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
         <div className="rounded-lg border border-gray-300 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
+          <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%] border-b border-gray-300">ID</th>
                 <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[60%] border-b border-gray-300">Registration No</th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[60%] border-b border-gray-300">No of Seats</th>
                 <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[30%] border-b border-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-300 text-center">
-              {buses.map((bus, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
-                  <td className="px-4 py-4 whitespace-nowrap w-[60%] overflow-hidden text-ellipsis">{bus.reg_no}</td>
-                 
-                  <td className="px-20 py-4 flex items-center space-x-2 w-[30%] ml-12">
-                  
-                    <button
-                      className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
-                    >
-                      Delete
-                    </button>
-
+              {filteredBuses.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-6 text-gray-500">
+                    {searchTerm ? "No buses match your search." : "No buses found."}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredBuses.map((bus, index) => (
+                  <tr key={bus.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
+                    <td className="px-4 py-4 whitespace-nowrap w-[60%] overflow-hidden text-ellipsis">{bus.busId}</td>
+                    <td className="px-4 py-4 whitespace-nowrap w-[60%] overflow-hidden text-ellipsis">{bus.seatCapacity}</td>
+                    <td className="px-20 py-4 flex items-center space-x-2 w-[30%] ml-12">
+                      <button
+                        onClick={() => handleDeleteClick(bus)}
+                        className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           <div className="flex items-center justify-between m-6">
@@ -107,13 +171,53 @@ const BusesContent: React.FC = () => {
             </div>
           </div>
         </div>
-
-
       </div>
 
-
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && busToDelete && (
+        <DeleteModal
+          busId={busToDelete.busId}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          deleting={deleting}
+        />
+      )}
     </div>
   );
 };
 
 export default BusesContent;
+
+// Modal Component
+type DeleteModalProps = {
+  busId: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  deleting: boolean;
+};
+
+const DeleteModal: React.FC<DeleteModalProps> = ({ busId, onConfirm, onCancel, deleting }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+    <div className="bg-white rounded-lg shadow-lg p-6 min-w-[300px]">
+      <div className="mb-4 text-lg font-semibold text-gray-800 text-center">
+        Are you sure to delete <span className="text-red-600 font-bold">{busId}</span>?
+      </div>
+      <div className="flex justify-center space-x-4 mt-6">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition"
+          disabled={deleting}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+          disabled={deleting}
+        >
+          {deleting ? "Deleting..." : "Ok"}
+        </button>
+      </div>
+    </div>
+  </div>
+);

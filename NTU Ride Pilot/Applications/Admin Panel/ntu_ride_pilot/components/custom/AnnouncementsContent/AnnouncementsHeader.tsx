@@ -1,22 +1,14 @@
 "use client";
 import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
-import BusFilterDropdown from './BusFilterDropdown';
-import { useState } from 'react';
+import AnnouncementsFilterDropdown from './AnnouncementsFilterDropdown';
 
-type BusesHeaderProps = {
-  onSearch: (term: string) => void;
-};
+interface AnnouncementsHeaderProps {
+  searchInput: string;
+  setSearchInput: (value: string) => void;
+}
 
-const BusesHeader: React.FC<BusesHeaderProps> = ({ onSearch }) => {
-    const [searchInput, setSearchInput] = useState("");
-
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setSearchInput(value);
-        onSearch(value);
-    };
-
+const AnnouncementsHeader: React.FC<AnnouncementsHeaderProps> = ({ searchInput, setSearchInput }) => {
     return (
         <div className="w-full h-32 bg-[#F5F5F5] p-4 rounded-md">
             {/* Header Icons Row */}
@@ -26,15 +18,15 @@ const BusesHeader: React.FC<BusesHeaderProps> = ({ onSearch }) => {
 
             {/* Main Header Section */}
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Buses</h2>
+                <h2 className="text-2xl font-semibold">Announcements</h2>
                 <div className="flex items-center space-x-3">
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Search by registration or seats"
+                            placeholder="Search"
                             className='w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
                             value={searchInput}
-                            onChange={handleSearchChange}
+                            onChange={e => setSearchInput(e.target.value)}
                         />
                         <button className="absolute right-2 top-1/2 transform -translate-y-1/2">
                             {/* Search Icon */}
@@ -42,12 +34,12 @@ const BusesHeader: React.FC<BusesHeaderProps> = ({ onSearch }) => {
                         </button>
                     </div>
 
-                    <BusFilterDropdown />
-                    <Link href="/dashboard/buses/add-bus">
+                    <AnnouncementsFilterDropdown />
+                    <Link href="/dashboard/announcements/add-announcements">
                         <button
                             className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
                         >
-                            Add Bus
+                            Create
                         </button>
                     </Link>
                 </div>
@@ -56,4 +48,4 @@ const BusesHeader: React.FC<BusesHeaderProps> = ({ onSearch }) => {
     );
 };
 
-export default BusesHeader;
+export default AnnouncementsHeader;

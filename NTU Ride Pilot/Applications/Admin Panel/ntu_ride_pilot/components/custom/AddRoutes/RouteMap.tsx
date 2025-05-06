@@ -30,9 +30,10 @@ type RouteMapProps = {
   busStops: BusStop[];
   addBusStop: (busStopName: string, longitude: number, latitude: number) => void;
   mapCenter?: { lat: number; lng: number } | null;
+  isViewMode?: boolean;
 };
 
-const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) => {
+const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter, isViewMode = false }) => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [webGLError, setWebGLError] = useState<string | null>(null);
@@ -46,17 +47,15 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) 
     pitch: 0,
   });
 
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [newStopCoords, setNewStopCoords] = useState<{ lng: number; lat: number } | null>(null);
   const [newStopName, setNewStopName] = useState("");
 
-  // Markers reference for cleanup
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupsRef = useRef<mapboxgl.Popup[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
-
     return () => {
       if (map.current) {
         map.current.remove();
@@ -111,15 +110,16 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) 
         setWebGLError(`Map error: ${e.error?.message || "Unknown error"}`);
       });
 
-      // Add click event to map for adding bus stops
-      map.current.on("click", (e) => {
-        setNewStopCoords({
-          lng: e.lngLat.lng,
-          lat: e.lngLat.lat,
+      if (!isViewMode) {
+        map.current.on("click", (e) => {
+          setNewStopCoords({
+            lng: e.lngLat.lng,
+            lat: e.lngLat.lat,
+          });
+          setNewStopName("");
+          setShowModal(true);
         });
-        setNewStopName("");
-        setShowModal(true);
-      });
+      }
     } catch (error) {
       console.error("Map initialization error:", error);
       setWebGLError(
@@ -128,18 +128,18 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) 
           : "Failed to initialize the map. Please check your console for details."
       );
     }
-  }, [isMounted]);
+  }, [isMounted]); // Removed isViewMode from dependencies
 
   useEffect(() => {
     if (!map.current) return;
 
-    // Remove existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
+    popupsRef.current.forEach((popup) => popup.remove());
+    popupsRef.current = [];
 
-    // Add new markers
     busStops.forEach((stop) => {
-      const marker = new mapboxgl.Marker({ color: "#2563eb" }) // blue marker
+      const marker = new mapboxgl.Marker({ color: "#2563eb" })
         .setLngLat([parseFloat(stop.longitude), parseFloat(stop.latitude)])
         .addTo(map.current!);
 
@@ -159,17 +159,11 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) 
           white-space: nowrap;
         ">${stop.busStopName}</div>`
       );
-
-      marker.getElement().addEventListener("mouseenter", () => {
-        popup.addTo(map.current!);
-        popup.setLngLat([parseFloat(stop.longitude), parseFloat(stop.latitude)]);
-      });
-
-      marker.getElement().addEventListener("mouseleave", () => {
-        popup.remove();
-      });
+      marker.setPopup(popup);
+      popup.addTo(map.current!);
 
       markersRef.current.push(marker);
+      popupsRef.current.push(popup);
     });
   }, [busStops]);
 
@@ -226,6 +220,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) 
       </div>
     );
   }
+
   return (
     <>
       <div
@@ -233,8 +228,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter }) 
         className="h-[400px] w-full rounded-lg overflow-hidden shadow-md bg-gray-100"
       />
 
-      {/* Modal */}
-      {showModal && (
+      {!isViewMode && showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-80 shadow-lg">
             <h2 className="text-lg font-semibold mb-4">Add Bus Stop</h2>
