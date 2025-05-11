@@ -1,12 +1,15 @@
+"use client"
 import React from 'react'
-import DashboardLayout from '../DashboardLayout'
+import DashboardLayout from '../DashboardLayout';
+import RidesContent from '@/components/custom/RidesContent/RidesContent';
 
 function page() {
   return (
     <DashboardLayout>
-          <div>Rides Content</div>
+      <RidesContent/>
     </DashboardLayout>
+
   )
 }
 
-export default page
+export default page;
