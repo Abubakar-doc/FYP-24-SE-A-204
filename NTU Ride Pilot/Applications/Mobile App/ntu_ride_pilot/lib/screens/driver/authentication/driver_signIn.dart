@@ -37,6 +37,7 @@ class _DriverSignInScreenState extends State<DriverSignInScreen> {
       await _driverAuthService.signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
+        context
       );
 
       setState(() {

@@ -8,11 +8,14 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     Future.delayed(Duration(seconds: 1), () async {
-      await _authService.isSignedIn();
+      await _authService.isSignedIn(context);
     });
 
     return Scaffold(
+      backgroundColor:
+      Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -23,18 +26,13 @@ class SplashScreen extends StatelessWidget {
               // Logo image in the center
               Expanded(
                 child: Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Background color
-                      borderRadius: BorderRadius.circular(10), // Rounded corners
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10), // Apply to image as well
-                      child: Image.asset(
-                        'assets/pictures/National_Textile_University_Logo.png', // Path to your logo
-                        width: 150, // Adjust the width as needed
-                      ),
-                    ),
+                  child: theme.brightness == Brightness.dark
+                      ? Image.asset(
+                    'assets/pictures/logoDark.jpg',
+                  )
+                      : Image.asset(
+                    'assets/pictures/logoLight.jpg',
+                    width: 250,
                   ),
                 ),
               ),

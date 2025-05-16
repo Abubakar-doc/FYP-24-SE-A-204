@@ -116,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() {
                             _isLoggingOut = true;
                           });
-                          await authService.logout();
+                          await authService.logout(context);
                           // Optionally, if logout fails and the user remains on this screen,
                           // you can reset _isLoggingOut to false.
                           setState(() {

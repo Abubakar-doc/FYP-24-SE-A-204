@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
@@ -18,12 +19,17 @@ class AuthService extends GetxController {
 
   String? get currentUserEmail => FirebaseAuth.instance.currentUser?.email;
 
-  Future<void> isSignedIn() async {
+  Future<void> isSignedIn(BuildContext context) async {
     try {
       User? user = _auth.currentUser;
 
       if (user == null) {
-        Get.off(() => WelcomeScreen());
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => WelcomeScreen()),
+              (Route<dynamic> route) => false,
+        );
+
         return;
       }
 
@@ -42,17 +48,25 @@ class AuthService extends GetxController {
         var rideBox = await Hive.openBox<RideModel>('rides');
         if (rideBox.containsKey('currentRide')) {
           // Navigate to RideControlScreen if a ride is found.
-          Get.off(() => RideControlScreen(),
-              transition: Transition.rightToLeft);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => RideControlScreen()),
+                (Route<dynamic> route) => false,
+          );
         } else {
-          // Otherwise, go to the normal DriverHomeScreen.
-          Get.off(() => DriverHomeScreen(),
-              transition: Transition.rightToLeft);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => DriverHomeScreen()),
+                (Route<dynamic> route) => false,
+          );
         }
         return;
       } else if (studentBox.containsKey('current_student')) {
-        Get.off(() => StudentHomeScreen(),
-            transition: Transition.rightToLeft);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => StudentHomeScreen()),
+              (Route<dynamic> route) => false,
+        );
         return;
       }
 
@@ -65,11 +79,17 @@ class AuthService extends GetxController {
         driverBox.put('current_driver', driver);
         var rideBox = await Hive.openBox<RideModel>('rides');
         if (rideBox.containsKey('currentRide')) {
-          Get.off(() => RideControlScreen(),
-              transition: Transition.rightToLeft);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => RideControlScreen()),
+                (Route<dynamic> route) => false,
+          );
         } else {
-          Get.off(() => DriverHomeScreen(),
-              transition: Transition.rightToLeft);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => DriverHomeScreen()),
+                (Route<dynamic> route) => false,
+          );
         }
         return;
       }
@@ -77,8 +97,11 @@ class AuthService extends GetxController {
       StudentModel? student = await studentService.getStudentByEmail(email);
       if (student != null) {
         studentBox.put('current_student', student);
-        Get.off(() => StudentHomeScreen(),
-            transition: Transition.rightToLeft);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => StudentHomeScreen()),
+              (Route<dynamic> route) => false,
+        );
         return;
       }
 
@@ -97,34 +120,8 @@ class AuthService extends GetxController {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
     try {
-      // // Delete the 'driverBox' if it exists.
-      // if (Hive.isBoxOpen('driverBox')) {
-      //   final driverBox = Hive.box<DriverModel>('driverBox');
-      //   await driverBox.clear();
-      //   // await driverBox.close();
-      //   await Hive.deleteBoxFromDisk('driverBox');
-      // } else if (await Hive.boxExists('driverBox')) {
-      //   final driverBox = await Hive.openBox<DriverModel>('driverBox');
-      //   await driverBox.clear();
-      //   // await driverBox.close();
-      //   await Hive.deleteBoxFromDisk('driverBox');
-      // }
-      //
-      // // Delete the 'studentBox' if it exists.
-      // if (Hive.isBoxOpen('studentBox')) {
-      //   final studentBox = Hive.box<StudentModel>('studentBox');
-      //   await studentBox.clear();
-      //   // await studentBox.close();
-      //   await Hive.deleteBoxFromDisk('studentBox');
-      // } else if (await Hive.boxExists('studentBox')) {
-      //   final studentBox = await Hive.openBox<StudentModel>('studentBox');
-      //   await studentBox.clear();
-      //   // await studentBox.close();
-      //   await Hive.deleteBoxFromDisk('studentBox');
-      // }
-
       // Delete the 'rides' box if it exists.
       if (Hive.isBoxOpen('rides')) {
         final rideBox = Hive.box<RideModel>('rides');
@@ -153,8 +150,11 @@ class AuthService extends GetxController {
 
       // Sign out from Firebase and navigate to the welcome screen.
       await FirebaseAuth.instance.signOut();
-      Get.off(() => WelcomeScreen(),
-          transition: Transition.rightToLeft);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => WelcomeScreen()),
+            (Route<dynamic> route) => false, // This removes all previous routes
+      );
     } catch (e) {
       SnackbarUtil.showError("Logout Error", "Unexpected error: ${e.toString()}");
     }

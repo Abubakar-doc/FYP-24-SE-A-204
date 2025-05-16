@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:ntu_ride_pilot/controllers/ride_control_controller.dart';
+import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_control.dart';
@@ -16,7 +17,6 @@ import 'package:ntu_ride_pilot/widget/alert_dialog/alert_dialog.dart';
 import 'package:ntu_ride_pilot/widget/detail_row/detail_row.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:ntu_ride_pilot/services/route/route_service.dart';
-import '../../../model/bus_card/bus_card.dart';
 import 'widget/bus_card_verification_widget.dart';
 
 class RideControlScreen extends StatefulWidget {
@@ -131,7 +131,11 @@ class _RideControlScreenState extends State<RideControlScreen> {
         await _rideService.endRide(_currentRide!, context);
         SnackbarUtil.showSuccess("Success", "Ride ended successfully.");
         // After ending the ride, navigate back to the StartRideScreen.
-        Get.off(StartRideScreen());
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => StartRideScreen()),
+          (Route<dynamic> route) => false,
+        );
       } else {
         // Starting the ride.
         setState(() {
@@ -167,7 +171,11 @@ class _RideControlScreenState extends State<RideControlScreen> {
       liveLocationService.stopPeriodicLocationUpdates();
 
       // Navigate to the StartRideScreen after the ride is canceled
-      Get.off(StartRideScreen());
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => StartRideScreen()),
+        (Route<dynamic> route) => false, // This removes all previous routes
+      );
     } catch (e) {
       print('Error cancelling ride: $e');
       setState(() {
@@ -193,6 +201,8 @@ class _RideControlScreenState extends State<RideControlScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final rawStatus = _currentRide?.rideStatus ?? 'idle';
     String rideStatusDisplay;
     switch (rawStatus) {
@@ -217,7 +227,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
     } else {
       buttonText = isRideInProgress ? 'End Ride' : 'Start Ride';
     }
-    final theme = Theme.of(context);
 
     // Wrap entire UI in WillPopScope to intercept back button
     return WillPopScope(
@@ -255,7 +264,9 @@ class _RideControlScreenState extends State<RideControlScreen> {
               Skeletonizer(
                 enabled: _isLoading,
                 child: Text(
-                  '${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}'.length > 25
+                  '${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}'
+                              .length >
+                          25
                       ? '${'${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}'.substring(0, 22)}...'
                       : '${_currentRide?.busId ?? 'N/A'} - ${_currentRoute?.name ?? 'N/A'}',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -320,16 +331,20 @@ class _RideControlScreenState extends State<RideControlScreen> {
                           child: GestureDetector(
                             onTap: () async {
                               // Open both boxes up front
-                              final rideBox = await Hive.openBox<RideModel>('rides');
-                              final busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
+                              final rideBox =
+                                  await Hive.openBox<RideModel>('rides');
+                              final busCardBox =
+                                  await Hive.openBox<BusCardModel>('bus_cards');
 
                               // Show the modal when the button is tapped
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
-                                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                                backgroundColor:
+                                    Theme.of(context).scaffoldBackgroundColor,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                  borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16)),
                                 ),
                                 builder: (_) {
                                   return RideDetailsModal(
@@ -347,7 +362,6 @@ class _RideControlScreenState extends State<RideControlScreen> {
                               ),
                             ),
                           ),
-
                         ),
                       ],
                     ),

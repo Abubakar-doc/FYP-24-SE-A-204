@@ -53,6 +53,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      preCacheImages(context);
+    });
     return GetX<ThemeController>(
       builder: (controller) {
         return GetMaterialApp(
@@ -66,5 +69,9 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+  void preCacheImages(BuildContext context) {
+    precacheImage(AssetImage('assets/pictures/logoDark.jpg'), context);
+    precacheImage(AssetImage('assets/pictures/logoLight.jpg'), context);
   }
 }
