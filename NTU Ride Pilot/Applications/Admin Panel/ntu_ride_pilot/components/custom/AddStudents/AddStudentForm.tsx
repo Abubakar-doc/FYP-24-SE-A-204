@@ -6,6 +6,8 @@ import RollNumberEmailRow from './RollNumberEmailRow';
 import NameFeePaidRow from './NameFeePaidRow';
 import BusCardRow from './BusCardRow';
 import { firestore } from '@/lib/firebase';
+import { initializeApp } from 'firebase/app';
+import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
 import {
   doc,
   setDoc,
@@ -29,8 +31,22 @@ type Student = {
   created_at: any;
   updated_at: any;
   bus_card_id?: string;
-  bus_card_status?: string;
+  bus_card_status: string; // always present now
 };
+
+// Initialize secondary Firebase app for creating users without affecting admin auth
+const secondaryApp = initializeApp(
+  {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  },
+  'Secondary'
+);
+const secondaryAuth = getAuth(secondaryApp);
 
 const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const searchParams = useSearchParams();
@@ -42,7 +58,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [feePaid] = useState('Yes');
-  const [busCardStatus, setBusCardStatus] = useState('Active');
+  const [busCardStatus, setBusCardStatus] = useState('Inactive');
   const [busCard, setBusCard] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -53,6 +69,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const normalizeSpaces = (str: string) => str.trim().replace(/\s+/g, ' ');
+
+  const isEditMode = formType === 'editForm';
 
   useEffect(() => {
     const fetchRollNumbers = async () => {
@@ -75,7 +93,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   useEffect(() => {
     const fetchStudent = async () => {
-      if (formType === 'editForm' && studentId) {
+      if (isEditMode && studentId) {
         try {
           const studentDocRef = doc(
             firestore,
@@ -91,7 +109,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             setEmail(data.email);
             setName(data.name);
             setBusCard(data.bus_card_id || '');
-            setBusCardStatus(data.bus_card_status || 'Active');
+            setBusCardStatus(data.bus_card_status || 'Inactive');
           } else {
             setErrorMessage('Student not found.');
             setShowNotification(true);
@@ -105,7 +123,38 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       }
     };
     fetchStudent();
-  }, [formType, studentId]);
+  }, [isEditMode, studentId]);
+
+  useEffect(() => {
+    if (!busCard) {
+      setBusCardStatus('Inactive');
+    }
+  }, [busCard]);
+
+  const generatePassword = () => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+    const specials = '!@#$%^&*()';
+
+    const getRandomChar = (str: string) =>
+      str[Math.floor(Math.random() * str.length)];
+
+    let password = [
+      getRandomChar(uppercase),
+      getRandomChar(lowercase),
+      getRandomChar(digits),
+      getRandomChar(specials),
+      getRandomChar(specials),
+    ];
+
+    const allChars = uppercase + lowercase + digits + specials;
+    for (let i = 0; i < 3; i++) {
+      password.push(getRandomChar(allChars));
+    }
+
+    return password.sort(() => Math.random() - 0.5).join('');
+  };
 
   const validateInputs = () => {
     const rollNoRegex = /^\d{2}-NTU-[A-Z]{2}-\d{4}$/;
@@ -138,7 +187,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     setRollNumber('00-NTU-AA-0000');
     setName('');
     setEmail('');
-    setBusCardStatus('Active');
+    setBusCardStatus('Inactive');
     setBusCard('');
   };
 
@@ -154,7 +203,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       return;
     }
 
-    if (!sessionId && formType !== 'editForm') {
+    if (!sessionId && !isEditMode) {
       setErrorMessage('No session selected');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
@@ -180,7 +229,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       /^[A-Za-z\s]+$/.test(normalizedName) &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     ) {
-      if (formType !== 'editForm' && existingRollNumbers.includes(rollNumber)) {
+      if (!isEditMode && existingRollNumbers.includes(rollNumber)) {
         setErrorMessage(`${rollNumber} is already present!`);
         setSuccessMessage('');
         setShowNotification(true);
@@ -189,6 +238,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       }
 
       setLoading(true);
+
       try {
         const studentDocRef = doc(
           firestore,
@@ -197,22 +247,15 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           'students',
           rollNumber
         );
-        const studentData: Student = {
-          roll_no: rollNumber,
-          email: normalizedEmail,
-          name: normalizedName,
-          fee_paid: true,
-          created_at: serverTimestamp(),
-          updated_at: serverTimestamp(),
-        };
-        const isActive = busCardStatus === 'Active';
 
-        if (formType === 'editForm') {
+        const isActive = busCard ? busCardStatus === 'Active' : false;
+
+        if (isEditMode) {
+          // Edit mode: update Firestore only (no auth check or user creation)
           const existingStudentDoc = await getDoc(studentDocRef);
           const existingData = existingStudentDoc.data() as Student;
           const previousBusCardId = existingData.bus_card_id || '';
 
-          // Handle bus card changes
           if (busCard && busCard !== previousBusCardId) {
             const busCardDocRef = doc(firestore, 'bus_cards', busCard);
             const busCardDoc = await getDoc(busCardDocRef);
@@ -239,10 +282,12 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
                 updated_at: serverTimestamp(),
               });
             }
-
-            // Update previous bus card if exists
             if (previousBusCardId) {
-              const prevBusCardRef = doc(firestore, 'bus_cards', previousBusCardId);
+              const prevBusCardRef = doc(
+                firestore,
+                'bus_cards',
+                previousBusCardId
+              );
               await updateDoc(prevBusCardRef, {
                 isActive: false,
                 roll_no: '',
@@ -250,8 +295,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               });
             }
           }
-
-          // Update bus card status (isActive) if busCard is present
           if (busCard) {
             const busCardDocRef = doc(firestore, 'bus_cards', busCard);
             await updateDoc(busCardDocRef, {
@@ -262,79 +305,108 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
           await updateDoc(studentDocRef, {
             email: normalizedEmail,
-            bus_card_id: busCard,
-            bus_card_status: busCardStatus,
+            bus_card_status: busCard ? busCardStatus : 'Inactive',
+            ...(busCard ? { bus_card_id: busCard } : { bus_card_id: '' }),
             updated_at: serverTimestamp(),
           });
 
           setSuccessMessage('Student updated successfully!');
-          // Reset all fields after edit completes
           resetForm();
-        } else {
-          // Handle new student bus card
-          if (busCard) {
-            const busCardDocRef = doc(firestore, 'bus_cards', busCard);
-            const busCardDoc = await getDoc(busCardDocRef);
-
-            if (busCardDoc.exists()) {
-              const busCardData = busCardDoc.data();
-              if (busCardData.roll_no) {
-                setErrorMessage(
-                  `Bus Card is already assigned to ${busCardData.roll_no}`
-                );
-                setBusCard('');
-                setShowNotification(true);
-                setTimeout(() => setShowNotification(false), 3000);
-                setLoading(false);
-                return;
-              }
-            }
-
-            await setDoc(busCardDocRef, {
-              bus_card_id: busCard,
-              isActive: isActive,
-              roll_no: rollNumber,
-              name: normalizedName,
-              created_at: serverTimestamp(),
-              updated_at: serverTimestamp(),
-            });
-          }
-
-          studentData.bus_card_id = busCard;
-          studentData.bus_card_status = busCardStatus;
-          await setDoc(studentDocRef, studentData);
-
-          // Update session
-          const sessionDocRef = doc(firestore, 'sessions', sessionId!);
-          const sessionDocSnap = await getDoc(sessionDocRef);
-
-          if (sessionDocSnap.exists()) {
-            const rollNos: string[] = sessionDocSnap.data()?.roll_no || [];
-            if (!rollNos.includes(rollNumber)) {
-              await updateDoc(sessionDocRef, {
-                roll_no: arrayUnion(rollNumber),
-              });
-            }
-          } else {
-            await setDoc(sessionDocRef, {
-              roll_no: [rollNumber],
-              status: 'active',
-              created_at: serverTimestamp(),
-            });
-          }
-          setSuccessMessage('Student added successfully!');
-          resetForm();
+          setExistingRollNumbers((prev) => [...prev, rollNumber]);
+          setErrorMessage('');
+          setShowNotification(true);
+          setTimeout(() => setShowNotification(false), 3000);
+          setLoading(false);
+          return;
         }
 
+        // Add mode: create user in Firebase Auth first
+        const generatedPassword = generatePassword();
+
+        await createUserWithEmailAndPassword(
+          secondaryAuth,
+          normalizedEmail,
+          generatedPassword
+        );
+
+        // Handle bus card document if assigned
+        if (busCard) {
+          const busCardDocRef = doc(firestore, 'bus_cards', busCard);
+          const busCardDoc = await getDoc(busCardDocRef);
+
+          if (busCardDoc.exists()) {
+            const busCardData = busCardDoc.data();
+            if (busCardData.roll_no) {
+              setErrorMessage(
+                `Bus Card is already assigned to ${busCardData.roll_no}`
+              );
+              setBusCard('');
+              setShowNotification(true);
+              setTimeout(() => setShowNotification(false), 3000);
+              setLoading(false);
+              return;
+            }
+          }
+
+          await setDoc(busCardDocRef, {
+            bus_card_id: busCard,
+            isActive: isActive,
+            roll_no: rollNumber,
+            name: normalizedName,
+            created_at: serverTimestamp(),
+            updated_at: serverTimestamp(),
+          });
+        }
+
+        // Build student data with bus_card_status always present
+        const studentData: Student = {
+          roll_no: rollNumber,
+          email: normalizedEmail,
+          name: normalizedName,
+          fee_paid: true,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+          bus_card_status: busCard ? busCardStatus : 'Inactive',
+          ...(busCard ? { bus_card_id: busCard } : {}),
+        };
+
+        await setDoc(studentDocRef, studentData);
+
+        // Update session document roll_no array
+        const sessionDocRef = doc(firestore, 'sessions', sessionId!);
+        const sessionDocSnap = await getDoc(sessionDocRef);
+
+        if (sessionDocSnap.exists()) {
+          const rollNos: string[] = sessionDocSnap.data()?.roll_no || [];
+          if (!rollNos.includes(rollNumber)) {
+            await updateDoc(sessionDocRef, {
+              roll_no: arrayUnion(rollNumber),
+            });
+          }
+        } else {
+          await setDoc(sessionDocRef, {
+            roll_no: [rollNumber],
+            status: 'active',
+            created_at: serverTimestamp(),
+          });
+        }
+
+        setSuccessMessage('Student added successfully!');
+        resetForm();
         setExistingRollNumbers((prev) => [...prev, rollNumber]);
         setErrorMessage('');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
-      } catch (error) {
-        console.error('Error saving student:', error);
-        setErrorMessage('Failed to save student. Please try again.');
+      } catch (authError: any) {
+        if (
+          authError.code === 'auth/email-already-in-use' ||
+          authError.message?.includes('auth/email-already-in-use')
+        ) {
+          setErrorMessage('Email already registered in authentication system');
+        } else {
+          setErrorMessage('Failed to create authentication user.');
+        }
         setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 3000);
       } finally {
         setLoading(false);
       }
@@ -363,6 +435,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           email={email}
           setEmail={setEmail}
           disabled={loading}
+          disableRollEmail={isEditMode} // <-- Disable Roll No and Email in edit mode
         />
 
         <NameFeePaidRow
@@ -372,15 +445,14 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           disabled={loading}
         />
 
-        {formType === 'editForm' && (
-          <BusCardRow
-            busCard={busCard}
-            setBusCard={setBusCard}
-            busCardStatus={busCardStatus}
-            setBusCardStatus={setBusCardStatus}
-            disabled={loading}
-          />
-        )}
+        <BusCardRow
+          busCard={busCard}
+          setBusCard={setBusCard}
+          busCardStatus={busCardStatus}
+          setBusCardStatus={setBusCardStatus}
+          disabled={loading}
+          statusDisabled={!busCard || loading}
+        />
 
         <div className="flex justify-end space-x-4">
           <button
@@ -401,7 +473,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            {loading ? 'Saving...' : formType === 'editForm' ? 'Update' : 'Add'}
+            {loading ? 'Saving...' : isEditMode ? 'Update' : 'Add'}
           </button>
         </div>
       </form>

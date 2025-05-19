@@ -7,6 +7,7 @@ type BusCardRowProps = {
   busCardStatus: string;
   setBusCardStatus: React.Dispatch<React.SetStateAction<string>>;
   disabled: boolean;
+  statusDisabled?: boolean; // New optional prop to disable status input
 };
 
 const BusCardRow: React.FC<BusCardRowProps> = ({
@@ -15,6 +16,7 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
   busCardStatus,
   setBusCardStatus,
   disabled,
+  statusDisabled = false,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -48,10 +50,10 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
       if (/^\d{10}$/.test(value)) {
         setMessage('Success! Bus card scanned.');
         setIsScanSuccessful(true);
-        setBusCard(value); // Update parent immediately
+        setBusCard(value);
         setTimeout(() => {
           closeModal();
-        }, 1000); // Auto-close after 1s
+        }, 1000);
       } else {
         setMessage('Invalid format. Only digits allowed!');
         setIsScanSuccessful(false);
@@ -69,7 +71,7 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label htmlFor="busCard" className="block text-sm font-semibold text-[#202020]">
-          Bus Card *
+          Bus Card
         </label>
         <input
           type="text"
@@ -79,7 +81,7 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
           value={busCard}
           onFocus={openModal}
           readOnly
-          required
+          required={false} // Optional field
           disabled={disabled}
         />
       </div>
@@ -94,17 +96,16 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
           value={busCardStatus}
           onChange={(e) => setBusCardStatus(e.target.value)}
           required
-          disabled={disabled}
+          disabled={disabled || statusDisabled} // Disable if no bus card or parent disabled
         >
           <option>Active</option>
-          <option>InActive</option>
+          <option>Inactive</option>
         </select>
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            {/* Close Icon */}
             <button
               type="button"
               onClick={closeModal}
@@ -119,13 +120,15 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
             </h3>
             <div className="mt-2 px-7 py-3 text-center">
               <FaIdCard className="mx-auto h-16 w-16 text-blue-500 animate-pulse mb-4" />
-              <p className={`text-sm ${
-                isScanSuccessful
-                  ? 'text-green-500'
-                  : message.startsWith('Tap')
-                  ? 'text-gray-600'
-                  : 'text-red-500'
-              }`}>
+              <p
+                className={`text-sm ${
+                  isScanSuccessful
+                    ? 'text-green-500'
+                    : message.startsWith('Tap')
+                    ? 'text-gray-600'
+                    : 'text-red-500'
+                }`}
+              >
                 {message}
               </p>
               <input
@@ -139,8 +142,7 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
                 className="absolute left-[-9999px]"
                 tabIndex={-1}
                 id="rfid-input"
-                // Prevent Enter from submitting any parent form
-                onKeyDown={e => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter') e.preventDefault();
                 }}
               />

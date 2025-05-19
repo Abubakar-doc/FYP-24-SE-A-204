@@ -1,5 +1,4 @@
-"use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
@@ -10,10 +9,9 @@ import StudentDeleteButton from "./StudentDeleteButton";
 const StudentsContent: React.FC = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [busCardFilter, setBusCardFilter] = useState<"Active" | "InActive" | "All">("Active");
+  const [busCardFilter, setBusCardFilter] = useState<"Active" | "Inactive" | "All">("Active");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  // Fetch students from Firestore
   const fetchStudents = async () => {
     try {
       const studentsCollection = collection(
@@ -36,7 +34,6 @@ const StudentsContent: React.FC = () => {
     fetchStudents();
   }, []);
 
-  // Refresh list after delete
   const handleStudentDeleted = () => {
     fetchStudents();
   };
@@ -44,10 +41,7 @@ const StudentsContent: React.FC = () => {
   // Filtering logic based on bus card status
   const filteredStudents = students.filter((student) => {
     if (busCardFilter === "All") {
-      return (
-        student.bus_card_status === "Active" ||
-        student.bus_card_status === "InActive"
-      );
+      return true; // Show all students regardless of status
     }
     return student.bus_card_status === busCardFilter;
   });
@@ -117,7 +111,7 @@ const StudentsContent: React.FC = () => {
                     {student.fee_paid ? "Paid" : "Not Paid"}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap w-[10%]">
-                    {student.bus_card_status ? student.bus_card_status : "-"}
+                    {student.bus_card_status ?? "-"}
                   </td>
                   <td className="px-20 py-4 flex items-center space-x-2 ">
                     <StudentEditButton rollNo={student.roll_no} />
@@ -130,7 +124,8 @@ const StudentsContent: React.FC = () => {
               ))}
             </tbody>
           </table>
-          <div>
+          {/* Pagination controls omitted for brevity */}
+           <div>
             <div className="flex items-center justify-between m-6">
               <div className="flex items-center">
                 <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">

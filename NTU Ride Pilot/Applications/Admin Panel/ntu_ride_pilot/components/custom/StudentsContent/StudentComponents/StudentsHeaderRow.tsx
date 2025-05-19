@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 
 interface Session {
   id: string;
@@ -9,15 +9,19 @@ interface Session {
 interface StudentsHeaderRowProps {
   sessions: Session[];
   onSessionSelect: (sessionId: string) => void;
+  loading: boolean;
 }
 
-const StudentsHeaderRow: React.FC<StudentsHeaderRowProps> = ({ sessions, onSessionSelect }) => {
+const StudentsHeaderRow: React.FC<StudentsHeaderRowProps> = ({
+  sessions,
+  onSessionSelect,
+  loading,
+}) => {
   useEffect(() => {
-    // Set initial session selection
-    if (sessions.length > 0) {
+    if (!loading && sessions.length > 0) {
       onSessionSelect(sessions[0].id);
     }
-  }, [sessions]);
+  }, [sessions, onSessionSelect, loading]);
 
   const handleSessionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
@@ -31,9 +35,14 @@ const StudentsHeaderRow: React.FC<StudentsHeaderRowProps> = ({ sessions, onSessi
         <select
           onChange={handleSessionChange}
           className="w-full bg-blue-500 text-white px-6 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none"
+          disabled={loading}
+          aria-live="polite"
+          aria-busy={loading}
         >
-          {sessions.length === 0 ? (
-            <option>Loading sessions...</option>
+          {loading ? (
+            <option>Session Loading....</option>
+          ) : sessions.length === 0 ? (
+            <option>No Active Session</option>
           ) : (
             sessions.map((session) => (
               <option key={session.id} value={session.id}>

@@ -1,10 +1,8 @@
-"use client";
-
 import React from "react";
 
 interface StudentFilterDropdownProps {
-  value: "Active" | "InActive" | "All";
-  onChange: (value: "Active" | "InActive" | "All") => void;
+  value: "Active" | "Inactive" | "All";
+  onChange: (value: "Active" | "Inactive" | "All") => void;
 }
 
 const StudentFilterDropdown: React.FC<StudentFilterDropdownProps> = ({
@@ -16,10 +14,10 @@ const StudentFilterDropdown: React.FC<StudentFilterDropdownProps> = ({
       <select
         className="w-full bg-blue-500 text-white text-start px-6 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none"
         value={value}
-        onChange={e => onChange(e.target.value as "Active" | "InActive" | "All")}
+        onChange={e => onChange(e.target.value as "Active" | "Inactive" | "All")}
       >
         <option value="Active">Active</option>
-        <option value="InActive">InActive</option>
+        <option value="Inactive">Inactive</option>
         <option value="All">All</option>
       </select>
       {/* Custom Dropdown Arrow */}

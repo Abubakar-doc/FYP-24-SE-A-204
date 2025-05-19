@@ -19,6 +19,7 @@
     "cloudinary": "^2.6.1",
     "clsx": "^2.1.1",
     "firebase": "^11.4.0",
+    "firebase-admin": "^13.4.0",
     "lucide-react": "^0.475.0",
     "mapbox-gl": "^2.15.0",
     "maplibre-gl": "^5.4.0",

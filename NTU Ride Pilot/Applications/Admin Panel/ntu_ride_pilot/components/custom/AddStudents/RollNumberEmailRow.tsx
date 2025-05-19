@@ -6,6 +6,7 @@ type RollNumberEmailRowProps = {
   email: string;
   setEmail: React.Dispatch<React.SetStateAction<string>>;
   disabled: boolean;
+  disableRollEmail?: boolean; // new optional prop
 };
 
 const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
@@ -14,6 +15,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
   email,
   setEmail,
   disabled,
+  disableRollEmail = false,
 }) => {
   const normalizeSpaces = (str: string) => str.replace(/^\s+/, '').replace(/\s+/g, ' ');
 
@@ -32,13 +34,14 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             className="w-12 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
             value={rollNumber.split('-')[0] || ''}
             onChange={(e) => {
+              if (disableRollEmail) return;
               const val = e.target.value.replace(/\D/g, '').slice(0, 2);
               const parts = rollNumber.split('-');
               parts[0] = val;
               setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
             }}
             required
-            disabled={disabled}
+            disabled={disabled || disableRollEmail}
           />
 
           <span className="text-2xl font-bold">-NTU-</span>
@@ -51,13 +54,14 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             className="w-12 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3 uppercase"
             value={rollNumber.split('-')[2] || ''}
             onChange={(e) => {
+              if (disableRollEmail) return;
               const val = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
               const parts = rollNumber.split('-');
               parts[2] = val;
               setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
             }}
             required
-            disabled={disabled}
+            disabled={disabled || disableRollEmail}
           />
 
           <span className="text-2xl font-bold">-</span>
@@ -70,13 +74,14 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             className="w-16 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
             value={rollNumber.split('-')[3] || ''}
             onChange={(e) => {
+              if (disableRollEmail) return;
               const val = e.target.value.replace(/\D/g, '').slice(0, 4);
               const parts = rollNumber.split('-');
               parts[3] = val;
               setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
             }}
             required
-            disabled={disabled}
+            disabled={disabled || disableRollEmail}
           />
         </div>
       </div>
@@ -90,10 +95,16 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
           id="email"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
           value={email}
-          onChange={(e) => setEmail(normalizeSpaces(e.target.value))}
-          onBlur={(e) => setEmail(normalizeSpaces(e.target.value.trim()))}
+          onChange={(e) => {
+            if (disableRollEmail) return;
+            setEmail(normalizeSpaces(e.target.value));
+          }}
+          onBlur={(e) => {
+            if (disableRollEmail) return;
+            setEmail(normalizeSpaces(e.target.value.trim()));
+          }}
           required
-          
+          disabled={disableRollEmail}
         />
       </div>
     </div>
