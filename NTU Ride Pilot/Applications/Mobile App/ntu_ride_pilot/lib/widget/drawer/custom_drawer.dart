@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ntu_ride_pilot/screens/common/feedback/feedback.dart';
+import 'package:ntu_ride_pilot/screens/common/notification/notification.dart';
 import 'package:ntu_ride_pilot/screens/common/settings/settings.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'bottom_user_info.dart';
@@ -60,7 +62,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   Navigator.pop(context);
                 },
               ),
-
               // CustomListTile for Notifications
               CustomListTile(
                 isCollapsed: _isCollapsed,
@@ -71,6 +72,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   _onTileTapped(1);
                   Navigator.pop(context);
+                  Get.to(() => NotificationScreen(),
+                      transition: Transition.rightToLeft);
                 },
               ),
 
@@ -84,6 +87,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   _onTileTapped(2);
                   Navigator.pop(context);
+                  Get.to(() => FeedbackScreen(),
+                      transition: Transition.rightToLeft);
                 },
               ),
               // CustomListTile for Settings

@@ -19,4 +19,9 @@ const Color textButtonColor = Colors.white;
 // Input Field Colors
 const Color LightInputFieldFillColor = Color(0xFFEFEFEF);
 const Color DarkInputFieldFillColor = Color(0xFF3F4042);
-const Color inputFieldBorderColor = Colors.transparent; // No border
+const Color inputFieldBorderColor = Colors.transparent;
+
+// Card color
+const Color LightCardFillColor = Color(0xFFF5F5F5);
+const Color DarkCardFillColor = Color(0xFF3F4042);
+
