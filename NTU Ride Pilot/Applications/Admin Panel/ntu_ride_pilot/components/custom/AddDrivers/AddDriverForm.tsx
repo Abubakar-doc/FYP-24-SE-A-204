@@ -12,13 +12,34 @@ import {
 } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// --- NEW IMPORTS FOR AUTH ---
+import {
+  initializeApp,
+  getApps,
+  FirebaseApp,
+} from "firebase/app";
+import {
+  getAuth,
+  fetchSignInMethodsForEmail,
+  createUserWithEmailAndPassword,
+  Auth,
+} from "firebase/auth";
+
+// --- PROVIDE YOUR FIREBASE CONFIG FOR SECONDARY APP ---
+const SECONDARY_FIREBASE_CONFIG = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+};
+
 type AddDriverFormProps = {
   onBack?: () => void;
 };
 
 const PAKISTAN_COUNTRY_CODE = '+92';
-
-// Your Cloudinary config - replace with your actual cloud name and preset
 const CLOUDINARY_UPLOAD_PRESET = 'unsigned_preset';
 
 const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
@@ -45,6 +66,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [driverId, setDriverId] = useState<string | null>(null);
   const [existingProfilePic, setExistingProfilePic] = useState<string>(''); // Store existing profile pic URL
+  const [existingProfilePicPublicId, setExistingProfilePicPublicId] = useState<string>(''); // Store existing profile pic public ID
 
   // Normalize and validation functions
   const normalizeName = (name: string) => {
@@ -117,7 +139,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
           if (nameRef.current) nameRef.current.value = driver.name || '';
           if (emailRef.current) emailRef.current.value = driver.email || '';
 
-          let contactNumber = driver.contactNo || ''; // Updated field name
+          let contactNumber = driver.contactNo || '';
           if (contactNumber.startsWith(PAKISTAN_COUNTRY_CODE)) {
             contactNumber = contactNumber.slice(PAKISTAN_COUNTRY_CODE.length);
           } else if (contactNumber.startsWith('+')) {
@@ -125,7 +147,8 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
           }
           if (contactRef.current) contactRef.current.value = contactNumber;
 
-          setExistingProfilePic(driver.profilePicLink || ''); // Updated field name
+          setExistingProfilePic(driver.profilePicLink || '');
+          setExistingProfilePicPublicId(driver.profilePicPublicId || '');
         }
       } catch (error) {
         console.error('Failed to parse driver data:', error);
@@ -133,8 +156,38 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
     }
   }, [searchParams]);
 
-  // Upload image to Cloudinary function
-  const uploadImageToCloudinary = async (file: File): Promise<string> => {
+  // --- RANDOM PASSWORD GENERATOR ---
+  const generateRandomPassword = (): string => {
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const digits = "0123456789";
+    const specials = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+
+    // Ensure at least one of each required type
+    let password = [
+      upper[Math.floor(Math.random() * upper.length)],
+      lower[Math.floor(Math.random() * lower.length)],
+      digits[Math.floor(Math.random() * digits.length)],
+      specials[Math.floor(Math.random() * specials.length)],
+      specials[Math.floor(Math.random() * specials.length)],
+    ];
+
+    // Fill remaining 3 characters randomly
+    const all = upper + lower + digits + specials;
+    for (let i = password.length; i < 8; i++) {
+      password.push(all[Math.floor(Math.random() * all.length)]);
+    }
+    // Shuffle password to randomize character positions
+    for (let i = password.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [password[i], password[j]] = [password[j], password[i]];
+    }
+    return password.join('');
+  };
+
+  // --- CLOUDINARY UPLOAD ---
+  // UPDATED: Return both URL and publicId
+  const uploadImageToCloudinary = async (file: File): Promise<{ url: string; publicId: string }> => {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     if (!cloudName) {
       throw new Error('Cloudinary cloud name not set in environment variables');
@@ -154,10 +207,10 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
     }
 
     const data = await response.json();
-    return data.secure_url; // Return the image URL
+    return { url: data.secure_url, publicId: data.public_id };
   };
 
-  // Form submit handler with Cloudinary upload
+  // --- MAIN SUBMIT HANDLER ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -209,7 +262,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
         return;
       }
 
-      // Check for duplicate email except current driver in edit mode
+      // Check for duplicate email except current driver in edit mode (Firestore)
       const existingDriverWithEmail = querySnapshot.docs.find(doc => {
         const data = doc.data();
         if (isEditMode && doc.id === driverId) return false;
@@ -222,44 +275,94 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
         return;
       }
 
-      // Upload profile picture to Cloudinary if new file selected
-      let profilePicUrl = existingProfilePic; // default to existing pic in edit mode
-      if (profilePicFile) {
-        profilePicUrl = await uploadImageToCloudinary(profilePicFile);
+      // --- AUTHENTICATION LOGIC: ONLY FOR ADD (NOT EDIT) ---
+      if (!isEditMode) {
+        // 1. Initialize secondary app (or get if already initialized)
+        let secondaryApp: FirebaseApp | undefined;
+        const existing = getApps().find(app => app.name === "Secondary");
+        if (existing) {
+          secondaryApp = existing;
+        } else {
+          secondaryApp = initializeApp(SECONDARY_FIREBASE_CONFIG, "Secondary");
+        }
+        const secondaryAuth: Auth = getAuth(secondaryApp);
+
+        // 2. Check if email already exists in Firebase Auth
+        let signInMethods: string[] = [];
+        try {
+          signInMethods = await fetchSignInMethodsForEmail(secondaryAuth, email);
+        } catch (fetchError: any) {
+          showNotification('Failed to check email in authentication table. Please try again.', 'error');
+          setLoading(false);
+          return;
+        }
+
+        if (signInMethods && signInMethods.length > 0) {
+          showNotification(`Email "${email}" already exists in authentication table!`, 'warning');
+          setLoading(false);
+          return;
+        }
+
+        // 3. Generate random password
+        const randomPassword = generateRandomPassword();
+
+        // 4. Try to create user in Firebase Auth
+        try {
+          await createUserWithEmailAndPassword(secondaryAuth, email, randomPassword);
+        } catch (authError: any) {
+          if (authError.code === 'auth/email-already-in-use') {
+            showNotification(`Email "${email}" already exists in authentication table!`, 'warning');
+          } else {
+            showNotification(authError.message || 'Failed to create driver authentication.', 'error');
+          }
+          setLoading(false);
+          return;
+        }
+        // Optionally: send email to driver with password here (not implemented)
       }
 
-      // Prepare data with updated field names
+      // --- IMAGE UPLOAD ---
+      // Upload new profile pic if selected, else keep existing
+      let profilePicUrl = existingProfilePic;
+      let profilePicPublicId = existingProfilePicPublicId;
+      if (profilePicFile) {
+        const uploadResult = await uploadImageToCloudinary(profilePicFile);
+        profilePicUrl = uploadResult.url;
+        profilePicPublicId = uploadResult.publicId;
+      }
+
+      // --- PREPARE DATA ---
       const driverData = {
         name,
         email,
-        contactNo: selectedCode + contact, // updated field name
-        profilePicLink: profilePicUrl, // updated field name
+        contactNo: selectedCode + contact,
+        profilePicLink: profilePicUrl,
+        profilePicPublicId: profilePicPublicId || '',
         updated_at: serverTimestamp(),
         ...(isEditMode ? {} : { created_at: serverTimestamp() }),
       };
 
+      // --- FIRESTORE WRITE ---
       if (isEditMode && driverId) {
         const driverDocRef = doc(driversCollectionRef, driverId);
         await setDoc(driverDocRef, driverData, { merge: true });
         showNotification('Driver updated successfully!', 'success');
-
-        // Reset inputs and clear preview after successful edit
         if (nameRef.current) nameRef.current.value = '';
         if (emailRef.current) emailRef.current.value = '';
         if (contactRef.current) contactRef.current.value = '';
         if (profilePicRef.current) profilePicRef.current.value = '';
         setExistingProfilePic('');
+        setExistingProfilePicPublicId('');
       } else {
         const newDriverDocRef = doc(driversCollectionRef);
         await setDoc(newDriverDocRef, driverData);
         showNotification('Driver added successfully!', 'success');
-
-        // Reset inputs after successful add
         if (nameRef.current) nameRef.current.value = '';
         if (emailRef.current) emailRef.current.value = '';
         if (contactRef.current) contactRef.current.value = '';
         if (profilePicRef.current) profilePicRef.current.value = '';
         setExistingProfilePic('');
+        setExistingProfilePicPublicId('');
       }
     } catch (error: any) {
       showNotification(error.message || 'Failed to add/update driver.', 'error');
@@ -275,6 +378,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
     if (contactRef.current) contactRef.current.value = '';
     if (profilePicRef.current) profilePicRef.current.value = '';
     setExistingProfilePic('');
+    setExistingProfilePicPublicId('');
     setIsNotificationVisible(false);
     setSuccessMessage('');
     setErrorMessage('');
@@ -332,7 +436,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
                 className="rounded-md border-gray-300 bg-[#F5F5F5] focus:border-blue-500 focus:ring-blue-500 p-3 text-sm mr-2"
                 style={{ minWidth: 90 }}
                 required
-                disabled // country code fixed to +92
+                disabled
               >
                 <option value={PAKISTAN_COUNTRY_CODE}>{PAKISTAN_COUNTRY_CODE}</option>
               </select>
@@ -355,7 +459,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
             <label htmlFor="profilePicture" className="block text-sm font-semibold text-[#202020]">
               Profile Picture {isEditMode ? '(Optional)' : '*'}
             </label>
-
             <input
               type="file"
               id="profilePicture"
@@ -365,7 +468,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
               {...(!isEditMode ? { required: true } : {})}
               disabled={loading}
             />
-            {/* Existing profile picture preview */}
             {existingProfilePic && (
               <img
                 src={existingProfilePic}
@@ -375,7 +477,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
             )}
           </div>
         </div>
-
         {/* Buttons */}
         <div className="flex justify-end space-x-4">
           <button

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useState, useRef, useEffect } from 'react';
 import AddAnnouncementsHeader from './AddAnnouncementsHeader';
 import { firestore } from '@/lib/firebase';
@@ -34,7 +34,8 @@ const getFileIcon = (file: File) => {
   return <FaFileAlt className="text-gray-600 w-5 h-5" />;
 };
 
-const uploadFileToCloudinary = async (file: File): Promise<string> => {
+// Upload file returns { url, publicId }
+const uploadFileToCloudinary = async (file: File): Promise<{ url: string; publicId: string }> => {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     throw new Error('Cloudinary cloud name not set in environment variables');
@@ -54,7 +55,7 @@ const uploadFileToCloudinary = async (file: File): Promise<string> => {
   }
 
   const data = await response.json();
-  return data.secure_url;
+  return { url: data.secure_url, publicId: data.public_id };
 };
 
 const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) => {
@@ -167,7 +168,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
             (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
           )
       );
-
       setFiles((prev) => [...prev, ...newFiles]);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -245,11 +245,13 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
 
     try {
       let mediaLinks: string[] = [];
+      let mediaPublicIds: string[] = [];
       if (files.length > 0) {
         for (const file of files) {
           if (ALLOWED_MIME_TYPES.includes(file.type)) {
-            const url = await uploadFileToCloudinary(file);
+            const { url, publicId } = await uploadFileToCloudinary(file);
             mediaLinks.push(url);
+            mediaPublicIds.push(publicId);
           }
         }
       }
@@ -261,6 +263,7 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
         title,
         message,
         mediaLinks: mediaLinks.length > 0 ? mediaLinks : [],
+        mediaPublicIds: mediaPublicIds.length > 0 ? mediaPublicIds : [],
         created_at: serverTimestamp(),
       });
 
@@ -331,7 +334,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
             placeholder="Enter Announcement Title"
           />
         </div>
-
         <div className="mb-4">
           <label htmlFor="message" className="block text-sm font-semibold text-[#202020] mb-1">
             Message*

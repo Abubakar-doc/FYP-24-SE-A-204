@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import AnnouncementsHeader from "./AnnouncementsHeader";
 import { useRouter } from "next/navigation";
-import { FaEye, FaTrashAlt } from 'react-icons/fa';
+import { FaEye, FaTrashAlt } from "react-icons/fa";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 
@@ -13,6 +13,7 @@ interface Announcement {
   message: string;
   created_at: any;
   mediaLinks?: string[];
+  mediaPublicIds?: string[]; // Optional array of public IDs
 }
 
 const AnnouncementsContent: React.FC = () => {
@@ -36,14 +37,16 @@ const AnnouncementsContent: React.FC = () => {
   const formatTimestamp = (timestamp: any): string => {
     if (!timestamp) return "";
     const date = timestamp.toDate();
-    return date.toLocaleString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }).replace(",", " ");
+    return date
+      .toLocaleString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+      .replace(",", " ");
   };
 
   // Fetch announcements
@@ -60,6 +63,7 @@ const AnnouncementsContent: React.FC = () => {
           message: docData.message || "",
           created_at: docData.created_at,
           mediaLinks: docData.mediaLinks || [],
+          mediaPublicIds: docData.mediaPublicIds || [],
         });
       });
       data.sort((a, b) => b.created_at?.seconds - a.created_at?.seconds);
@@ -85,19 +89,37 @@ const AnnouncementsContent: React.FC = () => {
     setShowModal(true);
   };
 
-  // Delete announcement from Firestore only
+  // Delete announcement and associated media files
   const handleConfirmDelete = async () => {
     if (!announcementToDelete) return;
     setDeleteLoading(true);
 
     try {
+      // Step 1: Delete media files from Cloudinary via backend API if mediaPublicIds exist and length > 0
+      if (
+        announcementToDelete.mediaPublicIds &&
+        announcementToDelete.mediaPublicIds.length > 0
+      ) {
+        const response = await fetch("/api/delete-cloudinary-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicIds: announcementToDelete.mediaPublicIds }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete media files from Cloudinary");
+        }
+      }
+
+      // Step 2: Delete announcement document from Firestore
       await deleteDoc(doc(firestore, "announcements", announcementToDelete.id));
-      setAnnouncements(prev => prev.filter(a => a.id !== announcementToDelete.id));
+      setAnnouncements((prev) => prev.filter((a) => a.id !== announcementToDelete.id));
       setShowModal(false);
       setAnnouncementToDelete(null);
     } catch (err) {
       console.error("Failed to delete announcement:", err);
-      alert("Failed to delete announcement. Please try again.");
+      alert("Failed to delete announcement or associated media files. Please try again.");
     } finally {
       setDeleteLoading(false);
     }
@@ -131,11 +153,21 @@ const AnnouncementsContent: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%] border-b border-gray-300">ID</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%] border-b border-gray-300">Title</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[40%] border-b border-gray-300">Message</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%] border-b border-gray-300">Created On</th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%] border-b border-gray-300">Actions</th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%] border-b border-gray-300">
+                  ID
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%] border-b border-gray-300">
+                  Title
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[40%] border-b border-gray-300">
+                  Message
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%] border-b border-gray-300">
+                  Created On
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%] border-b border-gray-300">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-300 text-center">

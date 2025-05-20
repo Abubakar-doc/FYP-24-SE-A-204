@@ -70,6 +70,7 @@ const DriversContent: React.FC = () => {
       ...driver,
       contact_no: driver.contactNo,
       profile_pic_link: driver.profilePicLink,
+      profile_pic_public_id: driver.profilePicPublicId, // Include public ID for editing if needed
     };
     const encodedDriver = encodeURIComponent(JSON.stringify(driverDataForEdit));
     router.push(`/dashboard/drivers/add-driver?driver=${encodedDriver}`);
@@ -93,7 +94,53 @@ const DriversContent: React.FC = () => {
         "drivers",
         driverToDelete.id
       );
+
+      // 1. Delete driver profile picture from Cloudinary via backend API if publicId exists
+      if (driverToDelete.profilePicPublicId) {
+        try {
+          const response = await fetch('/api/delete-cloudinary-media', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ publicIds: [driverToDelete.profilePicPublicId] }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete driver profile picture from Cloudinary');
+          }
+        } catch (cloudinaryError) {
+          console.error("Error deleting driver profile picture from Cloudinary:", cloudinaryError);
+          // Continue even if profile pic deletion fails
+          alert(`Driver profile picture deletion failed: ${(cloudinaryError as Error).message}`);
+        }
+      }
+
+      // 2. Delete driver document from Firestore
       await deleteDoc(driverDocRef);
+
+      // 3. Delete driver account from Firebase Authentication via API (existing logic)
+      if (driverToDelete.email) {
+        try {
+          const response = await fetch('/api/delete-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: driverToDelete.email }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete auth user');
+          }
+        } catch (authError: any) {
+          console.error("Error deleting driver from authentication:", authError);
+          alert(`Driver data deleted but auth account deletion failed: ${authError.message || authError}`);
+        }
+      }
+
       setShowDeleteModal(false);
       setDriverToDelete(null);
       // Refresh drivers list
