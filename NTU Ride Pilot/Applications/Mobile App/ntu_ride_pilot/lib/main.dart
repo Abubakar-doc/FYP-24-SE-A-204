@@ -9,8 +9,9 @@ import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/home/home_screen.dart';
-import 'package:ntu_ride_pilot/services/common/common_auth.dart';
+import 'package:ntu_ride_pilot/services/common/authentication/common_auth.dart';
 import 'controllers/theme_controller.dart';
+import 'model/notification/notification.dart';
 import 'themes/light_theme.dart';
 import 'themes/dark_theme.dart';
 
@@ -24,6 +25,11 @@ void main() async {
   Hive.registerAdapter(StudentModelAdapter());
   Hive.registerAdapter(BusCardModelAdapter());
   Hive.registerAdapter(RideModelAdapter());
+  Hive.registerAdapter(NotificationModelAdapter());
+  await Hive.openBox<NotificationModel>('notificationBox');
+  await Hive.box<NotificationModel>('notificationBox').clear();
+
+
   if (!Hive.isBoxOpen('driverBox')) {
     await Hive.openBox<DriverModel>('driverBox');
   }
@@ -39,6 +45,7 @@ void main() async {
   await mapbox_setup();
   runApp(MyApp());
 }
+
 
 Future<void> mapbox_setup() async {
   MapboxOptions.setAccessToken("pk.eyJ1IjoiYTEzdTEzYWthciIsImEiOiJjbTZ1enk1OWQwMmk0MmpzY2hvZW9hdm1yIn0.MUvJhxa9kuRSvus6oclMMw");
@@ -73,5 +80,6 @@ class MyApp extends StatelessWidget {
   void preCacheImages(BuildContext context) {
     precacheImage(AssetImage('assets/pictures/logoDark.jpg'), context);
     precacheImage(AssetImage('assets/pictures/logoLight.jpg'), context);
+    precacheImage(AssetImage('assets/pictures/National_Textile_University_Logo.png'), context);
   }
 }

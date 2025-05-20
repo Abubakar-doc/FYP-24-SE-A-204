@@ -23,13 +23,14 @@ class NotificationModelAdapter extends TypeAdapter<NotificationModel> {
       mediaLinks: (fields[3] as List).cast<String>(),
       createdAt: fields[4] as DateTime,
       read: fields[5] as bool,
+      isDeleted: fields[6] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, NotificationModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.notificationId)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class NotificationModelAdapter extends TypeAdapter<NotificationModel> {
       ..writeByte(4)
       ..write(obj.createdAt)
       ..writeByte(5)
-      ..write(obj.read);
+      ..write(obj.read)
+      ..writeByte(6)
+      ..write(obj.isDeleted);
   }
 
   @override

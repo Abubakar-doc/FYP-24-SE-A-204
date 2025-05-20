@@ -23,16 +23,20 @@ class NotificationModel {
   @HiveField(5)
   bool read;
 
+  @HiveField(6)
+  bool isDeleted;  // NEW: flag to mark if notification is deleted
+
   NotificationModel({
     required this.notificationId,
     required this.title,
     required this.message,
     required this.mediaLinks,
     required this.createdAt,
-    this.read = false,  // Default value is false
+    this.read = false,
+    this.isDeleted = false,  // Default false
   });
 
-  // Convert NotificationModel to a Map for saving in Firestore
+  // Convert NotificationModel to Map for Firestore or other uses
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -40,26 +44,60 @@ class NotificationModel {
       'mediaLinks': mediaLinks,
       'createdAt': createdAt.toIso8601String(),
       'read': read,
+      'isDeleted': isDeleted,
     };
   }
 
-  // Factory constructor for creating NotificationModel from a Map
+  // Create NotificationModel from Firestore map
   factory NotificationModel.fromMap(Map<String, dynamic> map, String docId) {
-    // Handle createdAt field: Check if it's a Timestamp and convert it to DateTime
     DateTime createdAt;
     if (map['created_at'] is Timestamp) {
-      createdAt = (map['created_at'] as Timestamp).toDate(); // Convert Timestamp to DateTime
+      createdAt = (map['created_at'] as Timestamp).toDate();
     } else {
-      createdAt = DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String());
+      createdAt = DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now();
     }
 
     return NotificationModel(
-      notificationId: docId,  // Using the Firestore document ID
+      notificationId: docId,
       title: map['title'] ?? 'Untitled Notification',
       message: map['message'] ?? 'No message',
       mediaLinks: List<String>.from(map['mediaLinks'] ?? []),
       createdAt: createdAt,
-      read: map['read'] ?? false,  // Default to false if not present
+      read: map['read'] ?? false,
+      isDeleted: map['isDeleted'] ?? false,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is NotificationModel &&
+        other.notificationId == notificationId &&
+        other.title == title &&
+        other.message == message &&
+        other.read == read &&
+        other.isDeleted == isDeleted &&
+        other.createdAt == createdAt &&
+        _listEquals(other.mediaLinks, mediaLinks);
+  }
+
+  @override
+  int get hashCode {
+    return notificationId.hashCode ^
+    title.hashCode ^
+    message.hashCode ^
+    read.hashCode ^
+    isDeleted.hashCode ^
+    createdAt.hashCode ^
+    mediaLinks.hashCode;
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }

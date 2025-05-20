@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ntu_ride_pilot/services/common/common_auth.dart';
+import 'package:ntu_ride_pilot/services/common/authentication/common_auth.dart';
 
 class SplashScreen extends StatelessWidget {
   final AuthService _authService = AuthService();

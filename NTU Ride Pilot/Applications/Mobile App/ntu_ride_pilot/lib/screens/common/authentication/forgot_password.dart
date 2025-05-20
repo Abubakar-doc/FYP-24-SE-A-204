@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:ntu_ride_pilot/services/common/common_auth.dart';
+import 'package:ntu_ride_pilot/services/common/authentication/common_auth.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
