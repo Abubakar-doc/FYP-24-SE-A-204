@@ -1,7 +1,7 @@
 "use client"
 import AddStudentForm from '@/components/custom/AddStudents/AddStudentForm';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '../../DashboardLayout';
+import DashboardLayout from '../../dashboardLayout';
 
 export default function AddStudentPage() {
   const router = useRouter();

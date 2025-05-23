@@ -1,7 +1,7 @@
 "use client"
 import AddBusForm from '@/components/custom/AddBuses/AddBusForm';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '../../DashboardLayout';
+import DashboardLayout from '../../dashboardLayout';
 
 export default function AddSessionPage() {
   const router = useRouter();
