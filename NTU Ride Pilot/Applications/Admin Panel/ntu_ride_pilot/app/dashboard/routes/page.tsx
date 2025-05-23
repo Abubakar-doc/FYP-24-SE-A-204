@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '../dashboardLayout';
+import DashboardLayout from '@/app/dashboard/dashboardLayout';
 import RoutesContent from '@/components/custom/RoutesContent/RoutesContent';
 
 export default function RoutesPage() {

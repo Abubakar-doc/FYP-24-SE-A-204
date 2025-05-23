@@ -1,6 +1,6 @@
 "use client"
 import React from 'react'
-import DashboardLayout from '../DashboardLayout';
+import DashboardLayout from '@/app/dashboard/dashboardLayout';
 import RidesContent from '@/components/custom/RidesContent/RidesContent';
 
 function page() {
