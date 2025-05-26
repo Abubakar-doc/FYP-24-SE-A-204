@@ -35,8 +35,8 @@ class _RideControlScreenState extends State<RideControlScreen> {
   bool _isLoading = true;
   bool _isProcessing = false;
   String _buttonProgressText = '';
-  String _formattedETA = 'N/A';
-  String _nextStopName = 'N/A';
+  String _formattedETA = '-';
+  String _nextStopName = '-';
 
   @override
   void initState() {
@@ -53,11 +53,11 @@ class _RideControlScreenState extends State<RideControlScreen> {
       if (event.value is RideModel) {
         final updatedRide = event.value as RideModel;
         final eta = updatedRide.etaNextStop;
-        final stopName = updatedRide.nextStopName ?? 'N/A';
+        final stopName = updatedRide.nextStopName ?? '-';
 
         // Format ETA as 8:00 AM/PM
         final DateFormat formatter = DateFormat('h:mm a');
-        final formattedETA = eta != null ? formatter.format(eta) : 'N/A';
+        final formattedETA = eta != null ? formatter.format(eta) : '-';
 
         // Update the state with the new values to refresh the UI
         setState(() {
@@ -167,7 +167,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
       await _rideService.cancelRide(_currentRide!, context);
 
       // Stop live location updates
-      LiveLocationService liveLocationService = LiveLocationService(context);
+      LocationService liveLocationService = LocationService(context);
       liveLocationService.stopPeriodicLocationUpdates();
 
       // Navigate to the StartRideScreen after the ride is canceled

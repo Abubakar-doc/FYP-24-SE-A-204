@@ -24,7 +24,7 @@ class NotificationModel {
   bool read;
 
   @HiveField(6)
-  bool isDeleted;  // NEW: flag to mark if notification is deleted
+  bool isDeleted;
 
   NotificationModel({
     required this.notificationId,

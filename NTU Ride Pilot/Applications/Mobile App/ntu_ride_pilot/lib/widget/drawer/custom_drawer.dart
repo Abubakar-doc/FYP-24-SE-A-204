@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ntu_ride_pilot/controllers/notification_controller.dart';
 import 'package:ntu_ride_pilot/screens/common/feedback/feedback.dart';
 import 'package:ntu_ride_pilot/screens/common/notification/notification.dart';
 import 'package:ntu_ride_pilot/screens/common/settings/settings.dart';
@@ -17,6 +18,7 @@ class CustomDrawer extends StatefulWidget {
 
 class _CustomDrawerState extends State<CustomDrawer> {
   final bool _isCollapsed = true;
+  final notificationController = Get.find<NotificationController>();
 
   int _activeIndex = 0;
 
@@ -53,8 +55,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
               // CustomListTile for Home
               CustomListTile(
                 isCollapsed: _isCollapsed,
-                icon: Icons.home_outlined,
-                title: 'Home',
+                icon: Icons.directions_bus_sharp,
+                title: 'Rides',
                 infoCount: 0,
                 isActive: _activeIndex == 0,
                 onTap: () {
@@ -63,19 +65,22 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 },
               ),
               // CustomListTile for Notifications
-              CustomListTile(
-                isCollapsed: _isCollapsed,
-                icon: Icons.notifications,
-                title: 'Notifications',
-                infoCount: 2,
-                isActive: _activeIndex == 1,
-                onTap: () {
-                  _onTileTapped(1);
-                  Navigator.pop(context);
-                  Get.to(() => NotificationScreen(),
-                      transition: Transition.rightToLeft);
-                },
-              ),
+              Obx(() {
+                int count = notificationController.unreadCount.value;
+                return CustomListTile(
+                    isCollapsed: _isCollapsed,
+                    icon: Icons.notifications,
+                    title: 'Notifications',
+                    infoCount: count,
+                    isActive: _activeIndex == 1,
+                    onTap: () {
+                      _onTileTapped(1);
+                      Navigator.pop(context);
+                      Get.to(() => NotificationScreen(),
+                          transition: Transition.rightToLeft);
+                    },
+                  );
+              }),
 
               // CustomListTile for Feedback
               CustomListTile(

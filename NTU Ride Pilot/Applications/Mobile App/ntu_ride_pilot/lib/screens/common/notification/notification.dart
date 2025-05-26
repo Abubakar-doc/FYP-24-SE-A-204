@@ -1,9 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:ntu_ride_pilot/controllers/notification_controller.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
-import 'package:ntu_ride_pilot/screens/common/notification/widget/notifcation_widgets.dart';
-import 'package:ntu_ride_pilot/services/common/notification/notificationRepository.dart';
+import 'package:ntu_ride_pilot/screens/common/notification/widget/notifcation_list.dart';
+import 'package:ntu_ride_pilot/screens/common/notification/widget/notification_list_loading_placeholder.dart';
+import 'package:ntu_ride_pilot/services/common/permission/notification_permission.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -17,84 +19,54 @@ class _NotificationScreenState extends State<NotificationScreen>
   @override
   bool get wantKeepAlive => true;
 
-  StreamSubscription<List<NotificationModel>>? _streamSubscription;
-  final NotificationRepository _repository = NotificationRepository();
-
+  final NotificationController controller = Get.find();
   final ScrollController _scrollController = ScrollController();
+  final NotificationPermission _notificationPermission =
+      NotificationPermission();
 
-  bool _isLoading = true;
   bool _isLoadingMore = false;
-
-  Map<String, List<NotificationModel>> groupedNotifications = {};
 
   @override
   void initState() {
     super.initState();
-    _init();
+    _requestNotificationPermission();
     _scrollController.addListener(_scrollListener);
+    controller.captureNewSnapshot();
   }
 
-  @override
-  void dispose() {
-    _streamSubscription?.cancel();
-    _scrollController.dispose();
-    super.dispose();
+  Future<void> _requestNotificationPermission() async {
+    await _notificationPermission.requestPermission();
   }
 
-  Future<void> _init() async {
-    await _repository.init();
-    _setupStream();
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreNotifications();
+    }
+  }
+
+  Future<void> _loadMoreNotifications() async {
+    if (_isLoadingMore || !controller.hasMore) return;
+
     setState(() {
-      _isLoading = false;
-      _groupNotifications();
+      _isLoadingMore = true;
     });
-  }
 
-  void _setupStream() {
-    _streamSubscription = _repository
-        .getLatestNotificationsStream()
-        .listen((updatedNotifications) async {
-      if (updatedNotifications.isNotEmpty) {
-        // Updated notifications received from Firestore, replace local list
-
-        // Extract IDs from incoming stream
-        final updatedIds =
-            updatedNotifications.map((n) => n.notificationId).toSet();
-
-        // Remove local notifications NOT present in updated stream
-        _repository.notifications.removeWhere(
-            (localNotif) => !updatedIds.contains(localNotif.notificationId));
-
-        // Add or update notifications from stream
-        for (var notification in updatedNotifications) {
-          final index = _repository.notifications.indexWhere(
-              (n) => n.notificationId == notification.notificationId);
-          if (index != -1) {
-            // Update existing notification
-            if (_repository.notifications[index] != notification) {
-              _repository.notifications[index] = notification;
-            }
-          } else {
-            // Add new notification
-            _repository.notifications.insert(0, notification);
-          }
-        }
-
-        if (mounted) {
-          setState(() {
-            _groupNotifications();
-          });
-        }
-      } else {
-        // Clear all notifications locally if stream is empty
-        if (_repository.notifications.isNotEmpty && mounted) {
-          _repository.notifications.clear();
-          setState(() {
-            _groupNotifications();
-          });
-        }
+    try {
+      final newNotifications = await controller.loadMore();
+      if (newNotifications.isNotEmpty) {
+        // Grouping and UI update will happen automatically because `notifications` is reactive
       }
-    });
+    } catch (e) {
+      debugPrint('Error loading more notifications: $e');
+      controller.hasMore = false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
   }
 
   String _formatDate(DateTime timestamp) {
@@ -114,90 +86,156 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
-  void _groupNotifications() {
+  // Map<String, List<NotificationModel>> _groupNotifications(
+  //     List<NotificationModel> notifications, Set<String> newIdsUnion) {
+  //   final grouped = <String, List<NotificationModel>>{};
+  //
+  //   final newNotifications = notifications
+  //       .where((n) => newIdsUnion.contains(n.notificationId))
+  //       .toList();
+  //
+  //   if (newNotifications.isNotEmpty) {
+  //     newNotifications
+  //         .sort((a, b) => a.createdAt.compareTo(b.createdAt)); // ascending
+  //
+  //     final count = newNotifications.length;
+  //     final newLabel = '$count new notification${count == 1 ? '' : 's'}';
+  //
+  //     grouped[newLabel] = newNotifications;
+  //   }
+  //
+  //   final others = notifications
+  //       .where((n) => !newIdsUnion.contains(n.notificationId))
+  //       .toList();
+  //
+  //   for (var n in others) {
+  //     final date = _formatDate(n.createdAt);
+  //     grouped.putIfAbsent(date, () => []).add(n);
+  //   }
+  //
+  //   grouped.forEach((key, list) {
+  //     if (!key.startsWith(RegExp(r'\d+ new notification'))) {
+  //       list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  //     }
+  //   });
+  //
+  //   return grouped;
+  // }
+  Map<String, List<NotificationModel>> _groupNotifications(
+      List<NotificationModel> notifications, Set<String> newIdsUnion) {
+
     final grouped = <String, List<NotificationModel>>{};
-    for (final n in _repository.notifications) {
+
+    final newNotifications = notifications
+        .where((n) => newIdsUnion.contains(n.notificationId))
+        .toList();
+
+    if (newNotifications.isNotEmpty) {
+      newNotifications.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      final count = newNotifications.length;
+      final newLabel = '$count new notification${count == 1 ? '' : 's'}';
+      grouped[newLabel] = newNotifications;
+    }
+
+    final others = notifications
+        .where((n) => !newIdsUnion.contains(n.notificationId))
+        .toList();
+
+    for (var n in others) {
       final date = _formatDate(n.createdAt);
       grouped.putIfAbsent(date, () => []).add(n);
     }
+
     grouped.forEach((key, list) {
-      list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      if (!key.startsWith(RegExp(r'\d+ new notification'))) {
+        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
     });
-    groupedNotifications = grouped;
+
+    return grouped;
   }
 
-  void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      _loadMoreNotifications();
-    }
-  }
+
 
   String _formatTimestamp(DateTime timestamp) {
     return DateFormat('h:mm a').format(timestamp);
   }
 
-  Future<void> _loadMoreNotifications() async {
-    if (_isLoadingMore || !_repository.hasMore) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    try {
-      final newNotifications = await _repository.loadMore();
-      if (newNotifications.isNotEmpty) {
-        _groupNotifications();
-      }
-    } catch (e) {
-      debugPrint('Error loading more notifications: $e');
-      _repository.hasMore = false;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingMore = false;
-        });
-      }
-    }
+  // @override
+  // void dispose() {
+  //   controller.clearNewSnapshot();
+  //   _scrollController.dispose();
+  //   super.dispose();
+  // }
+  @override
+  void dispose() {
+    controller.onScreenClosed();
+    _scrollController.dispose();
+    super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context);
+
     final theme = Theme.of(context);
 
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Notifications',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          bottom: _isLoading
-              ? PreferredSize(
-                  preferredSize: const Size.fromHeight(4.0),
-                  child: LinearProgressIndicator(
-                      minHeight: 3,
-                      color: Colors.blue,
-                      backgroundColor: Colors.blue[100]),
-                )
-              : null,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Notifications',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              IconButton(
+                onPressed: null,
+                icon: Icon(
+                  Icons.more_vert,
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
+                ),
+              ),
+            ],
+          ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _isLoading
-              ? Container()
-              : _repository.notifications.isEmpty
-                  ? Center(
-                      child: Image.asset('assets/pictures/noNotification.png'))
-                  : NotificationList(
-                      scrollController: _scrollController,
-                      groupedNotifications: groupedNotifications,
-                      isLoadingMore: _isLoadingMore,
-                      hasMore: _repository.hasMore,
-                      theme: theme,
-                      isLoading: _isLoading,
-                      formatTimestamp: _formatTimestamp,
-                    ),
-        ),
+        body: Obx(() {
+          final notifications = controller.notifications;
+
+          if (notifications.isEmpty) {
+            if (controller.isInitialized) {
+              return Center(
+                  child: Image.asset('assets/pictures/noNotification.png'));
+            } else {
+              return const NotificationListLoadingPlaceholder();
+            }
+          }
+
+          final combinedNewIds = {
+            ...controller.newIdsSnapshot,
+            ...controller.currentlyNewNotificationIds
+          };
+
+          final groupedNotifications = _groupNotifications(
+            controller.notifications,
+            combinedNewIds,
+          );
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: NotificationList(
+              scrollController: _scrollController,
+              groupedNotifications: groupedNotifications,
+              isLoadingMore: _isLoadingMore,
+              hasMore: controller.hasMore,
+              theme: theme,
+              isLoading: false,
+              formatTimestamp: _formatTimestamp,
+            ),
+          );
+        }),
       ),
     );
   }

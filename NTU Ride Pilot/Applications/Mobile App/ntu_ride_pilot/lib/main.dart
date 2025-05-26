@@ -2,16 +2,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
-import 'package:ntu_ride_pilot/model/driver/driver.dart';
-import 'package:ntu_ride_pilot/model/ride/ride.dart';
-import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/home/home_screen.dart';
 import 'package:ntu_ride_pilot/services/common/authentication/common_auth.dart';
+import 'package:ntu_ride_pilot/services/common/hive/hive_services.dart';
+import 'package:ntu_ride_pilot/services/common/media/media_service.dart';
+import 'package:ntu_ride_pilot/services/common/notification/notification_service.dart';
+import 'package:ntu_ride_pilot/services/ride/live_location.dart';
+import 'controllers/notification_controller.dart';
 import 'controllers/theme_controller.dart';
-import 'model/notification/notification.dart';
 import 'themes/light_theme.dart';
 import 'themes/dark_theme.dart';
 
@@ -19,49 +17,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await GetStorage.init();
+  await NotificationService().init();
   Get.put(AuthService());
-  await Hive.initFlutter();
-  Hive.registerAdapter(DriverModelAdapter());
-  Hive.registerAdapter(StudentModelAdapter());
-  Hive.registerAdapter(BusCardModelAdapter());
-  Hive.registerAdapter(RideModelAdapter());
-  Hive.registerAdapter(NotificationModelAdapter());
-  await Hive.openBox<NotificationModel>('notificationBox');
-  await Hive.box<NotificationModel>('notificationBox').clear();
-
-
-  if (!Hive.isBoxOpen('driverBox')) {
-    await Hive.openBox<DriverModel>('driverBox');
-  }
-  if (!Hive.isBoxOpen('studentBox')) {
-    await Hive.openBox<StudentModel>('studentBox');
-  }
-  if (!Hive.isBoxOpen('bus_cardsBox')) {
-    await Hive.openBox<BusCardModel>('bus_cardsBox');
-  }
-  if (!Hive.isBoxOpen('rideBox')) {
-    await Hive.openBox<RideModel>('rideBox');
-  }
-  await mapbox_setup();
+  await HiveService.init();
+  await LocationService.init();
   runApp(MyApp());
 }
-
-
-Future<void> mapbox_setup() async {
-  MapboxOptions.setAccessToken("pk.eyJ1IjoiYTEzdTEzYWthciIsImEiOiJjbTZ1enk1OWQwMmk0MmpzY2hvZW9hdm1yIn0.MUvJhxa9kuRSvus6oclMMw");
-}
-
-
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final ThemeController themeController = Get.put(ThemeController());
+  final NotificationController notificationController = Get.put(NotificationController());
+  final MediaService mediaService = MediaService();
 
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      preCacheImages(context);
+      mediaService.preCacheImages(context);
     });
     return GetX<ThemeController>(
       builder: (controller) {
@@ -70,16 +43,10 @@ class MyApp extends StatelessWidget {
           title: 'NTU RIDE PILOT',
           theme: lightTheme,
           darkTheme: darkTheme,
-          themeMode:
-              controller.themeMode.value,
+          themeMode: controller.themeMode.value,
           home: HomeScreen(),
         );
       },
     );
-  }
-  void preCacheImages(BuildContext context) {
-    precacheImage(AssetImage('assets/pictures/logoDark.jpg'), context);
-    precacheImage(AssetImage('assets/pictures/logoLight.jpg'), context);
-    precacheImage(AssetImage('assets/pictures/National_Textile_University_Logo.png'), context);
   }
 }

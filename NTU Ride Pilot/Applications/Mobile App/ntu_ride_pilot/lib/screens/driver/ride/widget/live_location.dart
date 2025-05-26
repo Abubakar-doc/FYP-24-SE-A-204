@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:ntu_ride_pilot/controllers/theme_controller.dart';
 import 'package:ntu_ride_pilot/services/ride/live_location.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -29,13 +31,14 @@ class _LiveLocationState extends State<LiveLocation> {
   MapboxMap? mapboxMapController;
   bool _isLocationPermissionGranted = false;
   PointAnnotationManager? _pointAnnotationManager;
-  late LiveLocationService _liveLocationService;
+  late LocationService _liveLocationService;
+  PolylineAnnotationManager? _polylineAnnotationManager;
+  final ThemeController _themeController = Get.find<ThemeController>();
 
   @override
   void initState() {
     super.initState();
-    _liveLocationService = LiveLocationService(context);
-    _checkLocationPermissionPeriodically();
+    _liveLocationService = LocationService(context);
   }
 
   @override
@@ -50,20 +53,45 @@ class _LiveLocationState extends State<LiveLocation> {
   @override
   void dispose() {
     _pointAnnotationManager?.deleteAll();
+    _polylineAnnotationManager?.deleteAll();
     _pointAnnotationManager = null;
+    _polylineAnnotationManager = null;
     mapboxMapController = null;
     super.dispose();
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateMapStyle();
+  }
+
+  Future<void> _updateMapStyle() async {
+    if (mapboxMapController == null) return;
+
+    final theme = Theme.of(context);
+    bool isDarkMode = theme.brightness == Brightness.dark;
+    String mapStyle = isDarkMode
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/outdoors-v11";
+
+    await mapboxMapController?.loadStyleURI(mapStyle);
+    _updateBusStopMarkers();
+    _addBusStopLines();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        MapWidget(
-          onMapCreated: _onMapCreated,
-        ),
-      ],
-    );
+    return Obx(() {
+      final currentTheme = _themeController.themeMode.value;
+      return Stack(
+        children: [
+          MapWidget(
+            onMapCreated: _onMapCreated,
+          ),
+        ],
+      );
+    });
   }
 
   void _onMapCreated(MapboxMap controller) async {
@@ -88,17 +116,25 @@ class _LiveLocationState extends State<LiveLocation> {
       widget.onMapReady!(_setCameraToFitAllMarkers);
     }
 
-    // Request location permission and set up the map
-    bool hasPermission = await _liveLocationService.checkLocationPermission();
+    // Check location permission and enable location settings
+    _checkLocationPermissionAndEnableLocation();
+  }
+
+  Future<void> _checkLocationPermissionAndEnableLocation() async {
+    bool hasPermission =
+        await _liveLocationService.getCurrentLocation() != null;
+
     if (hasPermission) {
+      setState(() {
+        _isLocationPermissionGranted = true;
+      });
       _liveLocationService.enableLocationSettings(mapboxMapController);
       _setCameraToFitAllMarkers();
-
-      // Add markers for each bus stop
       _addBusStopMarkers();
     } else {
       SnackbarUtil.showError('GPS Error!', 'GPS access is required!');
-      SystemNavigator.pop();
+      // Don't exit the app, just show the error
+      // SystemNavigator.pop();
     }
   }
 
@@ -109,7 +145,7 @@ class _LiveLocationState extends State<LiveLocation> {
     bool isDarkMode = theme.brightness == Brightness.dark;
 
     _pointAnnotationManager ??=
-    await mapboxMapController!.annotations.createPointAnnotationManager();
+        await mapboxMapController!.annotations.createPointAnnotationManager();
 
     await _pointAnnotationManager!.deleteAll();
 
@@ -126,29 +162,37 @@ class _LiveLocationState extends State<LiveLocation> {
         textColor: isDarkMode ? Colors.white.value : Colors.black.value,
         image: isFirst
             ? widget.firstMarkerBytes?.buffer.asUint8List()
-            : (isLast ? widget.lastMarkerBytes?.buffer.asUint8List()
-            : widget.defaultMarkerBytes?.buffer.asUint8List()),
+            : (isLast
+                ? widget.lastMarkerBytes?.buffer.asUint8List()
+                : widget.defaultMarkerBytes?.buffer.asUint8List()),
         iconSize: 0.15,
       );
     }).toList();
 
     _pointAnnotationManager!.createMulti(annotations);
+
+    // Add lines between bus stops
+    await _addBusStopLines();
   }
 
   void _addBusStopMarkers() async {
     final theme = Theme.of(context);
     bool isDarkMode = theme.brightness == Brightness.dark;
     final pointAnnotationManager =
-    await mapboxMapController!.annotations.createPointAnnotationManager();
+        await mapboxMapController!.annotations.createPointAnnotationManager();
 
     // Load all marker images
-    final ByteData defaultMarkerBytes = await rootBundle.load('assets/pictures/marker.png');
-    final Uint8List defaultMarkerImage = defaultMarkerBytes.buffer.asUint8List();
+    final ByteData defaultMarkerBytes =
+        await rootBundle.load('assets/pictures/marker.png');
+    final Uint8List defaultMarkerImage =
+        defaultMarkerBytes.buffer.asUint8List();
 
-    final ByteData firstMarkerBytes = await rootBundle.load('assets/pictures/first_marker.png');
+    final ByteData firstMarkerBytes =
+        await rootBundle.load('assets/pictures/first_marker.png');
     final Uint8List firstMarkerImage = firstMarkerBytes.buffer.asUint8List();
 
-    final ByteData lastMarkerBytes = await rootBundle.load('assets/pictures/last_marker.png');
+    final ByteData lastMarkerBytes =
+        await rootBundle.load('assets/pictures/last_marker.png');
     final Uint8List lastMarkerImage = lastMarkerBytes.buffer.asUint8List();
 
     for (var i = 0; i < (widget.busStops ?? []).length; i++) {
@@ -284,19 +328,34 @@ class _LiveLocationState extends State<LiveLocation> {
     return zoom.clamp(10.0, 18.0);
   }
 
-  Future<void> _checkLocationPermissionPeriodically() async {
-    while (true) {
-      await Future.delayed(Duration(seconds: 10));
-      bool hasPermission = await _liveLocationService.checkLocationPermission();
-      if (hasPermission != _isLocationPermissionGranted) {
-        setState(() {
-          _isLocationPermissionGranted = hasPermission;
-        });
-        if (!hasPermission) {
-          SnackbarUtil.showError('GPS Error!', 'GPS access is required!');
-          SystemNavigator.pop();
-        }
-      }
+  Future<void> _addBusStopLines() async {
+    if (mapboxMapController == null ||
+        widget.busStops == null ||
+        widget.busStops!.length < 2) {
+      return;
     }
+
+    _polylineAnnotationManager ??= await mapboxMapController!.annotations
+        .createPolylineAnnotationManager();
+
+    await _polylineAnnotationManager!.deleteAll();
+
+    // Create a list of points for the polyline
+    List<Position> lineCoordinates = [];
+    for (var busStop in widget.busStops!) {
+      lineCoordinates.add(Position(busStop['longitude'], busStop['latitude']));
+    }
+
+    // Add the polyline annotation
+    final theme = Theme.of(context);
+    bool isDarkMode = theme.brightness == Brightness.dark;
+
+    _polylineAnnotationManager!.create(
+      PolylineAnnotationOptions(
+        geometry: LineString(coordinates: lineCoordinates),
+        lineColor: isDarkMode ? Colors.lightBlue.value : Colors.blue.value,
+        lineWidth: 4.0,
+      ),
+    );
   }
 }

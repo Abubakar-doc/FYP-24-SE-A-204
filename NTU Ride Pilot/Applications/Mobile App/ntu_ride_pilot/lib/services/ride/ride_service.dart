@@ -71,7 +71,7 @@ class RideService {
       print("Starting periodic location updates for ride: ${ride.rideId}");
 
       // Start periodic location updates and ETA calculations for the ride
-      LiveLocationService liveLocationService = LiveLocationService(context);
+      LocationService liveLocationService = LocationService(context);
 
       // Call updateRideWithETA immediately to calculate the ETA and update location
       await liveLocationService.updateRideWithETA(ride, route, context);
@@ -99,7 +99,7 @@ class RideService {
       });
 
       // Stop the periodic location updates if the ride is completed
-      LiveLocationService liveLocationService = LiveLocationService(context);
+      LocationService liveLocationService = LocationService(context);
       await liveLocationService.stopPeriodicLocationUpdates();
 
       // Clear Hive box.
@@ -115,7 +115,7 @@ class RideService {
       await _firestore.collection('rides').doc(ride.rideId).delete();
 
       // Stop the periodic location updates if the ride is cancelled
-      LiveLocationService liveLocationService = LiveLocationService(context);
+      LocationService liveLocationService = LocationService(context);
       await liveLocationService.stopPeriodicLocationUpdates();
 
       final rideBox = await Hive.openBox<RideModel>('rides');
@@ -451,7 +451,7 @@ class RideService {
       }
 
       // Get live location from LiveLocationService
-      LiveLocationService liveLocationService = LiveLocationService(context);
+      LocationService liveLocationService = LocationService(context);
       geo.Position? position = await liveLocationService.getCurrentLocation();
 
       if (position == null) {

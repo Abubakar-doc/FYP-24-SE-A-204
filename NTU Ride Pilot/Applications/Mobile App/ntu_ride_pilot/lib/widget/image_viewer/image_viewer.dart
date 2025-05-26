@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:ntu_ride_pilot/services/common/media/media_service.dart';
+import 'package:ntu_ride_pilot/services/common/permission/media_permission.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 import 'package:photo_view/photo_view.dart';
@@ -10,12 +11,18 @@ class ImageViewer extends StatefulWidget {
   final List<dynamic> images;
   final int initialIndex;
   final MediaService mediaService;
+  final MediaPermission mediaPermission;
+  final bool enableSharing;
+  final String? appBarTitle;
 
   const ImageViewer({
     super.key,
     required this.images,
     required this.initialIndex,
     required this.mediaService,
+    required this.mediaPermission,
+    this.enableSharing = true,
+    this.appBarTitle,
   });
 
   @override
@@ -40,6 +47,21 @@ class _ImageViewerState extends State<ImageViewer> {
     super.dispose();
   }
 
+  Future<void> _handleDownload() async {
+    try {
+      await widget.mediaService.downloadImage(widget.images[_currentPage], context);
+      if (mounted) {
+        SnackbarUtil.showSuccess('Downloaded', 'Image saved to gallery');
+      }
+    } catch (e) {
+      if (e.toString().contains('Storage permission')) {
+        MediaPermission.showPermissionDialog(context);
+      } else if (mounted) {
+        SnackbarUtil.showError('Error', 'Failed to save image: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -48,37 +70,28 @@ class _ImageViewerState extends State<ImageViewer> {
         backgroundColor: theme.brightness == Brightness.dark
             ? darkBackgroundColor
             : LightCardFillColor,
-        title: Text('${_currentPage + 1} / ${widget.images.length}'),
+        title: Text(
+          widget.appBarTitle ?? '${_currentPage + 1} / ${widget.images.length}',
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () async {
-              try {
-                await widget.mediaService
-                    .shareMedia(widget.images[_currentPage]);
-              } catch (e) {
-                SnackbarUtil.showError('Error', 'Failed to share: $e');
-              }
-            },
-          ),
+          if (widget.enableSharing) // Only show share button if enabled
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () async {
+                try {
+                  await widget.mediaService
+                      .shareMedia(widget.images[_currentPage]);
+                } catch (e) {
+                  if (mounted) {
+                    SnackbarUtil.showError('Error', 'Failed to share: $e');
+                  }
+                }
+              },
+            ),
           const SizedBox(width: 10),
           IconButton(
             icon: const Icon(Icons.download),
-            onPressed: () async {
-              try {
-                await widget.mediaService
-                    .downloadImage(widget.images[_currentPage], context);
-                if (mounted) {
-                  SnackbarUtil.showSuccess('Downloaded', 'Image saved to gallery');
-                }
-              } catch (e) {
-                if (e.toString().contains('Storage permission')) {
-                  widget.mediaService.showPermissionDialog(context);
-                } else if (mounted) {
-                  SnackbarUtil.showError('Error', 'Failed to save image: $e');
-                }
-              }
-            },
+            onPressed: _handleDownload,
           ),
         ],
       ),
@@ -100,7 +113,7 @@ class _ImageViewerState extends State<ImageViewer> {
               minScale: PhotoViewComputedScale.contained,
               maxScale: PhotoViewComputedScale.covered,
               heroAttributes:
-                  PhotoViewHeroAttributes(tag: widget.images[index]),
+              PhotoViewHeroAttributes(tag: widget.images[index]),
             );
           },
           scrollPhysics: const BouncingScrollPhysics(),

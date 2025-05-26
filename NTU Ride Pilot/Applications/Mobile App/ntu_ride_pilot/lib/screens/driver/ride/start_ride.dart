@@ -59,7 +59,6 @@ class _StartRideScreenState extends State<StartRideScreen> {
     }
   }
 
-
   Uint8List? get defaultMarkerImage => defaultMarkerBytes?.buffer.asUint8List();
   Uint8List? get firstMarkerImage => firstMarkerBytes?.buffer.asUint8List();
   Uint8List? get lastMarkerImage => lastMarkerBytes?.buffer.asUint8List();
@@ -140,7 +139,6 @@ class _StartRideScreenState extends State<StartRideScreen> {
     setLoading(false);
   }
 
-  // This function will fetch the bus stops based on the selected route
   void updateBusStopsForSelectedRoute() {
     if (selectedRoute != null) {
       // Assuming that each RouteModel has a property called 'busStops'
@@ -162,7 +160,6 @@ class _StartRideScreenState extends State<StartRideScreen> {
             // Map placeholder divided into 60% and 40% of the screen.
             Positioned.fill(
               child: Container(
-                color: Colors.grey[700],
                 child: Column(
                   children: [
                     Expanded(
@@ -299,11 +296,11 @@ class _StartRideScreenState extends State<StartRideScreen> {
                             selectedValue: selectedRoute,
                             items: routes,
                             displayItem: (route) => route.name,
-                            onChanged: (value) {
+                            onChanged: (value) async{
+                              await Future.delayed(Duration(milliseconds: 100));
                               setState(() {
                                 selectedRoute = value;
                                 errorMessageRoute = "";
-                                // Update bus stops whenever route is selected
                                 updateBusStopsForSelectedRoute();
                               });
                             },

@@ -1,60 +1,34 @@
 import 'dart:async';
 import 'dart:math' as Math;
-import 'package:android_intent_plus/android_intent.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
+import 'package:ntu_ride_pilot/services/common/permission/location_permission.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
-import 'package:ntu_ride_pilot/widget/alert_dialog/alert_dialog.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class LiveLocationService {
+class LocationService {
   final BuildContext context;
-  LiveLocationService(this.context);
+  final LocationPermission _locationPermission;
   Timer? _etaUpdateTimer;
   bool isLocationUpdating = false;
   static const Duration PERIODIC_UPDATE_INTERVAL = Duration(seconds: 15);
 
-  Future<bool> checkLocationPermission() async {
-    bool isLocationServiceEnabled =
-        await Permission.location.serviceStatus.isEnabled;
-    if (!isLocationServiceEnabled) {
-      bool serviceEnabled = await showEnableLocationServiceDialog();
-      if (!serviceEnabled) {
-        return false;
-      }
-    }
-
-    var status = await Permission.location.status;
-
-    if (status.isGranted) {
-      return true;
-    } else if (status.isDenied) {
-      bool shouldRequestPermission = await showPermissionRationale();
-      if (shouldRequestPermission) {
-        status = await Permission.location.request();
-        return status.isGranted;
-      }
-      return false;
-    } else if (status.isPermanentlyDenied) {
-      bool openedSettings = await showPermanentlyDeniedDialog();
-      if (openedSettings) {
-        status = await Permission.location.status;
-        return status.isGranted;
-      }
-      return false;
-    }
-    return false;
+  static Future<void> init() async {
+    MapboxOptions.setAccessToken(
+      "pk.eyJ1IjoiYTEzdTEzYWthciIsImEiOiJjbTZ1enk1OWQwMmk0MmpzY2hvZW9hdm1yIn0.MUvJhxa9kuRSvus6oclMMw",
+    );
   }
 
+  LocationService(this.context) : _locationPermission = LocationPermission(context);
+
   Future<geo.Position?> getCurrentLocation() async {
-    bool hasPermission = await checkLocationPermission();
+    bool hasPermission = await _locationPermission.checkLocationPermission();
     if (!hasPermission) return null;
 
     try {
@@ -65,95 +39,6 @@ class LiveLocationService {
       SnackbarUtil.showError('Error', 'Failed to get current location.');
       return null;
     }
-  }
-
-  Future<bool> showEnableLocationServiceDialog() async {
-    bool? result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return CustomAlertDialog(
-          title: "Enable GPS",
-          message: "GPS is disabled. Please enable it to continue.",
-          onConfirm: () {
-            Navigator.pop(context, true);
-          },
-          onCancel: () {
-            Navigator.pop(context, false);
-          },
-          yesText: 'Enable',
-          noText: 'Cancel',
-          yesColor: Colors.blue,
-        );
-      },
-    );
-
-    if (result == true) {
-      await openLocationSettings();
-    }
-
-    return result ?? false;
-  }
-
-  Future<void> openLocationSettings() async {
-    try {
-      AndroidIntent intent = AndroidIntent(
-        action: 'android.settings.LOCATION_SOURCE_SETTINGS',
-      );
-      await intent.launch();
-    } catch (e) {
-      SnackbarUtil.showError('Error', 'Failed to open location settings.');
-    }
-  }
-
-  Future<bool> showPermissionRationale() async {
-    bool? result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return CustomAlertDialog(
-          title: "GPS Permission",
-          message: "Allow access to GPS in order to continue!",
-          onConfirm: () {
-            Navigator.pop(context, true);
-          },
-          onCancel: () {
-            Navigator.pop(context, false);
-          },
-          yesText: 'Allow',
-          noText: 'Cancel',
-          yesColor: Colors.blue,
-        );
-      },
-    );
-
-    return result ?? false;
-  }
-
-  Future<bool> showPermanentlyDeniedDialog() async {
-    bool? result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return CustomAlertDialog(
-          title: "Permission Required",
-          message:
-              "Location permission is permanently denied. Please enable it in app settings.",
-          onConfirm: () {
-            Navigator.pop(context, true);
-          },
-          onCancel: () {
-            Navigator.pop(context, false);
-          },
-          yesText: 'Open Settings',
-          noText: 'Cancel',
-          yesColor: Colors.blue,
-        );
-      },
-    );
-
-    if (result == true) {
-      await openAppSettings();
-    }
-
-    return result ?? false;
   }
 
   void enableLocationSettings(MapboxMap? mapboxMapController) {
@@ -171,10 +56,10 @@ class LiveLocationService {
   }
 
   Future<void> updateRideWithETA(
-    RideModel ride,
-    RouteModel route,
-    BuildContext context,
-  ) async {
+      RideModel ride,
+      RouteModel route,
+      BuildContext context,
+      ) async {
     // Get the bus's current location
     geo.Position? currentPosition = await getCurrentLocation();
 
@@ -191,7 +76,7 @@ class LiveLocationService {
         nextBusStop['busStopName'] == 'Last Stop (Continued ETA)') {
       // Continue giving ETA updates at the last stop
       double etaMinutes =
-          await _calculateETAToNextStop(currentPosition, nextBusStop);
+      await _calculateETAToNextStop(currentPosition, nextBusStop);
 
       // Update ETA and next stop name in Firestore
       await _updateRideETAInFirestore(
@@ -212,7 +97,7 @@ class LiveLocationService {
 
     // Calculate the ETA to the next bus stop using Mapbox API
     double etaMinutes =
-        await _calculateETAToNextStop(currentPosition, nextBusStop);
+    await _calculateETAToNextStop(currentPosition, nextBusStop);
     print("Calculated ETA: $etaMinutes minutes"); // Debug log
 
     // Update ETA and nextStopName in Firestore
@@ -249,7 +134,7 @@ class LiveLocationService {
     if (distanceToLastStop <= 100.0) {
       // Calculate the ETA for the last bus stop
       double etaMinutes =
-          await _calculateETAToNextStop(currentPosition, lastBusStop);
+      await _calculateETAToNextStop(currentPosition, lastBusStop);
 
       // Update ETA and location in Firestore and Hive
       await _updateRideETAInFirestore(
@@ -280,9 +165,9 @@ class LiveLocationService {
   }
 
   Map<String, dynamic>? _findNextBusStop(
-    List<Map<String, dynamic>> busStops,
-    geo.Position currentPosition,
-  ) {
+      List<Map<String, dynamic>> busStops,
+      geo.Position currentPosition,
+      ) {
     double closestDistance = double.infinity;
     Map<String, dynamic>? closestBusStop;
     int closestBusStopIndex = -1;
@@ -325,9 +210,9 @@ class LiveLocationService {
   }
 
   Future<double> _calculateETAToNextStop(
-    geo.Position currentPosition,
-    Map<String, dynamic> nextBusStop,
-  ) async {
+      geo.Position currentPosition,
+      Map<String, dynamic> nextBusStop,
+      ) async {
     // Directly access latitude and longitude as numbers (no parsing)
     double nextStopLat = nextBusStop['latitude']; // Latitude as a number
     double nextStopLon = nextBusStop['longitude']; // Longitude as a number
@@ -364,11 +249,11 @@ class LiveLocationService {
   }
 
   double _calculateDistance(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
+      double lat1,
+      double lon1,
+      double lat2,
+      double lon2,
+      ) {
     const double R = 6371000; // Radius of Earth in meters
     double phi1 = lat1 * (Math.pi / 180);
     double phi2 = lat2 * (Math.pi / 180);
@@ -385,10 +270,10 @@ class LiveLocationService {
   }
 
   Future<void> _updateRideETAInFirestore(
-    String rideId,
-    double etaMinutes,
-    String nextStopName,
-  ) async {
+      String rideId,
+      double etaMinutes,
+      String nextStopName,
+      ) async {
     try {
       await FirebaseFirestore.instance.collection('rides').doc(rideId).update({
         'eta_next_stop': etaMinutes,
@@ -401,10 +286,10 @@ class LiveLocationService {
   }
 
   Future<void> _updateRideETAInHive(
-    RideModel ride,
-    double etaMinutes,
-    String nextStopName,
-  ) async {
+      RideModel ride,
+      double etaMinutes,
+      String nextStopName,
+      ) async {
     try {
       ride.etaNextStop =
           DateTime.now().add(Duration(minutes: etaMinutes.toInt()));

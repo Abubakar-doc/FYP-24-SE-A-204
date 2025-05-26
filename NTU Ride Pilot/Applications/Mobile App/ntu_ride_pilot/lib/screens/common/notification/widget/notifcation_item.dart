@@ -3,86 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'package:ntu_ride_pilot/services/common/media/media_service.dart';
+import 'package:ntu_ride_pilot/services/common/permission/media_permission.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 import 'package:ntu_ride_pilot/widget/image_viewer/image_viewer.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-class NotificationList extends StatelessWidget {
-  final ScrollController scrollController;
-  final Map<String, List<NotificationModel>> groupedNotifications;
-  final bool isLoadingMore;
-  final bool hasMore;
-  final ThemeData theme;
-  final bool isLoading;
-  final String Function(DateTime) formatTimestamp;
-
-  const NotificationList({
-    super.key,
-    required this.scrollController,
-    required this.groupedNotifications,
-    required this.isLoadingMore,
-    required this.hasMore,
-    required this.theme,
-    required this.isLoading,
-    required this.formatTimestamp,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: scrollController,
-      reverse: true,
-      itemCount: groupedNotifications.keys.length + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == groupedNotifications.keys.length && hasMore) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: isLoadingMore
-                  ? CircularProgressIndicator(
-                color: Colors.grey,
-              )
-                  : null,
-            ),
-          );
-        }
-
-        final dateLabel = groupedNotifications.keys.toList()[index];
-        final notificationsForDate = groupedNotifications[dateLabel] ?? [];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Center(
-                child: Text(
-                  dateLabel,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: theme.brightness == Brightness.dark
-                        ? DarkhintTextColor
-                        : LighthintTextColor,
-                  ),
-                ),
-              ),
-            ),
-            ...notificationsForDate.map((notification) {
-              return NotificationItem(
-                notification: notification,
-                theme: theme,
-                isLoading: isLoading,
-                formatTimestamp: formatTimestamp,
-              );
-            }).toList(),
-          ],
-        );
-      },
-    );
-  }
-}
 
 class NotificationItem extends StatelessWidget {
   final NotificationModel notification;
@@ -123,11 +49,10 @@ class NotificationItem extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () async {
+                icon: const Icon(Icons.share),
+                onPressed: () async {
                   await _mediaService.shareNotification(notification);
-              }
-            ),
+                }),
           ],
         ),
         subtitle: Column(
@@ -151,14 +76,14 @@ class NotificationItem extends StatelessWidget {
                       try {
                         await launch(url);
                       } catch (e) {
-                        SnackbarUtil.showError('Error', 'Could not open PDF');
+                        SnackbarUtil.showError(
+                            'Error', 'Could not open PDF');
                       }
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.picture_as_pdf,
-                            color: Colors.red),
+                        const Icon(Icons.picture_as_pdf, color: Colors.red),
                         const SizedBox(width: 8),
                         Text(
                           'Open PDF',
@@ -225,11 +150,16 @@ class NotificationItem extends StatelessWidget {
 
   void _showImageViewer(
       BuildContext context, List<dynamic> images, int initialIndex) {
-    Get.to(ImageViewer(
-      images: images,
-      initialIndex: initialIndex,
-      mediaService: _mediaService,
-    ));
+    Get.to(
+      ImageViewer(
+        images: images,
+        initialIndex: initialIndex,
+        mediaService: _mediaService,
+        mediaPermission: MediaPermission(),
+      ),
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 300),
+    );
   }
 
   List<Widget> _buildImageGrid(BuildContext context, List<dynamic> mediaLinks) {
@@ -266,7 +196,8 @@ class NotificationItem extends StatelessWidget {
           children: List.generate(2, (i) {
             return Expanded(
               child: Padding(
-                padding: EdgeInsets.only(right: i == 0 ? 4 : 0, left: i == 1 ? 4 : 0),
+                padding: EdgeInsets.only(
+                    right: i == 0 ? 4 : 0, left: i == 1 ? 4 : 0),
                 child: GestureDetector(
                   onTap: () => _showImageViewer(context, images, i),
                   child: ClipRRect(
@@ -308,7 +239,8 @@ class NotificationItem extends StatelessWidget {
           children: List.generate(2, (i) {
             return Expanded(
               child: Padding(
-                padding: EdgeInsets.only(right: i == 0 ? 4 : 0, left: i == 1 ? 4 : 0),
+                padding: EdgeInsets.only(
+                    right: i == 0 ? 4 : 0, left: i == 1 ? 4 : 0),
                 child: GestureDetector(
                   onTap: () => _showImageViewer(context, images, i + 1),
                   child: ClipRRect(
