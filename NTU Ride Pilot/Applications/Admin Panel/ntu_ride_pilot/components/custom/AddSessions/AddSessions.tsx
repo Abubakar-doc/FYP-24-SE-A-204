@@ -4,7 +4,18 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AddSessionHeader from "./AddSessionHeader";
 import { firestore } from "@/lib/firebase";
-import { collection, addDoc, Timestamp, query, getDocs, orderBy, limit, where, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  Timestamp,
+  query,
+  getDocs,
+  orderBy,
+  limit,
+  where,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 
 type AddSessionFormProps = {
   onBack: () => void;
@@ -33,7 +44,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   const [initialFormValues, setInitialFormValues] = useState({
     name: "",
     startDate: "",
-    endDate: ""
+    endDate: "",
   });
 
   useEffect(() => {
@@ -59,7 +70,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
       setInitialFormValues({
         name: nameParam || "",
         startDate: startDateParam || "",
-        endDate: endDateParam || ""
+        endDate: endDateParam || "",
       });
     }
   }, [searchParams]);
@@ -69,7 +80,11 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
       if (isEdit) return;
 
       const sessionsRef = collection(firestore, "sessions");
-      const sessionsQuery = query(sessionsRef, orderBy("start_date", "desc"), limit(1));
+      const sessionsQuery = query(
+        sessionsRef,
+        orderBy("start_date", "desc"),
+        limit(1)
+      );
       const sessionsSnapshot = await getDocs(sessionsQuery);
 
       if (sessionsSnapshot.empty) {
@@ -108,14 +123,26 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
         });
         setSuccessMessage("Session updated successfully!");
       } else {
+        // Check if any session has session_status === "active"
         const sessionsRef = collection(firestore, "sessions");
-        const sessionsQuery = query(sessionsRef, where("session_status", "==", "active"));
-        const sessionsSnapshot = await getDocs(sessionsQuery);
+        const sessionsSnapshot = await getDocs(sessionsRef);
 
-        if (!sessionsSnapshot.empty && !isFirstSession) {
-          const activeSession = sessionsSnapshot.docs[0].data();
-          setActiveSessionName(activeSession.name);
-          setSuccessMessage(`Please deactivate the current active session: ${activeSession.name}`);
+        let activeSessionFound = false;
+        let activeSession = null;
+
+        sessionsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.session_status === "active") {
+            activeSessionFound = true;
+            activeSession = data;
+          }
+        });
+
+        if (activeSessionFound && !isFirstSession) {
+          setActiveSessionName(activeSession!.name);
+          setSuccessMessage(
+            `Please Deactivate the current active session: ${activeSession!.name} in order to add a new Session!`
+          );
           setTimeout(() => setSuccessMessage(""), 3000);
           setIsProcessing(false);
           return;
@@ -165,7 +192,10 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 p-4 mx-6">
         <div>
-          <label htmlFor="name" className="block text-sm font-semibold text-[#202020]">
+          <label
+            htmlFor="name"
+            className="block text-sm font-semibold text-[#202020]"
+          >
             Name *
           </label>
           <input
@@ -181,7 +211,10 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDate" className="block text-sm font-semibold text-[#202020]">
+            <label
+              htmlFor="startDate"
+              className="block text-sm font-semibold text-[#202020]"
+            >
               Starting Date *
             </label>
             <input
@@ -196,7 +229,10 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             />
           </div>
           <div>
-            <label htmlFor="endDate" className="block text-sm font-semibold text-[#202020]">
+            <label
+              htmlFor="endDate"
+              className="block text-sm font-semibold text-[#202020]"
+            >
               Ending Date *
             </label>
             <input

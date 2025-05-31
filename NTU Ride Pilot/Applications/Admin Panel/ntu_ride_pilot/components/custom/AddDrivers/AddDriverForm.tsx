@@ -20,7 +20,6 @@ import {
 } from "firebase/app";
 import {
   getAuth,
-  fetchSignInMethodsForEmail,
   createUserWithEmailAndPassword,
   Auth,
 } from "firebase/auth";
@@ -67,6 +66,9 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [existingProfilePic, setExistingProfilePic] = useState<string>(''); // Store existing profile pic URL
   const [existingProfilePicPublicId, setExistingProfilePicPublicId] = useState<string>(''); // Store existing profile pic public ID
+
+  // Store original email to detect changes
+  const [originalEmail, setOriginalEmail] = useState<string>('');
 
   // Normalize and validation functions
   const normalizeName = (name: string) => {
@@ -137,7 +139,10 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
           setDriverId(driver.id || null);
 
           if (nameRef.current) nameRef.current.value = driver.name || '';
-          if (emailRef.current) emailRef.current.value = driver.email || '';
+          if (emailRef.current) {
+            emailRef.current.value = driver.email || '';
+            setOriginalEmail(driver.email || '');
+          }
 
           let contactNumber = driver.contactNo || '';
           if (contactNumber.startsWith(PAKISTAN_COUNTRY_CODE)) {
@@ -210,6 +215,48 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
     return { url: data.secure_url, publicId: data.public_id };
   };
 
+  // --- HELPER: Check if email exists in Firebase Auth via API ---
+  const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/check-email-exists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToCheck }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        return data.exists;
+      } else {
+        console.error('Failed to check email existence:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking email existence:', error);
+      return false;
+    }
+  };
+
+  // --- HELPER: Delete user by email via API ---
+  const deleteUserByEmail = async (emailToDelete: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToDelete }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        return true;
+      } else {
+        console.error('Failed to delete user:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  };
+
   // --- MAIN SUBMIT HANDLER ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,7 +302,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
         if (isEditMode && doc.id === driverId) return false;
         return data.name?.toLowerCase() === name.toLowerCase();
       });
-
       if (existingDriverWithName) {
         showNotification(`Driver name "${name}" already exists!`, 'warning');
         setLoading(false);
@@ -275,38 +321,64 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
         return;
       }
 
-      // --- AUTHENTICATION LOGIC: ONLY FOR ADD (NOT EDIT) ---
-      if (!isEditMode) {
-        // 1. Initialize secondary app (or get if already initialized)
-        let secondaryApp: FirebaseApp | undefined;
-        const existing = getApps().find(app => app.name === "Secondary");
-        if (existing) {
-          secondaryApp = existing;
-        } else {
-          secondaryApp = initializeApp(SECONDARY_FIREBASE_CONFIG, "Secondary");
-        }
-        const secondaryAuth: Auth = getAuth(secondaryApp);
+      // --- AUTHENTICATION LOGIC ---
 
-        // 2. Check if email already exists in Firebase Auth
-        let signInMethods: string[] = [];
-        try {
-          signInMethods = await fetchSignInMethodsForEmail(secondaryAuth, email);
-        } catch (fetchError: any) {
-          showNotification('Failed to check email in authentication table. Please try again.', 'error');
-          setLoading(false);
-          return;
-        }
+      // Initialize secondary app (or get if already initialized)
+      let secondaryApp: FirebaseApp | undefined;
+      const existing = getApps().find(app => app.name === "Secondary");
+      if (existing) {
+        secondaryApp = existing;
+      } else {
+        secondaryApp = initializeApp(SECONDARY_FIREBASE_CONFIG, "Secondary");
+      }
+      const secondaryAuth: Auth = getAuth(secondaryApp);
 
-        if (signInMethods && signInMethods.length > 0) {
+      if (isEditMode) {
+        // EDIT MODE: Handle email update carefully
+
+        if (email.toLowerCase() !== originalEmail.toLowerCase()) {
+          // Check if new email already exists in Firebase Auth
+          const emailExists = await checkEmailExists(email);
+          if (emailExists) {
+            showNotification(`Email "${email}" already exists in the system!`, 'warning');
+            setLoading(false);
+            return;
+          }
+
+          // Delete old user by original email
+          const deleted = await deleteUserByEmail(originalEmail);
+          if (!deleted) {
+            showNotification('Failed to delete old user account.', 'error');
+            setLoading(false);
+            return;
+          }
+
+          // Create new user with updated email and a generated password
+          const randomPassword = generateRandomPassword();
+          try {
+            await createUserWithEmailAndPassword(secondaryAuth, email, randomPassword);
+          } catch (authError: any) {
+            if (authError.code === 'auth/email-already-in-use') {
+              showNotification(`Email "${email}" already exists in authentication table!`, 'warning');
+            } else {
+              showNotification(authError.message || 'Failed to create driver authentication.', 'error');
+            }
+            setLoading(false);
+            return;
+          }
+          // Optionally: send email to driver with password here (not implemented)
+        }
+      } else {
+        // ADD MODE: Check if email exists in Firebase Auth
+        const emailExists = await checkEmailExists(email);
+        if (emailExists) {
           showNotification(`Email "${email}" already exists in authentication table!`, 'warning');
           setLoading(false);
           return;
         }
 
-        // 3. Generate random password
+        // Create user in Firebase Auth
         const randomPassword = generateRandomPassword();
-
-        // 4. Try to create user in Firebase Auth
         try {
           await createUserWithEmailAndPassword(secondaryAuth, email, randomPassword);
         } catch (authError: any) {
@@ -347,23 +419,22 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
         const driverDocRef = doc(driversCollectionRef, driverId);
         await setDoc(driverDocRef, driverData, { merge: true });
         showNotification('Driver updated successfully!', 'success');
-        if (nameRef.current) nameRef.current.value = '';
-        if (emailRef.current) emailRef.current.value = '';
-        if (contactRef.current) contactRef.current.value = '';
-        if (profilePicRef.current) profilePicRef.current.value = '';
-        setExistingProfilePic('');
-        setExistingProfilePicPublicId('');
       } else {
         const newDriverDocRef = doc(driversCollectionRef);
         await setDoc(newDriverDocRef, driverData);
         showNotification('Driver added successfully!', 'success');
-        if (nameRef.current) nameRef.current.value = '';
-        if (emailRef.current) emailRef.current.value = '';
-        if (contactRef.current) contactRef.current.value = '';
-        if (profilePicRef.current) profilePicRef.current.value = '';
-        setExistingProfilePic('');
-        setExistingProfilePicPublicId('');
       }
+
+      // Reset form fields after success
+      if (nameRef.current) nameRef.current.value = '';
+      if (emailRef.current) emailRef.current.value = '';
+      if (contactRef.current) contactRef.current.value = '';
+      if (profilePicRef.current) profilePicRef.current.value = '';
+      setExistingProfilePic('');
+      setExistingProfilePicPublicId('');
+      setOriginalEmail('');
+      setIsEditMode(false);
+      setDriverId(null);
     } catch (error: any) {
       showNotification(error.message || 'Failed to add/update driver.', 'error');
     } finally {

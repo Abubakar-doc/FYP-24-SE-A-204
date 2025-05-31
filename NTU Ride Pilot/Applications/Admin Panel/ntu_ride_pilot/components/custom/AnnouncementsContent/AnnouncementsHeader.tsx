@@ -1,14 +1,21 @@
 "use client";
 import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
-import AnnouncementsFilterDropdown from './AnnouncementsFilterDropdown';
+import DeleteAllAnnouncement from './DeleteAllAnnouncement';
 
 interface AnnouncementsHeaderProps {
   searchInput: string;
   setSearchInput: (value: string) => void;
+  onDeleteAll: () => Promise<void>;
+  deleteAllLoading: boolean;
 }
 
-const AnnouncementsHeader: React.FC<AnnouncementsHeaderProps> = ({ searchInput, setSearchInput }) => {
+const AnnouncementsHeader: React.FC<AnnouncementsHeaderProps> = ({
+    searchInput,
+    setSearchInput,
+    onDeleteAll,
+    deleteAllLoading
+}) => {
     return (
         <div className="w-full h-32 bg-[#F5F5F5] p-4 rounded-md">
             {/* Header Icons Row */}
@@ -33,8 +40,7 @@ const AnnouncementsHeader: React.FC<AnnouncementsHeaderProps> = ({ searchInput, 
                             {/* SVG code goes here */}
                         </button>
                     </div>
-
-                    <AnnouncementsFilterDropdown />
+                    <DeleteAllAnnouncement onDeleteAll={onDeleteAll} loading={deleteAllLoading} />
                     <Link href="/dashboard/announcements/add-announcements">
                         <button
                             className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"

@@ -24,9 +24,11 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf',
 ];
 
-const MAX_FILES_COUNT = 3;
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
-const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024;   // 5MB
+// ===== UPDATED LIMITS =====
+const MAX_FILES_COUNT = 5; // was 3
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB, was 2MB
+const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;   // 10MB, was 5MB
+// ==========================
 
 const getFileIcon = (file: File) => {
   if (file.type === 'application/pdf') return <FaFilePdf className="text-red-600 w-5 h-5" />;
@@ -195,10 +197,10 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
   const validateFileSizes = (filesToValidate: File[]): { valid: boolean; message?: string } => {
     for (const file of filesToValidate) {
       if (file.type === 'application/pdf' && file.size > MAX_PDF_SIZE_BYTES) {
-        return { valid: false, message: `PDF file "${file.name}" exceeds the 5MB size limit.` };
+        return { valid: false, message: `PDF file "${file.name}" exceeds the 10MB size limit.` };
       }
       if ((file.type === 'image/png' || file.type === 'image/jpeg') && file.size > MAX_IMAGE_SIZE_BYTES) {
-        return { valid: false, message: `Image file "${file.name}" exceeds the 2MB size limit.` };
+        return { valid: false, message: `Image file "${file.name}" exceeds the 5MB size limit.` };
       }
     }
     return { valid: true };
@@ -225,7 +227,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
       showNotificationMessage(`You can upload a maximum of ${MAX_FILES_COUNT} media files.`, 'warning');
       return;
     }
-
     if (files.length > 0 && !validateFiles(files)) {
       showNotificationMessage(
         'You can only upload these types of media files:\n1. PNG image\n2. JPEG image\n3. PDF document',
@@ -391,8 +392,7 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
                 </span>
               </div>
             </div>
-
-            {files.length > 0 && (
+       {files.length > 0 && (
               <div className="mt-3 border border-gray-300 rounded-md bg-[#F9FAFB] max-h-48 overflow-auto">
                 {files.map((file, index) => (
                   <div

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { firestore } from "@/lib/firebase";
 import {
   collection,
@@ -10,6 +10,7 @@ import {
   Timestamp,
   query,
   where,
+  getDoc,
 } from "firebase/firestore";
 import SessionsHeader from "./SessionComponents/SessionsHeader";
 import ConfirmationModal from "./SessionComponents/ConfirmationModal";
@@ -39,6 +40,13 @@ const SessionsContent: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionToDeactivate, setSessionToDeactivate] = useState<Session | null>(null);
   const [searchInput, setSearchInput] = useState("");
+  const [activationError, setActivationError] = useState<string>("");
+
+  // Ref to track previous roll_no array for active session to detect changes
+  const previousRollNoRef = useRef<string[]>([]);
+
+  // Track the currently active session (assuming only one active session)
+  const activeSession = sessions.find((s) => s.session_status === "active") || null;
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -58,6 +66,7 @@ const SessionsContent: React.FC = () => {
           };
         });
 
+        // Sort sessions by start_date descending, nulls last
         const sortedSessions = sessionsData.sort((a, b) => {
           if (a.start_date === null) return 1;
           if (b.start_date === null) return -1;
@@ -65,6 +74,8 @@ const SessionsContent: React.FC = () => {
         });
 
         setAllSessions(sortedSessions);
+
+        // Filter active sessions initially
         const activeSessions = sortedSessions.filter(
           (session) => session.session_status === "active"
         );
@@ -80,11 +91,75 @@ const SessionsContent: React.FC = () => {
     fetchSessions();
   }, []);
 
+  // New useEffect to watch roll_no changes in active session and update students/bus cards accordingly
+  useEffect(() => {
+    if (!activeSession) {
+      previousRollNoRef.current = [];
+      return;
+    }
+
+    const previousRollNos = previousRollNoRef.current;
+    const currentRollNos = activeSession.roll_no || [];
+
+    // Detect new roll numbers added to the active session
+    const newRollNos = currentRollNos.filter((rollNo) => !previousRollNos.includes(rollNo));
+
+    if (newRollNos.length > 0) {
+      // Update students and bus cards for these new roll numbers
+      const updateStudentsAndBusCards = async () => {
+        try {
+          const studentsCollection = collection(
+            firestore,
+            "users",
+            "user_roles",
+            "students"
+          );
+          const busCardsCollection = collection(firestore, "bus_cards");
+
+          for (const rollNo of newRollNos) {
+            // Update student bus_card_status to "Active"
+            const studentQuery = query(studentsCollection, where("roll_no", "==", rollNo));
+            const studentQuerySnapshot = await getDocs(studentQuery);
+
+            for (const studentDoc of studentQuerySnapshot.docs) {
+              const studentRef = doc(firestore, "users", "user_roles", "students", studentDoc.id);
+              await updateDoc(studentRef, {
+                bus_card_status: "Active",
+                updated_at: Timestamp.now(),
+              });
+            }
+
+            // Update bus card isActive flag to true
+            const busCardQuery = query(busCardsCollection, where("roll_no", "==", rollNo));
+            const busCardQuerySnapshot = await getDocs(busCardQuery);
+
+            for (const busCardDoc of busCardQuerySnapshot.docs) {
+              const busCardRef = doc(firestore, "bus_cards", busCardDoc.id);
+              await updateDoc(busCardRef, {
+                isActive: true,
+                updated_at: Timestamp.now(),
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error updating students/bus cards on roll_no change:", error);
+        }
+      };
+
+      updateStudentsAndBusCards();
+    }
+
+    // Update ref to current roll_no array for next comparison
+    previousRollNoRef.current = currentRollNos;
+  }, [activeSession]);
+
+  // Deactivate session and update related students and bus cards
   const handleDeactivateSession = async (sessionId: string) => {
     if (!sessionToDeactivate) return;
 
     setIsDeactivating(true);
     try {
+      // Update session status to inactive
       const sessionRef = doc(firestore, "sessions", sessionId);
       await updateDoc(sessionRef, {
         session_status: "inactive",
@@ -102,7 +177,9 @@ const SessionsContent: React.FC = () => {
 
       const rollNumbers = sessionToDeactivate.roll_no || [];
 
+      // For each student roll_no in session, update student and bus card documents
       for (const rollNo of rollNumbers) {
+        // Update student bus_card_status to "Inactive"
         const studentQuery = query(studentsCollection, where("roll_no", "==", rollNo));
         const studentQuerySnapshot = await getDocs(studentQuery);
 
@@ -114,6 +191,7 @@ const SessionsContent: React.FC = () => {
           });
         }
 
+        // Update bus card isActive flag to false
         const busCardQuery = query(busCardsCollection, where("roll_no", "==", rollNo));
         const busCardQuerySnapshot = await getDocs(busCardQuery);
 
@@ -126,6 +204,7 @@ const SessionsContent: React.FC = () => {
         }
       }
 
+      // Update local state to reflect deactivation
       const updatedSessions = allSessions.map((session) =>
         session.id === sessionId ? { ...session, session_status: "inactive" } : session
       );
@@ -145,6 +224,99 @@ const SessionsContent: React.FC = () => {
       console.error("Error deactivating session:", error);
     } finally {
       setIsModalOpen(false);
+      setIsDeactivating(false);
+    }
+  };
+
+  // Activate session and update related students and bus cards
+  const handleActivateSession = async (session: Session) => {
+    setActivationError("");
+
+    // Prevent activating if another session is already active
+    const anotherActive = allSessions.some(
+      (s) => s.session_status === "active"
+    );
+    if (anotherActive) {
+      setActivationError("Please deactivate the current active session before activating a new one.");
+      setTimeout(() => setActivationError(""), 3000);
+      return;
+    }
+
+    // Prevent activating if session end date has passed
+    if (session.end_date && session.end_date < new Date(new Date().setHours(0,0,0,0))) {
+      setActivationError("Cannot activate session. The session end date has already passed.");
+      setTimeout(() => setActivationError(""), 3000);
+      return;
+    }
+
+    setIsDeactivating(true);
+    try {
+      // Update session document to active
+      const sessionRef = doc(firestore, "sessions", session.id);
+      await updateDoc(sessionRef, {
+        session_status: "active",
+        updated_at: Timestamp.now(),
+      });
+
+      const studentsCollection = collection(
+        firestore,
+        "users",
+        "user_roles",
+        "students"
+      );
+
+      const busCardsCollection = collection(firestore, "bus_cards");
+
+      const rollNumbers = session.roll_no || [];
+
+      // For each student roll_no in session, update student and bus card documents
+      for (const rollNo of rollNumbers) {
+        // Update student bus_card_status to "Active"
+        const studentQuery = query(studentsCollection, where("roll_no", "==", rollNo));
+        const studentQuerySnapshot = await getDocs(studentQuery);
+
+        for (const studentDoc of studentQuerySnapshot.docs) {
+          const studentRef = doc(firestore, "users", "user_roles", "students", studentDoc.id);
+          await updateDoc(studentRef, {
+            bus_card_status: "Active",
+            updated_at: Timestamp.now(),
+          });
+        }
+
+        // Update bus card isActive flag to true
+        const busCardQuery = query(busCardsCollection, where("roll_no", "==", rollNo));
+        const busCardQuerySnapshot = await getDocs(busCardQuery);
+
+        for (const busCardDoc of busCardQuerySnapshot.docs) {
+          const busCardRef = doc(firestore, "bus_cards", busCardDoc.id);
+          await updateDoc(busCardRef, {
+            isActive: true,
+            updated_at: Timestamp.now(),
+          });
+        }
+      }
+
+      // Update local state to reflect activation
+      const updatedSessions = allSessions.map((s) =>
+        s.id === session.id ? { ...s, session_status: "active" } : s
+      );
+      const sortedUpdatedSessions = updatedSessions.sort((a, b) => {
+        if (a.start_date === null) return 1;
+        if (b.start_date === null) return -1;
+        return b.start_date.getTime() - a.start_date.getTime();
+      });
+      setAllSessions(sortedUpdatedSessions);
+      const updatedActiveSessions = sortedUpdatedSessions.filter(
+        (s) => s.session_status === "active"
+      );
+      setSessions(updatedActiveSessions);
+      setFilteredSessions(updatedActiveSessions);
+      setFilterStatus("active");
+    } catch (error) {
+      console.error("Error activating session:", error);
+      setActivationError("Failed to activate session.");
+      setTimeout(() => setActivationError(""), 3000);
+    } finally {
       setIsDeactivating(false);
     }
   };
@@ -186,7 +358,6 @@ const SessionsContent: React.FC = () => {
           : filterStatus === "suspended"
           ? allSessions.filter((session) => session.session_status === "inactive")
           : sessions;
-
       const filtered = sessionsToFilter.filter((session) => {
         const name = session.name?.toLowerCase() ?? "";
         const startDate = session.start_date
@@ -241,6 +412,15 @@ const SessionsContent: React.FC = () => {
       setSessions(sortedSessions);
       setFilteredSessions(sortedSessions);
     }
+  };
+
+  // Helper to check if session can be activated
+  const canActivate = (session: Session) => {
+    if (!session.end_date) return false;
+    // Allow activate if end_date is today or in the future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return session.end_date >= today;
   };
 
   return (
@@ -317,28 +497,44 @@ const SessionsContent: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap flex space-x-2 w-[15%] border-b border-gray-300">
-                    <button
-                      className={`${
-                        session.session_status === "active"
-                          ? "text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2 "
-                          : "text-white opacity-50 bg-blue-500 px-4 py-2 rounded-lg font-bold cursor-not-allowed"
-                      }`}
-                      onClick={() => handleEditSession(session)}
-                      disabled={session.session_status !== "active"}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className={`${
-                        session.session_status === "active"
-                          ? "text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
-                          : "text-white font-bold rounded-lg bg-slate-500 px-4 py-2 opacity-50 cursor-not-allowed"
-                      }`}
-                      onClick={() => openConfirmationModal(session)}
-                      disabled={session.session_status !== "active"}
-                    >
-                      Deactivate
-                    </button>
+                    {session.session_status === "active" ? (
+                      <>
+                        <button
+                          className="text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2"
+                          onClick={() => handleEditSession(session)}
+                          disabled={session.session_status !== "active"}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
+                          onClick={() => openConfirmationModal(session)}
+                          disabled={session.session_status !== "active"}
+                        >
+                          Deactivate
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="text-white font-bold bg-blue-500 px-4 py-2 rounded-lg opacity-50 cursor-not-allowed"
+                          disabled
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className={`text-white font-bold rounded-lg bg-green-600 hover:bg-green-700 px-4 py-2 ${
+                            canActivate(session)
+                              ? ""
+                              : "opacity-50 cursor-not-allowed"
+                          }`}
+                          onClick={() => canActivate(session) && handleActivateSession(session)}
+                          disabled={!canActivate(session) || isDeactivating}
+                        >
+                          Activate
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -373,6 +569,11 @@ const SessionsContent: React.FC = () => {
             </div>
           )}
         </div>
+        {activationError && (
+          <div className="fixed bottom-4 right-4 z-50 p-8 rounded-lg shadow-lg bg-red-500 text-white font-bold transition duration-600 animate-out">
+            {activationError}
+          </div>
+        )}
       </div>
 
       {sessionToDeactivate && (

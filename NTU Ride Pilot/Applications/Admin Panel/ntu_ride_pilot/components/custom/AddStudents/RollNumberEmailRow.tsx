@@ -6,7 +6,7 @@ type RollNumberEmailRowProps = {
   email: string;
   setEmail: React.Dispatch<React.SetStateAction<string>>;
   disabled: boolean;
-  disableRollEmail?: boolean; // new optional prop
+  disableRollEmail?: boolean; // You can remove this prop if unused now
 };
 
 const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
@@ -15,7 +15,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
   email,
   setEmail,
   disabled,
-  disableRollEmail = false,
+  disableRollEmail = false, // default false
 }) => {
   const normalizeSpaces = (str: string) => str.replace(/^\s+/, '').replace(/\s+/g, ' ');
 
@@ -41,7 +41,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
               setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
             }}
             required
-            disabled={disabled || disableRollEmail}
+            disabled={disabled /* && disableRollEmail removed */}
           />
 
           <span className="text-2xl font-bold">-NTU-</span>
@@ -61,7 +61,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
               setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
             }}
             required
-            disabled={disabled || disableRollEmail}
+            disabled={disabled /* && disableRollEmail removed */}
           />
 
           <span className="text-2xl font-bold">-</span>
@@ -81,7 +81,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
               setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
             }}
             required
-            disabled={disabled || disableRollEmail}
+            disabled={disabled /* && disableRollEmail removed */}
           />
         </div>
       </div>
@@ -104,7 +104,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             setEmail(normalizeSpaces(e.target.value.trim()));
           }}
           required
-          disabled={disableRollEmail}
+          disabled={disabled /* removed disableRollEmail */}
         />
       </div>
     </div>

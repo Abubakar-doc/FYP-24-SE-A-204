@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { BsArrowUpCircle } from 'react-icons/bs';
-import { FaCheck } from 'react-icons/fa';
 import UploadModal from './UploadModal';
 import ProcessModal from './ProcessModal';
 import * as XLSX from 'xlsx';
@@ -79,41 +78,46 @@ const UploadFile: React.FC = () => {
 
   const readExcelFile = (file: File) => {
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        
-        // Convert to JSON
+
+        // Get headers from the first row
+        const headers: string[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+        const requiredHeaders = ['Roll No', 'Email', 'Name'];
+        const missingHeaders = requiredHeaders.filter(
+          (header) => !headers.includes(header)
+        );
+
+        if (missingHeaders.length > 0) {
+          throw new Error(
+            'The Excel file must contain "Roll No", "Email", and "Name" columns as headings in the first row.'
+          );
+        }
+
+        // Convert to JSON (missing values are allowed)
         const jsonData = XLSX.utils.sheet_to_json<StudentData>(worksheet);
-        
-        // Validate data structure
-        if (jsonData.length === 0) {
-          throw new Error('The Excel file is empty or has no valid data.');
-        }
-        
-        const firstRow = jsonData[0];
-        if (!('Roll No' in firstRow) || !('Email' in firstRow) || !('Name' in firstRow)) {
-          throw new Error('The Excel file must contain "Roll No", "Email", and "Name" columns.');
-        }
-        
+
         setJsonData(jsonData);
         setProgress(100);
         setStep2Completed(true);
         setSuccessMessage('File read successfully! Data ready for processing.');
       } catch (error) {
-        setErrorMessage(`Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setErrorMessage(
+          `Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
         console.error('Error reading file:', error);
       }
     };
-    
+
     reader.onerror = () => {
       setErrorMessage('Error reading file. Please try again.');
     };
-    
+
     reader.readAsArrayBuffer(file);
   };
 
@@ -129,7 +133,6 @@ const UploadFile: React.FC = () => {
   };
 
   const handleProcessConfirm = () => {
-    // This function is now handled by ProcessModal
     setIsProcessModalOpen(false);
     resetProcessState();
   };
@@ -191,7 +194,7 @@ const UploadFile: React.FC = () => {
               ref={fileInputRef}
               type="file"
               accept=".xlsx"
-           
+              className='p-2'
               onChange={handleFileChange}
             />
           )}

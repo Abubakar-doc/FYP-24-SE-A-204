@@ -1,5 +1,5 @@
 "use client"
-import DashboardLayout from './dashboardLayout';
+import DashboardLayout from './DashboardLayout';
 import DashboardContent from '@/components/custom/DashboardContent/DashboardContent';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';

@@ -13,7 +13,7 @@ interface Announcement {
   message: string;
   created_at: any;
   mediaLinks?: string[];
-  mediaPublicIds?: string[]; // Optional array of public IDs
+  mediaPublicIds?: string[];
 }
 
 const AnnouncementsContent: React.FC = () => {
@@ -28,6 +28,9 @@ const AnnouncementsContent: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Delete All state
+  const [deleteAllLoading, setDeleteAllLoading] = useState(false);
 
   const truncateMessage = (msg: string): string => {
     if (msg.length <= 50) return msg;
@@ -125,6 +128,46 @@ const AnnouncementsContent: React.FC = () => {
     }
   };
 
+  // --- DELETE ALL ANNOUNCEMENTS LOGIC ---
+  const handleDeleteAllAnnouncements = async () => {
+    if (announcements.length === 0) return;
+    setDeleteAllLoading(true);
+    try {
+      // 1. Delete all media files from Cloudinary
+      // For each announcement with mediaPublicIds, call the API
+      const mediaDeletePromises = announcements
+        .filter(a => a.mediaPublicIds && a.mediaPublicIds.length > 0)
+        .map(a =>
+          fetch("/api/delete-cloudinary-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ publicIds: a.mediaPublicIds }),
+          }).then(async response => {
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || "Failed to delete media files from Cloudinary");
+            }
+            return response.json();
+          })
+        );
+      await Promise.all(mediaDeletePromises);
+
+      // 2. Delete all announcements from Firestore
+      const deleteDocPromises = announcements.map(a =>
+        deleteDoc(doc(firestore, "announcements", a.id))
+      );
+      await Promise.all(deleteDocPromises);
+
+      // 3. Update state
+      setAnnouncements([]);
+    } catch (err) {
+      console.error("Failed to delete all announcements:", err);
+      alert("Failed to delete all announcements or associated media files. Please try again.");
+    } finally {
+      setDeleteAllLoading(false);
+    }
+  };
+
   // --- SEARCH LOGIC ---
   const filteredAnnouncements = announcements.filter((announcement) => {
     const search = searchInput.toLowerCase();
@@ -134,7 +177,6 @@ const AnnouncementsContent: React.FC = () => {
     if (announcement.created_at) {
       createdAtStr = formatTimestamp(announcement.created_at).toLowerCase();
     }
-
     return (
       announcement.title.toLowerCase().includes(search) ||
       announcement.message.toLowerCase().includes(search) ||
@@ -145,8 +187,13 @@ const AnnouncementsContent: React.FC = () => {
   return (
     <div className="w-full min-h-screen bg-white relative">
       <div className="rounded-lg mb-2">
-        {/* Pass searchInput and setSearchInput as props */}
-        <AnnouncementsHeader searchInput={searchInput} setSearchInput={setSearchInput} />
+        {/* Pass searchInput, setSearchInput, and delete all handlers as props */}
+        <AnnouncementsHeader
+          searchInput={searchInput}
+          setSearchInput={setSearchInput}
+          onDeleteAll={handleDeleteAllAnnouncements}
+          deleteAllLoading={deleteAllLoading}
+        />
       </div>
       <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
         <div className="rounded-lg border border-gray-300 overflow-hidden">

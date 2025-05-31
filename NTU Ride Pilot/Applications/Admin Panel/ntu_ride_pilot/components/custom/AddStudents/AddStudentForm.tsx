@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useRef, useState } from 'react';
 import AddStudentHeader from './AddStudentHeader';
 import { useSearchParams } from 'next/navigation';
@@ -12,11 +13,13 @@ import {
   doc,
   setDoc,
   getDocs,
-  collection,
   serverTimestamp,
   getDoc,
   updateDoc,
   arrayUnion,
+  collection,
+  query,
+  where,
 } from 'firebase/firestore';
 
 type AddStudentFormProps = {
@@ -31,10 +34,9 @@ type Student = {
   created_at: any;
   updated_at: any;
   bus_card_id?: string;
-  bus_card_status: string; // always present now
+  bus_card_status: string;
 };
 
-// Initialize secondary Firebase app for creating users without affecting admin auth
 const secondaryApp = initializeApp(
   {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -72,6 +74,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   const isEditMode = formType === 'editForm';
 
+  const [originalEmail, setOriginalEmail] = useState('');
+
   useEffect(() => {
     const fetchRollNumbers = async () => {
       try {
@@ -107,6 +111,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             const data = studentDoc.data() as Student;
             setRollNumber(data.roll_no);
             setEmail(data.email);
+            setOriginalEmail(data.email);
             setName(data.name);
             setBusCard(data.bus_card_id || '');
             setBusCardStatus(data.bus_card_status || 'Inactive');
@@ -156,7 +161,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     return password.sort(() => Math.random() - 0.5).join('');
   };
 
-  const validateInputs = () => {
+  const validateInputs = (nameToValidate: string, emailToValidate: string) => {
     const rollNoRegex = /^\d{2}-NTU-[A-Z]{2}-\d{4}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const nameRegex = /^[A-Za-z\s]+$/;
@@ -166,16 +171,16 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       return false;
     }
 
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(emailToValidate)) {
       setErrorMessage('Invalid Email Format');
       return false;
     }
 
-    if (!name || typeof name !== 'string' || name.length > 50) {
+    if (!nameToValidate || typeof nameToValidate !== 'string' || nameToValidate.length > 50) {
       setErrorMessage('Name must be a string with a maximum of 50 characters');
       return false;
     }
-    if (!nameRegex.test(name)) {
+    if (!nameRegex.test(nameToValidate)) {
       setErrorMessage('Name must contain letters and spaces only');
       return false;
     }
@@ -190,6 +195,66 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     setBusCardStatus('Inactive');
     setBusCard('');
   };
+
+  const checkEmailExists = async (emailToCheck: string) => {
+    try {
+      const response = await fetch('/api/check-email-exists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToCheck }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        return data.exists;
+      } else {
+        console.error('Failed to check email existence:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking email existence:', error);
+      return false;
+    }
+  };
+
+  const deleteUserByEmail = async (emailToDelete: string) => {
+    try {
+      const response = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToDelete }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        return true;
+      } else {
+        console.error('Failed to delete user:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  };
+
+  // ----------- UPDATED LOGIC STARTS HERE -----------
+  // Helper: Check if a bus card document exists for a given roll number
+  const checkBusCardExistsByRollNo = async (rollNo: string) => {
+    try {
+      const busCardsCollection = collection(firestore, 'bus_cards');
+      const q = query(busCardsCollection, where('roll_no', '==', rollNo));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        // Return the bus card ID if found
+        const docSnap = snapshot.docs[0];
+        return docSnap.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error checking bus card existence:', error);
+      return null;
+    }
+  };
+  // ----------- UPDATED LOGIC ENDS HERE -----------
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -220,21 +285,89 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       return;
     }
 
-    setName(normalizedName);
-    setEmail(normalizedEmail);
-
     if (
-      validateInputs() &&
+      validateInputs(normalizedName, normalizedEmail) &&
       normalizedName.length <= 50 &&
       /^[A-Za-z\s]+$/.test(normalizedName) &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     ) {
       if (!isEditMode && existingRollNumbers.includes(rollNumber)) {
-        setErrorMessage(`${rollNumber} is already present!`);
-        setSuccessMessage('');
-        setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 3000);
-        return;
+        // Student already exists in system, check session membership
+        try {
+          const sessionDocRef = doc(firestore, 'sessions', sessionId!);
+          const sessionDocSnap = await getDoc(sessionDocRef);
+
+          if (sessionDocSnap.exists()) {
+            const sessionData = sessionDocSnap.data();
+            const sessionRollNos: string[] = sessionData?.roll_no || [];
+            const sessionName: string = sessionData?.name || 'this session';
+            if (sessionRollNos.includes(rollNumber)) {
+              setErrorMessage(`${rollNumber} already present in ${sessionName}`);
+              setSuccessMessage('');
+              setShowNotification(true);
+              setTimeout(() => setShowNotification(false), 3000);
+              return;
+            } else {
+              // ----------- UPDATED LOGIC FOR BUS CARD STATUS -----------
+              // Student exists but not in this session, add roll_no to session
+              await updateDoc(sessionDocRef, {
+                roll_no: arrayUnion(rollNumber),
+                updated_at: serverTimestamp(),
+              });
+
+              // Now update the student's bus_card_status and bus card's isActive flag
+              // Check if a bus card document exists for this student
+              const busCardId = await checkBusCardExistsByRollNo(rollNumber);
+
+              const studentDocRef = doc(
+                firestore,
+                'users',
+                'user_roles',
+                'students',
+                rollNumber
+              );
+
+              if (busCardId) {
+                // Bus card exists: set bus_card_status to 'Active' and bus card's isActive to true
+                await updateDoc(studentDocRef, {
+                  bus_card_status: 'Active',
+                  updated_at: serverTimestamp(),
+                });
+                const busCardDocRef = doc(firestore, 'bus_cards', busCardId);
+                await updateDoc(busCardDocRef, {
+                  isActive: true,
+                  updated_at: serverTimestamp(),
+                });
+              } else {
+                // No bus card: set bus_card_status to 'Inactive'
+                await updateDoc(studentDocRef, {
+                  bus_card_status: 'Inactive',
+                  updated_at: serverTimestamp(),
+                });
+              }
+              // ----------- END UPDATED LOGIC -----------
+
+              setSuccessMessage(`Student added to session successfully!`);
+              resetForm();
+              setExistingRollNumbers((prev) => [...prev, rollNumber]);
+              setErrorMessage('');
+              setShowNotification(true);
+              setTimeout(() => setShowNotification(false), 3000);
+              return;
+            }
+          } else {
+            setErrorMessage('Selected session does not exist.');
+            setShowNotification(true);
+            setTimeout(() => setShowNotification(false), 3000);
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking session roll numbers:', error);
+          setErrorMessage('Failed to verify student session membership.');
+          setShowNotification(true);
+          setTimeout(() => setShowNotification(false), 3000);
+          return;
+        }
       }
 
       setLoading(true);
@@ -251,9 +384,45 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
         const isActive = busCard ? busCardStatus === 'Active' : false;
 
         if (isEditMode) {
-          // Edit mode: update Firestore only (no auth check or user creation)
+          // EDIT MODE: Handle email update carefully
+
+          // Fetch existing student data
           const existingStudentDoc = await getDoc(studentDocRef);
+          if (!existingStudentDoc.exists()) {
+            setErrorMessage('Student record not found.');
+            setShowNotification(true);
+            setLoading(false);
+            return;
+          }
           const existingData = existingStudentDoc.data() as Student;
+
+          // Check if email changed
+          if (normalizedEmail !== originalEmail) {
+            const emailExists = await checkEmailExists(normalizedEmail);
+            if (emailExists) {
+              setErrorMessage(`Email ${normalizedEmail} already exists in the system!`);
+              setShowNotification(true);
+              setLoading(false);
+              return;
+            }
+
+            const deleted = await deleteUserByEmail(originalEmail);
+            if (!deleted) {
+              setErrorMessage('Failed to delete old user account.');
+              setShowNotification(true);
+              setLoading(false);
+              return;
+            }
+
+            const generatedPassword = generatePassword();
+            await createUserWithEmailAndPassword(
+              secondaryAuth,
+              normalizedEmail,
+              generatedPassword
+            );
+          }
+
+          // Handle bus card update logic (unchanged)
           const previousBusCardId = existingData.bus_card_id || '';
 
           if (busCard && busCard !== previousBusCardId) {
@@ -302,7 +471,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               updated_at: serverTimestamp(),
             });
           }
-
           await updateDoc(studentDocRef, {
             email: normalizedEmail,
             bus_card_status: busCard ? busCardStatus : 'Inactive',
@@ -315,12 +483,11 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           setExistingRollNumbers((prev) => [...prev, rollNumber]);
           setErrorMessage('');
           setShowNotification(true);
-          setTimeout(() => setShowNotification(false), 3000);
           setLoading(false);
           return;
         }
 
-        // Add mode: create user in Firebase Auth first
+        // ADD MODE: unchanged (create user and Firestore doc)
         const generatedPassword = generatePassword();
 
         await createUserWithEmailAndPassword(
@@ -329,7 +496,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           generatedPassword
         );
 
-        // Handle bus card document if assigned
         if (busCard) {
           const busCardDocRef = doc(firestore, 'bus_cards', busCard);
           const busCardDoc = await getDoc(busCardDocRef);
@@ -358,7 +524,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           });
         }
 
-        // Build student data with bus_card_status always present
         const studentData: Student = {
           roll_no: rollNumber,
           email: normalizedEmail,
@@ -372,7 +537,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
         await setDoc(studentDocRef, studentData);
 
-        // Update session document roll_no array
         const sessionDocRef = doc(firestore, 'sessions', sessionId!);
         const sessionDocSnap = await getDoc(sessionDocRef);
 
@@ -381,6 +545,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           if (!rollNos.includes(rollNumber)) {
             await updateDoc(sessionDocRef, {
               roll_no: arrayUnion(rollNumber),
+              updated_at: serverTimestamp(),
             });
           }
         } else {
@@ -396,7 +561,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
         setExistingRollNumbers((prev) => [...prev, rollNumber]);
         setErrorMessage('');
         setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 3000);
       } catch (authError: any) {
         if (
           authError.code === 'auth/email-already-in-use' ||
@@ -435,7 +599,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           email={email}
           setEmail={setEmail}
           disabled={loading}
-          disableRollEmail={isEditMode} // <-- Disable Roll No and Email in edit mode
         />
 
         <NameFeePaidRow
@@ -453,7 +616,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           disabled={loading}
           statusDisabled={!busCard || loading}
         />
-
         <div className="flex justify-end space-x-4">
           <button
             type="button"

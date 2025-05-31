@@ -1,5 +1,5 @@
 import React from 'react'
-import DashboardLayout from '@/app/dashboard/dashboardLayout';
+import DashboardLayout from '@/app/dashboard/DashboardLayout';
 
 function page() {
   return (

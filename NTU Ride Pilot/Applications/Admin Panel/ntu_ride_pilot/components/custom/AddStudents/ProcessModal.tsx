@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaCheck, FaSpinner } from 'react-icons/fa';
 import {
   doc,
@@ -8,6 +8,9 @@ import {
   getDocs,
   updateDoc,
   arrayUnion,
+  getDoc,
+  query,
+  where,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { useSearchParams } from 'next/navigation';
@@ -34,6 +37,7 @@ interface ErrorReport {
   email?: string;
   name?: string;
   message?: string;
+  type?: 'error' | 'warning'; // distinguish error or warning
 }
 
 type ProcessModalProps = {
@@ -44,6 +48,55 @@ type ProcessModalProps = {
   dataCount: number;
   jsonData: any[];
 };
+
+// Helper: Check if email exists in Firebase Auth (via your API)
+const checkEmailExists = async (emailToCheck: string) => {
+  try {
+    const response = await fetch('/api/check-email-exists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailToCheck }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      return data.exists;
+    } else {
+      console.error('Failed to check email existence:', data.error);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error checking email existence:', error);
+    return false;
+  }
+};
+
+// Helper: Delete user by email in Firebase Auth (via your API)
+const deleteUserByEmail = async (emailToDelete: string) => {
+  try {
+    const response = await fetch('/api/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailToDelete }),
+    });
+    const data = await response.json();
+    if (response.ok && data.success) {
+      return true;
+    } else {
+      console.error('Failed to delete user:', data.error);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return false;
+  }
+};
+
+// Normalization function (same as AddStudentForm)
+const normalizeEmail = (email: string) =>
+  (email || '').trim().replace(/\s+/g, '').toLowerCase();
+
+const normalizeName = (name: string) =>
+  (name || '').trim().replace(/\s+/g, ' ');
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
   isOpen,
@@ -85,13 +138,11 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
     onClose();
   };
 
-  // Password generator meeting all criteria
   const generatePassword = () => {
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const digits = '0123456789';
     const specials = '!@#$%^&*()';
-
     const getRandomChar = (str: string) =>
       str[Math.floor(Math.random() * str.length)];
 
@@ -102,7 +153,6 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
       getRandomChar(specials),
       getRandomChar(specials),
     ];
-
     const allChars = uppercase + lowercase + digits + specials;
     for (let i = 0; i < 3; i++) {
       password.push(getRandomChar(allChars));
@@ -125,6 +175,29 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
     const regex = /^[A-Za-z\s]+$/;
     return regex.test(name);
   };
+
+  const checkBusCardExistsByRollNo = async (rollNo: string) => {
+    try {
+      const busCardsCollection = collection(firestore, 'bus_cards');
+      const q = query(busCardsCollection, where('roll_no', '==', rollNo));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0];
+        return docSnap.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error checking bus card existence:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && !isProcessing && !processingComplete) {
+      processCurrentStep();
+    }
+    // eslint-disable-next-line
+  }, [isOpen, currentStep, isProcessing, processingComplete]);
 
   const processCurrentStep = async () => {
     setIsProcessing(true);
@@ -163,6 +236,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
                 rowNumber: index + 2,
                 ...errors,
                 message: 'Missing required data',
+                type: 'error',
               });
               isValid = false;
             }
@@ -176,6 +250,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
                 rowNumber: index + 2,
                 rollNo: rollNo,
                 message: 'Invalid format. Expected: 00-NTU-AA-0000',
+                type: 'error',
               });
               isValid = false;
             }
@@ -190,6 +265,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
                 rowNumber: index + 2,
                 email: email,
                 message: 'Invalid email format',
+                type: 'error',
               });
               isValid = false;
             }
@@ -204,13 +280,20 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
                 rowNumber: index + 2,
                 name: name,
                 message: 'Should contain only letters and spaces',
+                type: 'error',
               });
               isValid = false;
             }
           });
           break;
 
-        case 4: // REVERSED LOGIC: Add to Authentication FIRST, then Firestore
+        case 4: // Add Students to Database and Authentication with session logic
+          if (!sessionId) {
+            setErrorMessage('No session selected. Cannot add students to session.');
+            setIsProcessing(false);
+            return;
+          }
+
           const studentsCollection = collection(
             firestore,
             'users',
@@ -221,28 +304,150 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
           const existingStudents = new Map(
             snapshot.docs.map((doc) => [doc.id, doc.data()])
           );
+          const sessionDocRef = doc(firestore, 'sessions', sessionId);
+          const sessionDocSnap = await getDoc(sessionDocRef);
+          if (!sessionDocSnap.exists()) {
+            setErrorMessage('Selected session does not exist.');
+            setIsProcessing(false);
+            return;
+          }
+          const sessionData = sessionDocSnap.data();
+          const sessionRollNos: string[] = sessionData?.roll_no || [];
+          const sessionName: string = sessionData?.name || 'this session';
 
           let newStudents = 0;
           let updatedStudents = 0;
           let skippedStudents = 0;
-          const rollNosToAdd: string[] = [];
+          let addedToSessionCount = 0;
 
           for (let i = 0; i < jsonData.length; i++) {
             const student = jsonData[i];
             const rollNo = student['Roll No'];
-            const email = student['Email'];
-            const name = student['Name'];
+            const rawEmail = student['Email'];
+            const rawName = student['Name'];
 
-            // Check if student already exists in Firestore
+            const normalizedName = normalizeName(rawName);
+            const normalizedNewEmail = normalizeEmail(rawEmail);
+
             const existingStudent = existingStudents.get(rollNo);
 
-            // If student exists in Firestore, check if email and name match
             if (existingStudent) {
-              // If details changed, update Firestore (no need to touch Auth)
-              if (
-                existingStudent.email !== email ||
-                existingStudent.name !== name
-              ) {
+              // Normalize old email
+              const normalizedOldEmail = normalizeEmail(existingStudent.email);
+
+              // CASE 1: Student already in session
+              if (sessionRollNos.includes(rollNo)) {
+                let updated = false;
+                let emailChanged = false;
+                let nameChanged = false;
+
+                if (normalizeName(existingStudent.name) !== normalizedName) {
+                  nameChanged = true;
+                }
+                if (normalizedOldEmail !== normalizedNewEmail) {
+                  emailChanged = true;
+                }
+
+                let shouldUpdateFirestore = true;
+
+                if (nameChanged || emailChanged) {
+                  const studentDocRef = doc(
+                    firestore,
+                    'users',
+                    'user_roles',
+                    'students',
+                    rollNo
+                  );
+
+                  // Email update logic
+                  if (emailChanged) {
+                    const emailExists = await checkEmailExists(normalizedNewEmail);
+                    if (emailExists) {
+                      report.push({
+                        rowNumber: i + 2,
+                        rollNo,
+                        email: normalizedNewEmail,
+                        name: normalizedName,
+                        message: `Email ${normalizedNewEmail} already exists in the system!`,
+                        type: 'error',
+                      });
+                      shouldUpdateFirestore = false;
+                      continue;
+                    }
+                    const deleted = await deleteUserByEmail(normalizedOldEmail);
+                    if (!deleted) {
+                      report.push({
+                        rowNumber: i + 2,
+                        rollNo,
+                        email: normalizedNewEmail,
+                        name: normalizedName,
+                        message: 'Failed to delete old user account.',
+                        type: 'error',
+                      });
+                      shouldUpdateFirestore = false;
+                      continue;
+                    }
+                    const generatedPassword = generatePassword();
+                    try {
+                      await createUserWithEmailAndPassword(
+                        secondaryAuth,
+                        normalizedNewEmail,
+                        generatedPassword
+                      );
+                    } catch (authError: any) {
+                      let message = 'Unknown auth error';
+                      if (authError.code === 'auth/email-already-in-use') {
+                        message = 'Email already registered in authentication system';
+                      } else if (authError.message) {
+                        message = authError.message;
+                      }
+                      report.push({
+                        rowNumber: i + 2,
+                        rollNo,
+                        email: normalizedNewEmail,
+                        name: normalizedName,
+                        message,
+                        type: 'error',
+                      });
+                      shouldUpdateFirestore = false;
+                      continue;
+                    }
+                  }
+
+                  if (shouldUpdateFirestore) {
+                    await setDoc(
+                      studentDocRef,
+                      {
+                        ...existingStudent,
+                        name: normalizedName,
+                        email: normalizedNewEmail,
+                        updated_at: serverTimestamp(),
+                      },
+                      { merge: true }
+                    );
+                    updatedStudents++;
+                    updated = true;
+                  }
+                }
+                report.push({
+                  rowNumber: i + 2,
+                  rollNo,
+                  message: `${rollNo} already present in ${sessionName}${updatedStudents > 0 ? ' (info updated)' : ''}`,
+                  type: 'warning',
+                });
+                skippedStudents++;
+                continue;
+              }
+              // CASE 2: Student exists but not in session
+              else {
+                await updateDoc(sessionDocRef, {
+                  roll_no: arrayUnion(rollNo),
+                  updated_at: serverTimestamp(),
+                });
+                addedToSessionCount++;
+
+                // Bus card status logic (unchanged)
+                const busCardId = await checkBusCardExistsByRollNo(rollNo);
                 const studentDocRef = doc(
                   firestore,
                   'users',
@@ -250,30 +455,114 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
                   'students',
                   rollNo
                 );
-                await setDoc(
-                  studentDocRef,
-                  {
-                    ...existingStudent,
-                    email: email,
-                    name: name,
+                if (busCardId) {
+                  await updateDoc(studentDocRef, {
+                    bus_card_status: 'Active',
                     updated_at: serverTimestamp(),
-                  },
-                  { merge: true }
-                );
-                updatedStudents++;
-              } else {
-                skippedStudents++;
+                  });
+                  const busCardDocRef = doc(firestore, 'bus_cards', busCardId);
+                  await updateDoc(busCardDocRef, {
+                    isActive: true,
+                    updated_at: serverTimestamp(),
+                  });
+                } else {
+                  await updateDoc(studentDocRef, {
+                    bus_card_status: 'Inactive',
+                    updated_at: serverTimestamp(),
+                  });
+                }
+
+                let emailChanged = false;
+                let nameChanged = false;
+
+                if (normalizeName(existingStudent.name) !== normalizedName) {
+                  nameChanged = true;
+                }
+                if (normalizedOldEmail !== normalizedNewEmail) {
+                  emailChanged = true;
+                }
+
+                let shouldUpdateFirestore = true;
+
+                if (nameChanged || emailChanged) {
+                  if (emailChanged) {
+                    const emailExists = await checkEmailExists(normalizedNewEmail);
+                    if (emailExists) {
+                      report.push({
+                        rowNumber: i + 2,
+                        rollNo,
+                        email: normalizedNewEmail,
+                        name: normalizedName,
+                        message: `Email ${normalizedNewEmail} already exists in the system!`,
+                        type: 'error',
+                      });
+                      shouldUpdateFirestore = false;
+                      continue;
+                    }
+                    const deleted = await deleteUserByEmail(normalizedOldEmail);
+                    if (!deleted) {
+                      report.push({
+                        rowNumber: i + 2,
+                        rollNo,
+                        email: normalizedNewEmail,
+                        name: normalizedName,
+                        message: 'Failed to delete old user account.',
+                        type: 'error',
+                      });
+                      shouldUpdateFirestore = false;
+                      continue;
+                    }
+                    const generatedPassword = generatePassword();
+                    try {
+                      await createUserWithEmailAndPassword(
+                        secondaryAuth,
+                        normalizedNewEmail,
+                        generatedPassword
+                      );
+                    } catch (authError: any) {
+                      let message = 'Unknown auth error';
+                      if (authError.code === 'auth/email-already-in-use') {
+                        message = 'Email already registered in authentication system';
+                      } else if (authError.message) {
+                        message = authError.message;
+                      }
+                      report.push({
+                        rowNumber: i + 2,
+                        rollNo,
+                        email: normalizedNewEmail,
+                        name: normalizedName,
+                        message,
+                        type: 'error',
+                      });
+                      shouldUpdateFirestore = false;
+                      continue;
+                    }
+                  }
+
+                  if (shouldUpdateFirestore) {
+                    await setDoc(
+                      studentDocRef,
+                      {
+                        ...existingStudent,
+                        name: normalizedName,
+                        email: normalizedNewEmail,
+                        updated_at: serverTimestamp(),
+                      },
+                      { merge: true }
+                    );
+                    updatedStudents++;
+                  }
+                }
+                continue;
               }
-              // No need to process Auth again for existing Firestore students
-              continue;
             }
 
-            // For NEW student: Try to create user in Auth FIRST
+            // --- CASE: Student is New ---
             let authCreated = false;
             let password = '';
             try {
               password = generatePassword();
-              await createUserWithEmailAndPassword(secondaryAuth, email, password);
+              await createUserWithEmailAndPassword(secondaryAuth, normalizedNewEmail, password);
               authCreated = true;
             } catch (authError: any) {
               let message = 'Unknown auth error';
@@ -282,18 +571,17 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
               } else if (authError.message) {
                 message = authError.message;
               }
-              // Report error and SKIP Firestore addition
               report.push({
                 rowNumber: i + 2,
                 rollNo,
-                email,
-                name,
+                email: normalizedNewEmail,
+                name: normalizedName,
                 message,
+                type: 'error',
               });
               continue;
             }
 
-            // Only add to Firestore if Auth creation was successful
             if (authCreated) {
               const studentDocRef = doc(
                 firestore,
@@ -304,43 +592,38 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
               );
               await setDoc(studentDocRef, {
                 roll_no: rollNo,
-                email: email,
-                name: name,
+                email: normalizedNewEmail,
+                name: normalizedName,
                 fee_paid: true,
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp(),
-                bus_card_status: "Inactive", // <-- NEW FIELD
+                bus_card_status: "Inactive",
               });
               newStudents++;
-              rollNosToAdd.push(rollNo);
+              await updateDoc(sessionDocRef, {
+                roll_no: arrayUnion(rollNo),
+                updated_at: serverTimestamp(),
+              });
+              addedToSessionCount++;
             }
-
-            // Update progress after each student
             setProgress(((i + 1) / jsonData.length) * 100);
-          }
-
-          // Update session document if needed
-          if (sessionId && rollNosToAdd.length > 0) {
-            const sessionDocRef = doc(firestore, 'sessions', sessionId);
-            await updateDoc(sessionDocRef, {
-              roll_no: arrayUnion(...rollNosToAdd),
-            });
           }
 
           let successMsg = '';
           if (newStudents > 0) successMsg += `Added ${newStudents} new student(s). `;
           if (updatedStudents > 0)
             successMsg += `Updated ${updatedStudents} existing student(s). `;
+          if (addedToSessionCount > 0)
+            successMsg += `Added ${addedToSessionCount} student(s) to ${sessionName}. `;
           if (skippedStudents > 0)
-            successMsg += `Skipped ${skippedStudents} unchanged student(s). `;
-          if (sessionId) successMsg += `Students added to session.`;
+            successMsg += `Skipped ${skippedStudents} student(s) already in ${sessionName}.`;
 
           setSuccessMessage(successMsg.trim());
 
           if (report.length > 0) {
             setErrorReport(report);
             setErrorMessage(
-              'Some students encountered issues during authentication creation. Please review the report below.'
+              'Some students encountered issues or warnings during processing. Please review the report below.'
             );
           }
           break;
@@ -354,17 +637,16 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
         setErrorMessage(`Validation failed for ${steps[currentStep]}`);
       }
 
-      // Step success
       const newProgress = ((currentStep + 1) / steps.length) * 100;
       setProgress(newProgress);
 
-      if (currentStep < steps.length - 1) {
+      if (currentStep < steps.length - 1 && isValid) {
         setSuccessMessage(`${steps[currentStep]} completed successfully!`);
         setTimeout(() => {
           setCurrentStep(currentStep + 1);
           setSuccessMessage(null);
         }, 1500);
-      } else {
+      } else if (currentStep === steps.length - 1) {
         setProcessingComplete(true);
       }
     } catch (error) {
@@ -386,9 +668,15 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
           {errorReport.map((item, index) => (
             <div
               key={index}
-              className="bg-red-50 p-3 rounded border border-red-100"
+              className={`p-3 rounded border ${
+                item.type === 'warning'
+                  ? 'bg-yellow-50 border-yellow-300 text-yellow-800'
+                  : 'bg-red-50 border-red-100 text-red-700'
+              }`}
             >
-              <p className="font-medium">Row {item.rowNumber}:</p>
+              <p className="font-medium">
+                Row {item.rowNumber}:
+              </p>
               {item.rollNo && (
                 <p>Roll No: {item.rollNo === 'Empty' ? 'Empty' : item.rollNo}</p>
               )}
@@ -399,7 +687,9 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
                 <p>Name: {item.name === 'Empty' ? 'Empty' : item.name}</p>
               )}
               {item.message && (
-                <p className="text-red-600">{item.message}</p>
+                <p className={item.type === 'warning' ? 'text-yellow-800' : 'text-red-600'}>
+                  {item.message}
+                </p>
               )}
             </div>
           ))}
@@ -445,7 +735,6 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
             </p>
           )}
         </div>
-
         {/* Steps */}
         <div className="mb-6 space-y-3">
           {steps.map((step, index) => (
@@ -474,7 +763,6 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
             </div>
           ))}
         </div>
-
         {/* Messages */}
         {errorMessage && (
           <div className="text-red-500 mb-4 p-3 bg-red-50 rounded">
@@ -488,36 +776,17 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
           </div>
         )}
 
-        {/* Action Button */}
-        <div className="flex justify-center mt-6">
-          {processingComplete ? (
+        {/* Action Button - Only show when processing is complete */}
+        {processingComplete && (
+          <div className="flex justify-center mt-6">
             <button
               onClick={handleClose}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-8 rounded"
             >
               Finish
             </button>
-          ) : (
-            <button
-              onClick={processCurrentStep}
-              disabled={isProcessing}
-              className={`flex items-center justify-center ${
-                isProcessing
-                  ? 'bg-blue-400'
-                  : 'bg-blue-500 hover:bg-blue-600'
-              } text-white font-bold py-2 px-8 rounded min-w-40`}
-            >
-              {isProcessing ? (
-                <>
-                  <FaSpinner className="animate-spin mr-2" />
-                  Processing...
-                </>
-              ) : (
-                `Process ${steps[currentStep]}`
-              )}
-            </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {renderErrorReport()}
       </div>
