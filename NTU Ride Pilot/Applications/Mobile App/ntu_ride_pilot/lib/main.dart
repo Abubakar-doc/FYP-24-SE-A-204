@@ -12,6 +12,7 @@ import 'controllers/notification_controller.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/light_theme.dart';
 import 'themes/dark_theme.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,10 @@ void main() async {
   Get.put(AuthService());
   await HiveService.init();
   await LocationService.init();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   runApp(MyApp());
 }
 

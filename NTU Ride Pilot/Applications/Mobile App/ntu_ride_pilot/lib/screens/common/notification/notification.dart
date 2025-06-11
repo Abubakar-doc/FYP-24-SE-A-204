@@ -18,20 +18,25 @@ class _NotificationScreenState extends State<NotificationScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
-
   final NotificationController controller = Get.find();
   final ScrollController _scrollController = ScrollController();
   final NotificationPermission _notificationPermission =
-      NotificationPermission();
-
+  NotificationPermission();
   bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
-    _requestNotificationPermission();
-    _scrollController.addListener(_scrollListener);
-    controller.captureNewSnapshot();
+    controller.onNotificationScreenOpened();
+      _requestNotificationPermission();
+      _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    controller.onNotificationScreenClosed();
+      _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _requestNotificationPermission() async {
@@ -86,94 +91,25 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
-  // Map<String, List<NotificationModel>> _groupNotifications(
-  //     List<NotificationModel> notifications, Set<String> newIdsUnion) {
-  //   final grouped = <String, List<NotificationModel>>{};
-  //
-  //   final newNotifications = notifications
-  //       .where((n) => newIdsUnion.contains(n.notificationId))
-  //       .toList();
-  //
-  //   if (newNotifications.isNotEmpty) {
-  //     newNotifications
-  //         .sort((a, b) => a.createdAt.compareTo(b.createdAt)); // ascending
-  //
-  //     final count = newNotifications.length;
-  //     final newLabel = '$count new notification${count == 1 ? '' : 's'}';
-  //
-  //     grouped[newLabel] = newNotifications;
-  //   }
-  //
-  //   final others = notifications
-  //       .where((n) => !newIdsUnion.contains(n.notificationId))
-  //       .toList();
-  //
-  //   for (var n in others) {
-  //     final date = _formatDate(n.createdAt);
-  //     grouped.putIfAbsent(date, () => []).add(n);
-  //   }
-  //
-  //   grouped.forEach((key, list) {
-  //     if (!key.startsWith(RegExp(r'\d+ new notification'))) {
-  //       list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  //     }
-  //   });
-  //
-  //   return grouped;
-  // }
   Map<String, List<NotificationModel>> _groupNotifications(
-      List<NotificationModel> notifications, Set<String> newIdsUnion) {
-
+      List<NotificationModel> notifications) {
     final grouped = <String, List<NotificationModel>>{};
 
-    final newNotifications = notifications
-        .where((n) => newIdsUnion.contains(n.notificationId))
-        .toList();
-
-    if (newNotifications.isNotEmpty) {
-      newNotifications.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      final count = newNotifications.length;
-      final newLabel = '$count new notification${count == 1 ? '' : 's'}';
-      grouped[newLabel] = newNotifications;
-    }
-
-    final others = notifications
-        .where((n) => !newIdsUnion.contains(n.notificationId))
-        .toList();
-
-    for (var n in others) {
+    for (var n in notifications) {
       final date = _formatDate(n.createdAt);
       grouped.putIfAbsent(date, () => []).add(n);
     }
 
     grouped.forEach((key, list) {
-      if (!key.startsWith(RegExp(r'\d+ new notification'))) {
-        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      }
+      list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     });
 
     return grouped;
   }
 
-
-
   String _formatTimestamp(DateTime timestamp) {
     return DateFormat('h:mm a').format(timestamp);
   }
-
-  // @override
-  // void dispose() {
-  //   controller.clearNewSnapshot();
-  //   _scrollController.dispose();
-  //   super.dispose();
-  // }
-  @override
-  void dispose() {
-    controller.onScreenClosed();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -213,15 +149,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             }
           }
 
-          final combinedNewIds = {
-            ...controller.newIdsSnapshot,
-            ...controller.currentlyNewNotificationIds
-          };
-
-          final groupedNotifications = _groupNotifications(
-            controller.notifications,
-            combinedNewIds,
-          );
+          final groupedNotifications = _groupNotifications(controller.notifications);
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -233,7 +161,8 @@ class _NotificationScreenState extends State<NotificationScreen>
               theme: theme,
               isLoading: false,
               formatTimestamp: _formatTimestamp,
-            ),
+              unreadCount: controller.uiUnreadCount.value,
+            )
           );
         }),
       ),

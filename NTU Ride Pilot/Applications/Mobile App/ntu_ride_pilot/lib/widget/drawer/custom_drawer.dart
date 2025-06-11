@@ -18,8 +18,7 @@ class CustomDrawer extends StatefulWidget {
 
 class _CustomDrawerState extends State<CustomDrawer> {
   final bool _isCollapsed = true;
-  final notificationController = Get.find<NotificationController>();
-
+  final NotificationController controller = Get.find();
   int _activeIndex = 0;
 
   void _onTileTapped(int index) {
@@ -33,45 +32,47 @@ class _CustomDrawerState extends State<CustomDrawer> {
     bool isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
-      child: AnimatedContainer(
-        curve: Curves.easeInOutCubic,
-        duration: const Duration(milliseconds: 500),
-        width: _isCollapsed ? 300 : 70,
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.only(
-            bottomRight: Radius.circular(10),
-            topRight: Radius.circular(10),
-          ),
-          color: isDarkTheme ? darkBackgroundColor : lightBackgroundColor,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CustomDrawerHeader(isColapsed: _isCollapsed),
-
-              // CustomListTile for Home
-              CustomListTile(
-                isCollapsed: _isCollapsed,
-                icon: Icons.directions_bus_sharp,
-                title: 'Rides',
-                infoCount: 0,
-                isActive: _activeIndex == 0,
-                onTap: () {
-                  _onTileTapped(0);
-                  Navigator.pop(context);
-                },
+      child: Obx(() {
+        final unreadCount = controller.unreadCount.value;
+        return SafeArea(
+          child: AnimatedContainer(
+            curve: Curves.easeInOutCubic,
+            duration: const Duration(milliseconds: 500),
+            width: _isCollapsed ? 300 : 70,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                bottomRight: Radius.circular(10),
+                topRight: Radius.circular(10),
               ),
-              // CustomListTile for Notifications
-              Obx(() {
-                int count = notificationController.unreadCount.value;
-                return CustomListTile(
+              color: isDarkTheme ? darkBackgroundColor : lightBackgroundColor,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CustomDrawerHeader(isColapsed: _isCollapsed),
+
+                  // CustomListTile for Home
+                  CustomListTile(
+                    isCollapsed: _isCollapsed,
+                    icon: Icons.home_outlined,
+                    title: 'Home',
+                    infoCount: 0,
+                    isActive: _activeIndex == 0,
+                    onTap: () {
+                      _onTileTapped(0);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  // CustomListTile for Notifications
+
+                  CustomListTile(
                     isCollapsed: _isCollapsed,
                     icon: Icons.notifications,
                     title: 'Notifications',
-                    infoCount: count,
+                    infoCount: unreadCount,
                     isActive: _activeIndex == 1,
                     onTap: () {
                       _onTileTapped(1);
@@ -79,44 +80,44 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       Get.to(() => NotificationScreen(),
                           transition: Transition.rightToLeft);
                     },
-                  );
-              }),
+                  ),
+                  // CustomListTile for Feedback
+                  CustomListTile(
+                    isCollapsed: _isCollapsed,
+                    icon: Icons.feedback_outlined,
+                    title: 'Feedback',
+                    infoCount: 0,
+                    isActive: _activeIndex == 2,
+                    onTap: () {
+                      _onTileTapped(2);
+                      Navigator.pop(context);
+                      Get.to(() => FeedbackScreen(),
+                          transition: Transition.rightToLeft);
+                    },
+                  ),
+                  // CustomListTile for Settings
+                  CustomListTile(
+                    isCollapsed: _isCollapsed,
+                    icon: Icons.settings,
+                    title: 'Settings',
+                    infoCount: 0,
+                    isActive: _activeIndex == 3,
+                    onTap: () {
+                      _onTileTapped(3);
+                      Navigator.pop(context);
+                      Get.to(() => SettingsScreen(),
+                          transition: Transition.rightToLeft);
+                    },
 
-              // CustomListTile for Feedback
-              CustomListTile(
-                isCollapsed: _isCollapsed,
-                icon: Icons.feedback_outlined,
-                title: 'Feedback',
-                infoCount: 0,
-                isActive: _activeIndex == 2,
-                onTap: () {
-                  _onTileTapped(2);
-                  Navigator.pop(context);
-                  Get.to(() => FeedbackScreen(),
-                      transition: Transition.rightToLeft);
-                },
+                  ),
+                  const Spacer(),
+                  BottomUserInfo(isCollapsed: _isCollapsed),
+                ],
               ),
-              // CustomListTile for Settings
-              CustomListTile(
-                isCollapsed: _isCollapsed,
-                icon: Icons.settings,
-                title: 'Settings',
-                infoCount: 0,
-                isActive: _activeIndex == 3,
-                onTap: () {
-                  _onTileTapped(3);
-                  Navigator.pop(context);
-                    Get.to(() => SettingsScreen(),
-                      transition: Transition.rightToLeft);
-                },
-
-              ),
-              const Spacer(),
-              BottomUserInfo(isCollapsed: _isCollapsed),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:ntu_ride_pilot/controllers/notification_controller.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'package:ntu_ride_pilot/screens/common/notification/widget/notifcation_item.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 class NotificationList extends StatelessWidget {
   final ScrollController scrollController;
@@ -15,6 +12,7 @@ class NotificationList extends StatelessWidget {
   final ThemeData theme;
   final bool isLoading;
   final String Function(DateTime) formatTimestamp;
+  final int unreadCount;
 
   const NotificationList({
     super.key,
@@ -25,34 +23,54 @@ class NotificationList extends StatelessWidget {
     required this.theme,
     required this.isLoading,
     required this.formatTimestamp,
+    required this.unreadCount,
   });
 
   @override
   Widget build(BuildContext context) {
+    final dateKeys = groupedNotifications.keys.toList();
+
     return ListView.builder(
       controller: scrollController,
       reverse: true,
-      itemCount: groupedNotifications.keys.length + (hasMore ? 1 : 0),
+      itemCount: dateKeys.length + (hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == groupedNotifications.keys.length && hasMore) {
+        if (hasMore && index == dateKeys.length) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: isLoadingMore
-                  ? CircularProgressIndicator(
-                      color: Colors.grey,
-                    )
-                  : null,
+              child: isLoadingMore ? CircularProgressIndicator(color: Colors.grey) : null,
             ),
           );
         }
 
-        final dateLabel = groupedNotifications.keys.toList()[index];
+        final dateLabel = dateKeys[index];
         final notificationsForDate = groupedNotifications[dateLabel] ?? [];
+
+        // Only for the first (newest) date group and if there are unread notifications
+        final bool showUnreadCount = index == 0 && unreadCount > 0;
+
+        // Find first unread notification index in this group (only if showUnreadCount)
+        // int? firstUnreadIndex;
+        // if (showUnreadCount) {
+        //   firstUnreadIndex = notificationsForDate.indexWhere((n) => !n.read && !n.isDeleted);
+        //   if (firstUnreadIndex == -1) firstUnreadIndex = null; // no unread in this group
+        // }
+        int? firstUnreadIndex;
+        if (showUnreadCount) {
+          firstUnreadIndex = notificationsForDate.indexWhere((n) => !n.read && !n.isDeleted);
+          if (firstUnreadIndex == -1) {
+            // No unread notification in first group, but unreadCount > 0,
+            // show unread badge at the top of the list for this group.
+            firstUnreadIndex = 0;
+          }
+        }
+
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show date label only once at top
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Center(
@@ -67,28 +85,49 @@ class NotificationList extends StatelessWidget {
                 ),
               ),
             ),
-            ...notificationsForDate.map((notification) {
-              return VisibilityDetector(
-                key: Key(notification.notificationId),
-                onVisibilityChanged: (info) {
-                  if (info.visibleFraction > 0.1 && !notification.read) {
-                    // Mark as read when at least 10% visible and unread
-                    final controller = Get.find<NotificationController>();
-                    controller.markAsRead(notification.notificationId);
-                  }
-                },
-                child: NotificationItem(
-                  notification: notification,
+
+            // Now list notifications with unread count inserted before first unread notification
+            ...List.generate(notificationsForDate.length, (notifIndex) {
+              if (showUnreadCount && firstUnreadIndex != null && notifIndex == firstUnreadIndex) {
+                // Insert unread count label widget before first unread notification
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Text(
+                        '$unreadCount Unread Update${unreadCount > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.brightness == Brightness.dark
+                              ? DarkhintTextColor
+                              : LighthintTextColor,
+                        ),
+                      ),
+                    ),
+                    NotificationItem(
+                      notification: notificationsForDate[notifIndex],
+                      theme: theme,
+                      isLoading: isLoading,
+                      formatTimestamp: formatTimestamp,
+                    ),
+                  ],
+                );
+              }
+              else {
+                // Just a normal notification item
+                return NotificationItem(
+                  notification: notificationsForDate[notifIndex],
                   theme: theme,
                   isLoading: isLoading,
                   formatTimestamp: formatTimestamp,
-                ),
-              );
-            }).toList(),
+                );
+              }
+            }),
           ],
         );
       },
     );
+
   }
 }
 

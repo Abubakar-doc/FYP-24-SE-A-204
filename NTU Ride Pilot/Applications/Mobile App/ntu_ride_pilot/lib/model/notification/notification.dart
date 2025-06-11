@@ -33,7 +33,7 @@ class NotificationModel {
     required this.mediaLinks,
     required this.createdAt,
     this.read = false,
-    this.isDeleted = false,  // Default false
+    this.isDeleted = false,
   });
 
   // Convert NotificationModel to Map for Firestore or other uses

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -63,33 +62,19 @@ class NotificationService {
         .toList();
   }
 
-  // Stream<List<NotificationModel>> getLatestNotificationsStream() {
-  //   return _firestore
-  //       .collection('announcements')
-  //       .orderBy('created_at', descending: true)
-  //       .limit(10) // Important to limit real-time updates to latest only
-  //       .snapshots()
-  //       .map((snapshot) {
-  //     return snapshot.docs
-  //         .map((doc) => NotificationModel.fromMap(
-  //             doc.data() as Map<String, dynamic>, doc.id))
-  //         .toList();
-  //   });
-  // }
   Stream<List<NotificationModel>> getLatestNotificationsStream() {
     return _firestore
         .collection('announcements')
         .orderBy('created_at', descending: true)
-        .limit(10)
+        .limit(10) // Important to limit real-time updates to latest only
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => NotificationModel.fromMap(
-          doc.data() as Map<String, dynamic>, doc.id))
+              doc.data() as Map<String, dynamic>, doc.id))
           .toList();
     });
   }
-
 
   Future<void> showProgressNotification(int id, int progress) async {
     final androidDetails = AndroidNotificationDetails(

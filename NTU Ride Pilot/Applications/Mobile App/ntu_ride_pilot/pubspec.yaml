@@ -40,7 +40,7 @@ dependencies:
   get_storage: ^2.1.1
   hive_flutter: ^1.1.0
   firebase_auth: ^5.4.1
-  skeletonizer: ^1.4.3
+  skeletonizer: ^2.0.1
   hive: ^2.2.3
   flutter_typeahead: ^5.2.0
   collection: any
@@ -61,8 +61,6 @@ dependencies:
   image_gallery_saver_plus: ^4.0.1
   share_plus: ^11.0.0
   flutter_local_notifications: ^19.2.1
-  firebase_messaging: ^15.2.6
-  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:

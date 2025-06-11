@@ -75,39 +75,4 @@ class NotificationRepository {
       print("Notification with ID $notificationId not found in Hive");
     }
   }
-
-
-  Future<void> markAsRead(String notificationId) async {
-    await _updateReadStatus(notificationId, true);
-  }
-
-  Future<void> markAsUnread(String notificationId) async {
-    await _updateReadStatus(notificationId, false);
-  }
-
-  Future<void> _updateReadStatus(String notificationId, bool readStatus) async {
-    // Update local list
-    final index = notifications.indexWhere((n) => n.notificationId == notificationId);
-    if (index != -1) {
-      notifications[index].read = readStatus;
-
-      // Update Hive
-      final key = _notificationBox.keys.firstWhere(
-            (key) => _notificationBox.get(key)?.notificationId == notificationId,
-        orElse: () => null,
-      );
-      if (key != null) {
-        final notif = _notificationBox.get(key);
-        if (notif != null) {
-          notif.read = readStatus;
-          await _notificationBox.put(key, notif);
-        }
-      }
-
-      // Update Firestore
-      await _notificationService.updateReadStatus(notificationId, readStatus);
-    }
-  }
-
-
 }

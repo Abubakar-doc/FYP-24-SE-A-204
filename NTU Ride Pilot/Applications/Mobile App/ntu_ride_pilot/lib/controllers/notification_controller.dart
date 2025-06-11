@@ -1,185 +1,126 @@
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'package:ntu_ride_pilot/services/common/notification/notificationRepository.dart';
+import 'package:ntu_ride_pilot/services/common/notification/notification_service.dart';
 
 class NotificationController extends GetxController {
-  final RxSet<String> _newIdsSnapshot = <String>{}.obs;
-  final RxSet<String> _currentlyNewNotificationIds = <String>{}.obs;
-  Set<String> get newIdsSnapshot => _newIdsSnapshot;
-  Set<String> get currentlyNewNotificationIds => _currentlyNewNotificationIds;
-  final NotificationRepository _repository = NotificationRepository();
-  final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
-  final RxInt unreadCount = 0.obs;
-  bool _isInitialized = false;
-  bool get isInitialized => _isInitialized;
+  final NotificationRepository repository = NotificationRepository();
+  RxList<NotificationModel> notifications = <NotificationModel>[].obs;
+  RxInt unreadCount = 0.obs;
   bool hasMore = true;
+  bool isInitialized = false;
+  bool _isOnNotificationScreen = false;
+  RxInt uiUnreadCount = 0.obs;
+  final Set<String> _uiUnreadCountedIds = {};
 
   @override
   void onInit() {
     super.onInit();
-    _init();
+    _initialize();
+    _listenForRealtimeUpdates();
   }
 
-  Set<String> get unionNewIds =>
-      {..._newIdsSnapshot, ..._currentlyNewNotificationIds};
-
-  void captureNewSnapshot() {
-    _newIdsSnapshot.clear();
-    _newIdsSnapshot.addAll(
-        notifications.where((n) => !n.read).map((n) => n.notificationId));
+  Future<void> _initialize() async {
+    await repository.init();
+    notifications.assignAll(repository.notifications);
+    _calculateUnreadCount();
+    hasMore = repository.hasMore;
+    isInitialized = repository.isInitialized;
   }
 
-  void clearNewSnapshot() {
-    _newIdsSnapshot.clear();
-    _currentlyNewNotificationIds.clear();
+  void _calculateUnreadCount() {
+    unreadCount.value =
+        notifications.where((n) => !n.read && !n.isDeleted).length;
   }
 
-  void _handleNewNotifications(List<NotificationModel> updatedList) {
-    final newUnread = updatedList.where((n) => !n.read).toList();
+  void _listenForRealtimeUpdates() {
+    repository.getLatestNotificationsStream().listen((latestNotifications) {
+      final existingIds = notifications.map((e) => e.notificationId).toSet();
 
-    final currentUnreadCount = notifications.where((n) => !n.read).length;
+      final newNotifications = latestNotifications
+          .where((n) => !existingIds.contains(n.notificationId))
+          .toList();
 
-    if (currentUnreadCount == 0 && newUnread.isNotEmpty) {
-      // All read previously, new unread arrived → reset snapshot and currentlyNew sets
-      _newIdsSnapshot.clear();
-      _currentlyNewNotificationIds.clear();
+      if (newNotifications.isNotEmpty) {
+        notifications.insertAll(0, newNotifications);
 
-      _newIdsSnapshot.addAll(newUnread.map((n) => n.notificationId));
-    } else {
-      // Normal update: add only new unread IDs arriving after screen open
-      for (var notif in newUnread) {
-        if (!_currentlyNewNotificationIds.contains(notif.notificationId) &&
-            !_newIdsSnapshot.contains(notif.notificationId)) {
-          _currentlyNewNotificationIds.add(notif.notificationId);
+        // Filter unread notifications that haven't been counted yet
+        final newlyUnread = newNotifications
+            .where((n) =>
+                !n.read && !_uiUnreadCountedIds.contains(n.notificationId))
+            .toList();
+
+        if (!_isOnNotificationScreen) {
+          unreadCount.value += newlyUnread.length;
+          uiUnreadCount.value += newlyUnread.length;
+        } else {
+          uiUnreadCount.value += newlyUnread.length;
         }
+
+        // Add these new counted notification IDs to the set
+        _uiUnreadCountedIds.addAll(newlyUnread.map((e) => e.notificationId));
       }
-    }
-
-    // Do NOT remove IDs from _newIdsSnapshot on read, so snapshot stays intact
-
-    // Remove read notifications only from currentlyNewNotificationIds so new ones disappear as read
-    _currentlyNewNotificationIds.removeWhere(
-        (id) => notifications.any((n) => n.notificationId == id && n.read));
-  }
-
-  Future<void> _init() async {
-    if (_isInitialized) return;
-    await _repository.init();
-
-    notifications.assignAll(_repository.notifications);
-    _updateUnreadCount();
-
-    // Initially add all unread notifications to currentlyNew set
-    addCurrentlyNew(notifications.where((n) => !n.read).toList());
-
-    _repository.getLatestNotificationsStream().listen((updatedList) {
-      notifications.assignAll(updatedList);
-      _updateUnreadCount();
-
-      final newUnread = updatedList.where((n) => !n.read).toList();
-
-      // Add any new unread notification IDs to currentlyNewNotificationIds (don't clear to keep old unread)
-      for (var notif in newUnread) {
-        if (!_currentlyNewNotificationIds.contains(notif.notificationId)) {
-          _currentlyNewNotificationIds.add(notif.notificationId);
-        }
-      }
-
-      // Remove IDs from currentlyNewNotificationIds if notification is read
-      _currentlyNewNotificationIds.removeWhere(
-          (id) => notifications.any((n) => n.notificationId == id && n.read));
-
-      // Trigger UI update
-      notifications.refresh();
     });
-
-    _isInitialized = true;
   }
 
-  // void _updateUnreadCount() {
-  //   unreadCount.value = notifications.where((n) => !n.read).length;
-  //
-  //   if (unreadCount.value == 0) {
-  //     // No unread notifications → clear the "currently new" set to avoid stale IDs
-  //     resetCurrentlyNew();
-  //   }
-  // }
-  void _updateUnreadCount() {
-    unreadCount.value = unionNewIds.length;
-
-    if (unreadCount.value == 0) {
-      resetCurrentlyNew();
+  Future<void> _markNotificationsRead(List<NotificationModel> notifs) async {
+    for (var notif in notifs) {
+      if (!notif.read) {
+        notif.read = true;
+        // Update Firestore read status
+        await NotificationService()
+            .updateReadStatus(notif.notificationId, true);
+      }
     }
+    // Update local list and Hive cache
+    notifications.refresh();
+    _calculateUnreadCount();
   }
 
+  Future<void> onNotificationScreenOpened() async {
+    _isOnNotificationScreen = true;
 
-  Future<void> markAsRead(String notificationId) async {
-    await _repository.markAsRead(notificationId);
+    // Initialize UI unread count from actual unread count
+    uiUnreadCount.value = unreadCount.value;
 
-    int idx =
-        notifications.indexWhere((n) => n.notificationId == notificationId);
-    if (idx != -1 && !notifications[idx].read) {
-      notifications[idx].read = true;
-      notifications.refresh();
-      _updateUnreadCount();
+    // Add all current unread notification IDs to the counted set
+    _uiUnreadCountedIds.clear();
+    final currentUnreadNotifs =
+        notifications.where((n) => !n.read && !n.isDeleted).toList();
+    _uiUnreadCountedIds
+        .addAll(currentUnreadNotifs.map((e) => e.notificationId));
 
-      // But DO NOT remove from currentlyNew here to keep "New" until screen closes
-      // removeCurrentlyNew(notificationId); // <-- Don't call here
+    // Mark all unread as read
+    if (currentUnreadNotifs.isNotEmpty) {
+      await _markNotificationsRead(currentUnreadNotifs);
     }
+
+    unreadCount.value = 0;
+
+    // Do NOT clear _uiUnreadCountedIds here because you want to track new incoming messages correctly
   }
 
-  Future<void> markAsUnread(String notificationId) async {
-    await _repository.markAsUnread(notificationId);
-    int idx =
-        notifications.indexWhere((n) => n.notificationId == notificationId);
-    if (idx != -1) {
-      notifications[idx].read = false;
-      notifications.refresh();
-      _updateUnreadCount();
-    }
+  Future<void> onNotificationScreenClosed() async {
+    _isOnNotificationScreen = false;
+
+    uiUnreadCount.value = 0;
+    unreadCount.value = 0;
+
+    // Also clear the tracking set on close if you want
+    _uiUnreadCountedIds.clear();
   }
 
   Future<List<NotificationModel>> loadMore() async {
     if (!hasMore) return [];
-    final newNotifications = await _repository.loadMore();
-    if (newNotifications.isEmpty) {
-      hasMore = false;
-    } else {
+
+    final newNotifications = await repository.loadMore();
+    if (newNotifications.isNotEmpty) {
       notifications.addAll(newNotifications);
+      hasMore = repository.hasMore;
+      _calculateUnreadCount();
+    } else {
+      hasMore = false;
     }
     return newNotifications;
   }
-
-  void resetCurrentlyNew() {
-    _currentlyNewNotificationIds.clear();
-  }
-
-  void addCurrentlyNew(List<NotificationModel> newNotifications) {
-    _currentlyNewNotificationIds
-        .addAll(newNotifications.map((n) => n.notificationId));
-  }
-
-  void removeCurrentlyNew(String notificationId) {
-    _currentlyNewNotificationIds.remove(notificationId);
-  }
-
-  void onScreenOpened() {
-    // Capture unread snapshot at open
-    _newIdsSnapshot.clear();
-    _newIdsSnapshot.addAll(notifications.where((n) => !n.read).map((n) => n.notificationId));
-
-    // Reset currently new set to empty at open
-    _currentlyNewNotificationIds.clear();
-
-    _updateUnreadCount();
-  }
-
-  void onScreenClosed() {
-    // Clear all new notification tracking when leaving the screen
-    _newIdsSnapshot.clear();
-    _currentlyNewNotificationIds.clear();
-
-    _updateUnreadCount();
-  }
-
 }
