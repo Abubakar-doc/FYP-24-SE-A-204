@@ -37,15 +37,46 @@ const getFileIcon = (file: File) => {
 };
 
 // Upload file returns { url, publicId }
+// const uploadFileToCloudinary = async (file: File): Promise<{ url: string; publicId: string }> => {
+//   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+//   if (!cloudName) {
+//     throw new Error('Cloudinary cloud name not set in environment variables');
+//   }
+//   const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+//   const formData = new FormData();
+//   formData.append('file', file);
+//   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+//   const response = await fetch(url, {
+//     method: 'POST',
+//     body: formData,
+//   });
+
+//   if (!response.ok) {
+//     throw new Error('Failed to upload file to Cloudinary');
+//   }
+
+//   const data = await response.json();
+//   return { url: data.secure_url, publicId: data.public_id };
+// };
+
 const uploadFileToCloudinary = async (file: File): Promise<{ url: string; publicId: string }> => {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     throw new Error('Cloudinary cloud name not set in environment variables');
   }
+
+  const fileName = file.name.split('.').slice(0, -1).join('.'); // Get the original file name without extension
+  const fileExtension = file.name.split('.').pop(); // Get the file extension
+
+  // Set the public ID to the original file name (without the extension)
+  const publicId = fileName; // You can customize this if needed (e.g., add a timestamp or other unique identifiers)
+
   const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('public_id', publicId);  // Set the custom public ID
 
   const response = await fetch(url, {
     method: 'POST',
@@ -59,6 +90,7 @@ const uploadFileToCloudinary = async (file: File): Promise<{ url: string; public
   const data = await response.json();
   return { url: data.secure_url, publicId: data.public_id };
 };
+
 
 const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) => {
   const titleRef = useRef<HTMLInputElement>(null);
@@ -108,7 +140,7 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
       };
       fetchAnnouncement();
     }
-  // eslint-disable-next-line
+   
   }, [searchParams]);
 
   const showNotificationMessage = (
@@ -245,8 +277,8 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
     setShowNotification(false);
 
     try {
-      let mediaLinks: string[] = [];
-      let mediaPublicIds: string[] = [];
+      const mediaLinks: string[] = [];
+      const mediaPublicIds: string[] = [];
       if (files.length > 0) {
         for (const file of files) {
           if (ALLOWED_MIME_TYPES.includes(file.type)) {
