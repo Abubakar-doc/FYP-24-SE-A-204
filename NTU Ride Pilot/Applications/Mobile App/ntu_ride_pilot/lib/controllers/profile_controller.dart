@@ -5,15 +5,12 @@ import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
 
 class DriverProfileController extends GetxController {
   final UserProfileService _userProfileService = UserProfileService();
-  final DriverService _driverService = DriverService();
   final ProfileStatsService _profileStatsService = ProfileStatsService();
 
   var name = "Guest".obs;
   var role = "".obs;
   var profilePic = Rxn<String>();
   var isLoading = true.obs;
-
-  // Ride statistics observables.
   var totalRides = 0.obs;
   var totalHours = "0.0".obs;
 

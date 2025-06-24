@@ -24,12 +24,7 @@ class AuthService extends GetxController {
       User? user = _auth.currentUser;
 
       if (user == null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => WelcomeScreen()),
-              (Route<dynamic> route) => false,
-        );
-
+        Get.offAll(() => WelcomeScreen());
         return;
       }
 
@@ -47,26 +42,13 @@ class AuthService extends GetxController {
       if (driverBox.containsKey('current_driver')) {
         var rideBox = await Hive.openBox<RideModel>('rides');
         if (rideBox.containsKey('currentRide')) {
-          // Navigate to RideControlScreen if a ride is found.
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => RideControlScreen()),
-                (Route<dynamic> route) => false,
-          );
+          Get.offAll(() => RideControlScreen());
         } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => DriverHomeScreen()),
-                (Route<dynamic> route) => false,
-          );
+          Get.offAll(() => DriverHomeScreen());
         }
         return;
       } else if (studentBox.containsKey('current_student')) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => StudentHomeScreen()),
-              (Route<dynamic> route) => false,
-        );
+        Get.offAll(() => StudentHomeScreen());
         return;
       }
 
@@ -79,17 +61,9 @@ class AuthService extends GetxController {
         driverBox.put('current_driver', driver);
         var rideBox = await Hive.openBox<RideModel>('rides');
         if (rideBox.containsKey('currentRide')) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => RideControlScreen()),
-                (Route<dynamic> route) => false,
-          );
+          Get.offAll(() => RideControlScreen());
         } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => DriverHomeScreen()),
-                (Route<dynamic> route) => false,
-          );
+          Get.offAll(() => DriverHomeScreen());
         }
         return;
       }
@@ -97,26 +71,25 @@ class AuthService extends GetxController {
       StudentModel? student = await studentService.getStudentByEmail(email);
       if (student != null) {
         studentBox.put('current_student', student);
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => StudentHomeScreen()),
-              (Route<dynamic> route) => false,
-        );
+        Get.offAll(() => StudentHomeScreen());
         return;
       }
-
-      // If no role is found in Firestore, force logout.
-      SnackbarUtil.showError("Login Issue", "User role not found. Please log in again.");
+      SnackbarUtil.showError(
+          "Login Issue", "User role not found. Please log in again.");
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-disabled') {
-        SnackbarUtil.showError("Account Disabled", "Your account has been disabled by an admin.");
+        SnackbarUtil.showError(
+            "Account Disabled", "Your account has been disabled by an admin.");
       } else if (e.code == 'user-not-found') {
-        SnackbarUtil.showError("Account Not Found", "This account no longer exists.");
+        SnackbarUtil.showError(
+            "Account Not Found", "This account no longer exists.");
       } else {
-        SnackbarUtil.showError("Authentication Error", e.message ?? "Something went wrong.");
+        SnackbarUtil.showError(
+            "Authentication Error", e.message ?? "Something went wrong.");
       }
     } catch (e) {
-      SnackbarUtil.showError("Sign-in Check Error", "Unexpected error: ${e.toString()}");
+      // SnackbarUtil.showError(
+      //     "Sign-in Check Error", "Unexpected error: ${e.toString()}");
     }
   }
 
@@ -153,14 +126,14 @@ class AuthService extends GetxController {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => WelcomeScreen()),
-            (Route<dynamic> route) => false, // This removes all previous routes
+        (Route<dynamic> route) => false, // This removes all previous routes
       );
     } catch (e) {
-      SnackbarUtil.showError("Logout Error", "Unexpected error: ${e.toString()}");
+      SnackbarUtil.showError(
+          "Logout Error", "Unexpected error: ${e.toString()}");
     }
   }
 
-  /// Reset password via Firebase
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);

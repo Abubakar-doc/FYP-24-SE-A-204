@@ -68,34 +68,41 @@ class NotificationItem extends StatelessWidget {
               ...mediaLinks
                   .where((link) => (link as String).endsWith('.pdf'))
                   .map(
-                    (pdfLink) => Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: GestureDetector(
-                    onTap: () async {
-                      final url = pdfLink as String;
-                      try {
-                        await launch(url);
-                      } catch (e) {
-                        SnackbarUtil.showError(
-                            'Error', 'Could not open PDF');
-                      }
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.picture_as_pdf, color: Colors.red),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Open PDF',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
+                    (pdfLink) {
+                  final url = pdfLink as String;
+                  final fileName = Uri.parse(url).pathSegments.last; // Get file name from URL
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: GestureDetector(
+                      onTap: () async {
+                        try {
+                          await launch(url);
+                        } catch (e) {
+                          SnackbarUtil.showError('Error', 'Could not open PDF');
+                        }
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.picture_as_pdf, color: Colors.red),
+                          const SizedBox(width: 8),
+                          // Use Text widget with overflow handling
+                          Expanded(
+                            child: Text(
+                              fileName,  // Display the PDF file name
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,  // Handle long text
+                              maxLines: 1,  // Ensure it stays on one line
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               )
                   .toList(),
             ],
@@ -165,8 +172,8 @@ class NotificationItem extends StatelessWidget {
   List<Widget> _buildImageGrid(BuildContext context, List<dynamic> mediaLinks) {
     final images = mediaLinks
         .where((link) =>
-    (link as String).endsWith('.jpg') ||
-        (link as String).endsWith('.png'))
+            (link as String).endsWith('.jpg') ||
+            (link as String).endsWith('.png'))
         .toList();
 
     if (images.isEmpty) return [];

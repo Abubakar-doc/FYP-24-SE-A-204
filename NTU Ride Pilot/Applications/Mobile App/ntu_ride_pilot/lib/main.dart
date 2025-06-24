@@ -8,7 +8,6 @@ import 'package:ntu_ride_pilot/services/common/hive/hive_services.dart';
 import 'package:ntu_ride_pilot/services/common/media/media_service.dart';
 import 'package:ntu_ride_pilot/services/common/notification/notification_service.dart';
 import 'package:ntu_ride_pilot/services/ride/live_location.dart';
-import 'controllers/notification_controller.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/light_theme.dart';
 import 'themes/dark_theme.dart';
@@ -33,7 +32,6 @@ class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final ThemeController themeController = Get.put(ThemeController());
-  final NotificationController notificationController = Get.put(NotificationController());
   final MediaService mediaService = MediaService();
 
   @override

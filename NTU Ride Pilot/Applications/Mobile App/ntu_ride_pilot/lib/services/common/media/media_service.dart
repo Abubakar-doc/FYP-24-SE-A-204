@@ -9,13 +9,15 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:typed_data';
 
 class MediaService {
-  final Dio _dio = Dio();
   final MediaPermission _mediaPermission = MediaPermission();
 
   void preCacheImages(BuildContext context) {
     precacheImage(const AssetImage('assets/pictures/logoDark.jpg'), context);
     precacheImage(const AssetImage('assets/pictures/logoLight.jpg'), context);
-    precacheImage(const AssetImage('assets/pictures/National_Textile_University_Logo.png'), context);
+    precacheImage(
+        const AssetImage(
+            'assets/pictures/National_Textile_University_Logo.png'),
+        context);
   }
 
   Future<void> shareMedia(String url) async {

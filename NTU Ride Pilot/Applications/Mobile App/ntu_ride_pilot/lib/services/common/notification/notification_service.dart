@@ -8,7 +8,8 @@ class NotificationService {
   DocumentSnapshot? _lastDocument;
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   NotificationService._internal();
 
   Future<void> init() async {
@@ -129,5 +130,4 @@ class NotificationService {
       'read': readStatus,
     });
   }
-
 }

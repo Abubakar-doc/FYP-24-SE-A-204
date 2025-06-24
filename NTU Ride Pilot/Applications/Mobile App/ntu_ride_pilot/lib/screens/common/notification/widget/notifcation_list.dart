@@ -13,6 +13,7 @@ class NotificationList extends StatelessWidget {
   final bool isLoading;
   final String Function(DateTime) formatTimestamp;
   final int unreadCount;
+  final Set<String> initialUnreadIds;
 
   const NotificationList({
     super.key,
@@ -24,6 +25,7 @@ class NotificationList extends StatelessWidget {
     required this.isLoading,
     required this.formatTimestamp,
     required this.unreadCount,
+    required this.initialUnreadIds,
   });
 
   @override
@@ -50,21 +52,15 @@ class NotificationList extends StatelessWidget {
         // Only for the first (newest) date group and if there are unread notifications
         final bool showUnreadCount = index == 0 && unreadCount > 0;
 
-        // Find first unread notification index in this group (only if showUnreadCount)
-        // int? firstUnreadIndex;
-        // if (showUnreadCount) {
-        //   firstUnreadIndex = notificationsForDate.indexWhere((n) => !n.read && !n.isDeleted);
-        //   if (firstUnreadIndex == -1) firstUnreadIndex = null; // no unread in this group
-        // }
+
         int? firstUnreadIndex;
         if (showUnreadCount) {
-          firstUnreadIndex = notificationsForDate.indexWhere((n) => !n.read && !n.isDeleted);
-          if (firstUnreadIndex == -1) {
-            // No unread notification in first group, but unreadCount > 0,
-            // show unread badge at the top of the list for this group.
-            firstUnreadIndex = 0;
-          }
+          firstUnreadIndex = notificationsForDate.indexWhere(
+                  (n) => initialUnreadIds.contains(n.notificationId)
+          );
+          if (firstUnreadIndex == -1) firstUnreadIndex = 0;
         }
+
 
 
         return Column(
