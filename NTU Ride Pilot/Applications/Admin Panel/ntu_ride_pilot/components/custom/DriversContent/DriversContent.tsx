@@ -116,7 +116,6 @@ const DriversContent: React.FC = () => {
           alert(`Driver profile picture deletion failed: ${(cloudinaryError as Error).message}`);
         }
       }
-
       // 2. Delete driver document from Firestore
       await deleteDoc(driverDocRef);
 
@@ -161,9 +160,10 @@ const DriversContent: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-white relative">
+      {/* Loading overlay - same as other content components */}
       {isLoading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-40">
-          <LoadingIndicator />
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading drivers..." />
         </div>
       )}
 
@@ -226,7 +226,6 @@ const DriversContent: React.FC = () => {
               )}
             </tbody>
           </table>
-
           <div className="flex items-center justify-between m-6">
             <div className="flex items-center">
               <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FaEye, FaTrashAlt } from "react-icons/fa";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
+import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
 
 interface Announcement {
   id: string;
@@ -186,8 +187,14 @@ const AnnouncementsContent: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-white relative">
+      {/* Loading overlay for UI consistency */}
+      {loading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading announcements..." />
+        </div>
+      )}
+
       <div className="rounded-lg mb-2">
-        {/* Pass searchInput, setSearchInput, and delete all handlers as props */}
         <AnnouncementsHeader
           searchInput={searchInput}
           setSearchInput={setSearchInput}
@@ -218,16 +225,10 @@ const AnnouncementsContent: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-300 text-center">
-              {loading ? (
+              {filteredAnnouncements.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-gray-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : filteredAnnouncements.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-gray-500">
-                    No announcements found.
+                    {loading ? "Loading..." : "No announcements found."}
                   </td>
                 </tr>
               ) : (

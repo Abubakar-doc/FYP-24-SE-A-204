@@ -16,8 +16,8 @@ type RouteData = {
 
 const RoutesContent: React.FC = () => {
   const router = useRouter();
-  const [allRoutes, setAllRoutes] = useState<RouteData[]>([]); // all routes fetched
-  const [routes, setRoutes] = useState<RouteData[]>([]); // filtered routes to display
+  const [allRoutes, setAllRoutes] = useState<RouteData[]>([]);
+  const [routes, setRoutes] = useState<RouteData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Modal state
@@ -67,7 +67,6 @@ const RoutesContent: React.FC = () => {
 
     const filtered = allRoutes.filter(route => {
       const nameMatch = route.name.toLowerCase().includes(lowerQuery);
-      // Check if query is a number or part of number of bus stops
       const stopsCountStr = route.busStops.length.toString();
       const stopsMatch = stopsCountStr.includes(lowerQuery);
       return nameMatch || stopsMatch;
@@ -92,14 +91,12 @@ const RoutesContent: React.FC = () => {
     setDeleting(true);
     try {
       await deleteDoc(doc(firestore, "routes", routeToDelete.id));
-      // Remove from both allRoutes and routes
       setAllRoutes(prev => prev.filter(r => r.id !== routeToDelete.id));
       setRoutes(prev => prev.filter(r => r.id !== routeToDelete.id));
       setDeleteModalOpen(false);
       setRouteToDelete(null);
     } catch (error) {
       console.error("Error deleting route:", error);
-      // Optionally, show error feedback to user here
     } finally {
       setDeleting(false);
     }
@@ -113,18 +110,18 @@ const RoutesContent: React.FC = () => {
 
   // Pass search state and setter to child
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value ?? ""); // Ensure never undefined/null
+    setSearchQuery(value ?? "");
   };
 
-  if (loading) {
-    return (
-      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
-        <LoadingIndicator />
-      </div>
-    );
-  }
- return (
+  return (
     <div className="w-full min-h-screen bg-white relative">
+      {/* Loading overlay for UI consistency */}
+      {loading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading routes..." />
+        </div>
+      )}
+
       <div className="rounded-lg mb-2">
         <RoutesHeader searchQuery={searchQuery ?? ""} onSearchChange={handleSearchChange} />
       </div>

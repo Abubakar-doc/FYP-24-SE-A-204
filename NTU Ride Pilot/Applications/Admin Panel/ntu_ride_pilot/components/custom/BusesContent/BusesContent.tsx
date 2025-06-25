@@ -72,7 +72,6 @@ const BusesContent: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!busToDelete) return;
-    
     setDeleting(true);
     try {
       await deleteDoc(doc(firestore, "buses", busToDelete.id));
@@ -96,16 +95,15 @@ const BusesContent: React.FC = () => {
     setSearchTerm(term);
   };
 
-  if (loading) {
-    return (
-      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
-        <LoadingIndicator />
-      </div>
-    );
-  }
-
   return (
     <div className="w-full min-h-screen bg-white relative">
+      {/* Loading overlay for UI consistency */}
+      {loading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading buses..." />
+        </div>
+      )}
+
       <div className="rounded-lg mb-2">
         <BusesHeader onSearch={handleSearch} />
       </div>

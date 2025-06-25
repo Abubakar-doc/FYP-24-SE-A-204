@@ -32,6 +32,7 @@ const StudentsContent: React.FC = () => {
 
   useEffect(() => {
     fetchStudents();
+    // eslint-disable-next-line
   }, []);
 
   const handleStudentDeleted = () => {
@@ -59,9 +60,10 @@ const StudentsContent: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-white relative">
+      {/* Loading overlay - same as SessionsContent */}
       {isLoading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <LoadingIndicator />
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading students..." />
         </div>
       )}
 
@@ -73,7 +75,6 @@ const StudentsContent: React.FC = () => {
           onSearchTermChange={setSearchTerm}
         />
       </div>
-
       <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
         <div className="rounded-lg border border-gray-300 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
@@ -124,8 +125,8 @@ const StudentsContent: React.FC = () => {
               ))}
             </tbody>
           </table>
-          {/* Pagination controls omitted for brevity */}
-           <div>
+          {/* Pagination controls */}
+          <div>
             <div className="flex items-center justify-between m-6">
               <div className="flex items-center">
                 <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
