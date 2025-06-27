@@ -12,7 +12,7 @@ import RideMapSection from "./RidesComponents/RideMapSection";
 import RideDetailsSection from "./RidesComponents/RideDetailsSection";
 import PassengersTableSection from "./RidesComponents/PassengersTableSection";
 import RidesHeader from "./RidesHeader";
-import LoadingIndicator from "../LoadingIndicator/LoadingIndicator"; // Import your loading component
+import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
 
 const NTU_DEFAULT_LOCATION = {
   latitude: "31.418715",
@@ -39,7 +39,6 @@ const RidesContent: React.FC = () => {
   const searchParams = useSearchParams();
   const rideIdFromQuery = searchParams.get("ride_id");
 
-  // Manage rideId in local state, initially null
   const [rideId, setRideId] = useState<string | null>(null);
 
   // Ride document states
@@ -81,7 +80,7 @@ const RidesContent: React.FC = () => {
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? "PM" : "AM";
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12;
     const minutesStr = minutes < 10 ? "0" + minutes : minutes.toString();
     return `${hours}:${minutesStr} ${ampm}`;
   };
@@ -99,7 +98,6 @@ const RidesContent: React.FC = () => {
     if (rideIdFromQuery && rideIdFromQuery !== rideId) {
       setRideId(rideIdFromQuery);
     } else if (!rideIdFromQuery) {
-      // Reset rideId and all states if no ride_id in query
       setRideId(null);
       setBusId("");
       setCreatedAt(null);
@@ -168,7 +166,6 @@ const RidesContent: React.FC = () => {
           setRideStatus(data.ride_status || "");
           setRouteId(data.route_id || "");
         } else {
-          console.warn("Ride document does not exist");
           setBusId("");
           setCreatedAt(null);
           setStartedAtFormatted("N/A");
@@ -188,7 +185,6 @@ const RidesContent: React.FC = () => {
           setPassengersOnBoard([]);
         }
       } catch (error) {
-        console.error("Error fetching ride document:", error);
         setBusId("");
         setCreatedAt(null);
         setStartedAtFormatted("N/A");
@@ -248,7 +244,6 @@ const RidesContent: React.FC = () => {
           setDriver(null);
         }
       } catch (error) {
-        console.error("Error fetching driver:", error);
         setDriver(null);
       }
     };
@@ -270,11 +265,10 @@ const RidesContent: React.FC = () => {
           setBus(null);
         }
       } catch (error) {
-        console.error("Error fetching bus:", error);
         setBus(null);
       }
     };
-  const fetchStudents = async () => {
+    const fetchStudents = async () => {
       try {
         const studentsCollection = collection(
           firestore,
@@ -288,12 +282,10 @@ const RidesContent: React.FC = () => {
         );
         setStudents(studentsList);
       } catch (error) {
-        console.error("Error fetching students:", error);
         setStudents([]);
       }
     };
 
-    // Run all fetches simultaneously
     fetchDriver();
     fetchBus();
     fetchStudents();
@@ -305,63 +297,14 @@ const RidesContent: React.FC = () => {
       setPassengersOnBoard([]);
       return;
     }
-
-    // Combine and deduplicate roll numbers
     const combinedRollNos = Array.from(
       new Set([...offlineOnBoard, ...onlineOnBoard])
     );
-
-    // Match roll numbers with student details
     const uniquePassengers = combinedRollNos
       .map((rollNo) => students.find((s) => s.roll_no === rollNo))
-      .filter((s): s is Student => s !== undefined); // filter out undefined
-
+      .filter((s): s is Student => s !== undefined);
     setPassengersOnBoard(uniquePassengers);
   }, [offlineOnBoard, onlineOnBoard, students]);
-
-  // Log all states for testing
-  useEffect(() => {
-    console.log("Ride Details:");
-    console.log({
-      rideId,
-      busId,
-      createdAt,
-      startedAtFormatted,
-      currentLocation,
-      driverId,
-      endedAt,
-      etaNextStop,
-      nextStopName,
-      nextStopETAFormatted,
-      offlineOnBoard,
-      onlineOnBoard,
-      rideStatus,
-      routeId,
-    });
-    console.log("Driver Details:", driver);
-    console.log("Bus Details:", bus);
-    console.log("Students List:", students);
-    console.log("Passengers On Board:", passengersOnBoard);
-  }, [
-    rideId,
-    busId,
-    createdAt,
-    startedAtFormatted,
-    currentLocation,
-    driverId,
-    endedAt,
-    etaNextStop,
-    nextStopName,
-    nextStopETAFormatted,
-    offlineOnBoard,
-    onlineOnBoard,
-    rideStatus,
-    routeId,
-    driver,
-    bus,
-    students,
-    passengersOnBoard,
-  ]);
 
   // Prepare rideDetails object to pass to RideDetailsSection
   const rideDetails = {
@@ -380,17 +323,34 @@ const RidesContent: React.FC = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-white relative">
-      <div className="rounded-lg mb-2">
-        <RidesHeader />
-      </div>
-      <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
-        <div className="mb-4">
-          <RideMapSection currentLocation={currentLocation} />
+    // OUTER FLEX CONTAINER for sidebar + main content (if you have sidebar)
+    <div className="flex h-screen bg-white w-full">
+      {/* ---- SIDEBAR (if you have one, place here) ---- */}
+      {/* <Sidebar /> */}
+      {/* End Sidebar */}
+
+      {/* MAIN CONTENT COLUMN */}
+      <div className="flex flex-col flex-1 h-screen">
+        {/* HEADER: sticky at top, does not scroll */}
+        <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
+          <div className="rounded-lg mb-2">
+            <RidesHeader />
+          </div>
         </div>
-        <RideDetailsSection rideDetails={rideDetails} />
-        <PassengersTableSection passengers={passengersOnBoard} />
+
+        {/* BODY: fills remaining height, scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-white rounded-lg p-4">
+            <div className="mb-4">
+              <RideMapSection currentLocation={currentLocation} />
+            </div>
+            <RideDetailsSection rideDetails={rideDetails} />
+            <PassengersTableSection passengers={passengersOnBoard} />
+          </div>
+        </div>
+        {/* END BODY */}
       </div>
+      {/* END MAIN CONTENT */}
     </div>
   );
 };

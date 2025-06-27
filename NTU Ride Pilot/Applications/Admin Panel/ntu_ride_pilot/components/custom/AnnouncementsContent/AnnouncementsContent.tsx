@@ -86,7 +86,6 @@ const AnnouncementsContent: React.FC = () => {
   const handleView = (id: string) => {
     router.push(`/dashboard/announcements/add-announcements?view=${id}`);
   };
-
   // Handle delete button click (open modal)
   const handleDeleteClick = (announcement: Announcement) => {
     setAnnouncementToDelete(announcement);
@@ -135,7 +134,6 @@ const AnnouncementsContent: React.FC = () => {
     setDeleteAllLoading(true);
     try {
       // 1. Delete all media files from Cloudinary
-      // For each announcement with mediaPublicIds, call the API
       const mediaDeletePromises = announcements
         .filter(a => a.mediaPublicIds && a.mediaPublicIds.length > 0)
         .map(a =>
@@ -186,108 +184,122 @@ const AnnouncementsContent: React.FC = () => {
   });
 
   return (
-    <div className="w-full min-h-screen bg-white relative">
+    <div className="flex h-screen bg-white w-full">
+      {/* ---- SIDEBAR (if you have one, place here) ---- */}
+      {/* <Sidebar /> */}
+      {/* End Sidebar */}
+
+      {/* MAIN CONTENT COLUMN */}
+      <div className="flex flex-col flex-1 h-screen">
+        {/* HEADER: sticky at top, does not scroll */}
+        <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
+          <div className="rounded-lg mb-2">
+            <AnnouncementsHeader
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              onDeleteAll={handleDeleteAllAnnouncements}
+              deleteAllLoading={deleteAllLoading}
+            />
+          </div>
+        </div>
+
+        {/* BODY: fills remaining height, scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-white rounded-lg p-4">
+            <div className="rounded-lg border border-gray-300 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-300">
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%]">
+                      ID
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%]">
+                      Title
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[40%]">
+                      Message
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%]">
+                      Created On
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%]">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white text-center">
+                  {filteredAnnouncements.length === 0 ? (
+                    <tr className="border-b border-gray-300">
+                      <td colSpan={5} className="py-8 text-center text-gray-500">
+                        {loading ? "Loading..." : "No announcements found."}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAnnouncements.map((announcement, index) => (
+                      <tr key={announcement.id} className="hover:bg-gray-50 border-b border-gray-300">
+                        <td className="px-4 py-4 whitespace-nowrap w-[5%]">{index + 1}</td>
+                        <td className="px-4 py-4 whitespace-nowrap w-[25%] overflow-hidden text-ellipsis">{announcement.title}</td>
+                        <td className="px-4 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">{truncateMessage(announcement.message)}</td>
+                        <td className="px-4 py-4 whitespace-nowrap w-[20%] overflow-hidden text-ellipsis">
+                          {formatTimestamp(announcement.created_at)}
+                        </td>
+                        <td className="px-4 py-4 flex items-center space-x-2 justify-center">
+                            <button
+                              className="text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2"
+                              title="View Announcement"
+                              onClick={() => handleView(announcement.id)}
+                            >
+                              View
+                            </button>
+                            <button
+                              className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
+                              title="Delete Announcement"
+                              onClick={() => handleDeleteClick(announcement)}
+                            >
+                              Delete
+                            </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <div className="flex items-center justify-between m-6">
+                <div className="flex items-center">
+                  <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
+                    Rows per page:
+                  </label>
+                  <select
+                    id="rowsPerPage"
+                    className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
+                  >
+                    <option>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
+                    &lt;
+                  </button>
+                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
+                    &gt;
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* END BODY */}
+      </div>
+      {/* END MAIN CONTENT */}
+
       {/* Loading overlay for UI consistency */}
       {loading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <LoadingIndicator message="Loading announcements..." />
         </div>
       )}
-
-      <div className="rounded-lg mb-2">
-        <AnnouncementsHeader
-          searchInput={searchInput}
-          setSearchInput={setSearchInput}
-          onDeleteAll={handleDeleteAllAnnouncements}
-          deleteAllLoading={deleteAllLoading}
-        />
-      </div>
-      <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
-        <div className="rounded-lg border border-gray-300 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%] border-b border-gray-300">
-                  ID
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%] border-b border-gray-300">
-                  Title
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[40%] border-b border-gray-300">
-                  Message
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%] border-b border-gray-300">
-                  Created On
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%] border-b border-gray-300">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-300 text-center">
-              {filteredAnnouncements.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-gray-500">
-                    {loading ? "Loading..." : "No announcements found."}
-                  </td>
-                </tr>
-              ) : (
-                filteredAnnouncements.map((announcement, index) => (
-                  <tr key={announcement.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap w-[5%]">{index + 1}</td>
-                    <td className="px-4 py-4 whitespace-nowrap w-[25%] overflow-hidden text-ellipsis">{announcement.title}</td>
-                    <td className="px-4 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">{truncateMessage(announcement.message)}</td>
-                    <td className="px-4 py-4 whitespace-nowrap w-[20%] overflow-hidden text-ellipsis">
-                      {formatTimestamp(announcement.created_at)}
-                    </td>
-                    <td className="px-4 py-4 flex items-center justify-center space-x-0">
-                      <div className="flex justify-center">
-                        <button
-                          className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-100 transition-colors duration-200"
-                          title="View Announcement"
-                          onClick={() => handleView(announcement.id)}
-                        >
-                          <FaEye className="w-4 h-4" />
-                        </button>
-                        <button
-                          className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-100 transition-colors duration-200"
-                          title="Delete Announcement"
-                          onClick={() => handleDeleteClick(announcement)}
-                        >
-                          <FaTrashAlt className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          <div className="flex items-center justify-between m-6">
-            <div className="flex items-center">
-              <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
-                Rows per page:
-              </label>
-              <select
-                id="rowsPerPage"
-                className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-              >
-                <option>10</option>
-                <option>20</option>
-                <option>50</option>
-              </select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                &lt;
-              </button>
-              <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                &gt;
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Delete Confirmation Modal */}
       {showModal && announcementToDelete && (
