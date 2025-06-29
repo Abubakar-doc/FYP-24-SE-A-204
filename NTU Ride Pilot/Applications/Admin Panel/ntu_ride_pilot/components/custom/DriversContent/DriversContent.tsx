@@ -65,12 +65,11 @@ const DriversContent: React.FC = () => {
 
   // Navigate to /dashboard/drivers/add-driver with driver data for editing
   const handleEdit = (driver: any) => {
-    // Map new field names back to old ones for compatibility with AddDriverForm URL param
     const driverDataForEdit = {
       ...driver,
       contact_no: driver.contactNo,
       profile_pic_link: driver.profilePicLink,
-      profile_pic_public_id: driver.profilePicPublicId, // Include public ID for editing if needed
+      profile_pic_public_id: driver.profilePicPublicId,
     };
     const encodedDriver = encodeURIComponent(JSON.stringify(driverDataForEdit));
     router.push(`/dashboard/drivers/add-driver?driver=${encodedDriver}`);
@@ -94,7 +93,6 @@ const DriversContent: React.FC = () => {
         "drivers",
         driverToDelete.id
       );
-
       // 1. Delete driver profile picture from Cloudinary via backend API if publicId exists
       if (driverToDelete.profilePicPublicId) {
         try {
@@ -112,11 +110,9 @@ const DriversContent: React.FC = () => {
           }
         } catch (cloudinaryError) {
           console.error("Error deleting driver profile picture from Cloudinary:", cloudinaryError);
-          // Continue even if profile pic deletion fails
           alert(`Driver profile picture deletion failed: ${(cloudinaryError as Error).message}`);
         }
       }
-
       // 2. Delete driver document from Firestore
       await deleteDoc(driverDocRef);
 
@@ -143,7 +139,6 @@ const DriversContent: React.FC = () => {
 
       setShowDeleteModal(false);
       setDriverToDelete(null);
-      // Refresh drivers list
       fetchDrivers();
     } catch (error) {
       console.error("Failed to delete driver:", error);
@@ -160,98 +155,112 @@ const DriversContent: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-white relative">
-      {isLoading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-40">
-          <LoadingIndicator />
+    <div className="flex h-screen bg-white w-full">
+      {/* ---- SIDEBAR (if you have one, place here) ---- */}
+      {/* <Sidebar /> */}
+      {/* End Sidebar */}
+
+      {/* MAIN CONTENT COLUMN */}
+      <div className="flex flex-col flex-1 h-screen">
+        {/* HEADER: sticky at top, does not scroll */}
+        <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
+          <div className="rounded-lg mb-2">
+            <DriversHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          </div>
         </div>
-      )}
 
-      {/* Pass searchQuery and setSearchQuery to DriversHeader */}
-      <div className="rounded-lg mb-2">
-        <DriversHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      </div>
-
-      <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
-        <div className="rounded-lg border border-gray-300 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%] border-b border-gray-300">
-                  ID
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[35%] border-b border-gray-300">
-                  Name
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%] border-b border-gray-300">
-                  Contact
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%] border-b border-gray-300">
-                  Email
-                </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%] border-b border-gray-300">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-300 text-center">
-              {filteredDrivers.map((driver, index) => (
-                <tr key={driver.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 whitespace-nowrap">{index + 1}</td>
-                  <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis">{driver.name}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{driver.contactNo}</td>
-                  <td className="px-4 py-4 whitespace-nowrap w-[40%]">{driver.email}</td>
-                  <td className="px-20 py-4 flex items-center space-x-2 justify-center">
-                    <button
-                      className="text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2"
-                      onClick={() => handleEdit(driver)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
-                      onClick={() => handleDeleteClick(driver)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredDrivers.length === 0 && !isLoading && (
-                <tr>
-                  <td colSpan={5} className="text-center py-6 text-gray-500">
-                    No drivers found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <div className="flex items-center justify-between m-6">
-            <div className="flex items-center">
-              <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
-                Rows per page:
-              </label>
-              <select
-                id="rowsPerPage"
-                className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-              >
-                <option>10</option>
-                <option>20</option>
-                <option>50</option>
-              </select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                &lt;
-              </button>
-              <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                &gt;
-              </button>
+        {/* BODY: fills remaining height, scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-white rounded-lg p-4">
+            <div className="rounded-lg border border-gray-300 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-300 text-sm text-left">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-300">
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%]">
+                      ID
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[35%]">
+                      Name
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%]">
+                      Contact
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%]">
+                      Email
+                    </th>
+                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%]">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white text-center">
+                  {filteredDrivers.map((driver, index) => (
+                    <tr key={driver.id} className="hover:bg-gray-50 border-b border-gray-300">
+                      <td className="px-4 py-4 whitespace-nowrap">{index + 1}</td>
+                      <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis">{driver.name}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">{driver.contactNo}</td>
+                      <td className="px-4 py-4 whitespace-nowrap w-[40%]">{driver.email}</td>
+                      <td className="px-20 py-4 flex items-center space-x-2 justify-center">
+                        <button
+                          className="text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2"
+                          onClick={() => handleEdit(driver)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
+                          onClick={() => handleDeleteClick(driver)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredDrivers.length === 0 && !isLoading && (
+                    <tr className="border-b border-gray-300">
+                      <td colSpan={5} className="text-center py-6 text-gray-500">
+                        No drivers found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <div className="flex items-center justify-between m-6">
+                <div className="flex items-center">
+                  <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
+                    Rows per page:
+                  </label>
+                  <select
+                    id="rowsPerPage"
+                    className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
+                  >
+                    <option>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
+                    &lt;
+                  </button>
+                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
+                    &gt;
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        {/* END BODY */}
       </div>
+      {/* END MAIN CONTENT */}
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading drivers..." />
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && driverToDelete && (

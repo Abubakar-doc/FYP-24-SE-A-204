@@ -31,7 +31,7 @@ const BusesHeader: React.FC<BusesHeaderProps> = ({ onSearch }) => {
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Search by registration or seats"
+                            placeholder="Search"
                             className='w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
                             value={searchInput}
                             onChange={handleSearchChange}

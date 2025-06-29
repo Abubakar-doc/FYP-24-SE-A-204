@@ -16,8 +16,8 @@ type RouteData = {
 
 const RoutesContent: React.FC = () => {
   const router = useRouter();
-  const [allRoutes, setAllRoutes] = useState<RouteData[]>([]); // all routes fetched
-  const [routes, setRoutes] = useState<RouteData[]>([]); // filtered routes to display
+  const [allRoutes, setAllRoutes] = useState<RouteData[]>([]);
+  const [routes, setRoutes] = useState<RouteData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Modal state
@@ -67,7 +67,6 @@ const RoutesContent: React.FC = () => {
 
     const filtered = allRoutes.filter(route => {
       const nameMatch = route.name.toLowerCase().includes(lowerQuery);
-      // Check if query is a number or part of number of bus stops
       const stopsCountStr = route.busStops.length.toString();
       const stopsMatch = stopsCountStr.includes(lowerQuery);
       return nameMatch || stopsMatch;
@@ -92,19 +91,16 @@ const RoutesContent: React.FC = () => {
     setDeleting(true);
     try {
       await deleteDoc(doc(firestore, "routes", routeToDelete.id));
-      // Remove from both allRoutes and routes
       setAllRoutes(prev => prev.filter(r => r.id !== routeToDelete.id));
       setRoutes(prev => prev.filter(r => r.id !== routeToDelete.id));
       setDeleteModalOpen(false);
       setRouteToDelete(null);
     } catch (error) {
       console.error("Error deleting route:", error);
-      // Optionally, show error feedback to user here
     } finally {
       setDeleting(false);
     }
   };
-
   // Cancel deletion
   const handleCancelDelete = () => {
     setDeleteModalOpen(false);
@@ -113,96 +109,110 @@ const RoutesContent: React.FC = () => {
 
   // Pass search state and setter to child
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value ?? ""); // Ensure never undefined/null
+    setSearchQuery(value ?? "");
   };
 
-  if (loading) {
-    return (
-      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
-        <LoadingIndicator />
-      </div>
-    );
-  }
- return (
-    <div className="w-full min-h-screen bg-white relative">
-      <div className="rounded-lg mb-2">
-        <RoutesHeader searchQuery={searchQuery ?? ""} onSearchChange={handleSearchChange} />
-      </div>
+  return (
+    <div className="flex h-screen bg-white w-full">
+      {/* ---- SIDEBAR (if you have one, place here) ---- */}
+      {/* <Sidebar /> */}
+      {/* End Sidebar */}
 
-      <div className="bg-white shadow-md rounded-lg p-4 overflow-y-auto h-[calc(100vh-200px)]">
-        <div className="rounded-lg border border-gray-300 overflow-hidden">
-          <table className="w-full divide-y divide-gray-300">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%] border-b border-gray-300">Sr#</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[45%] border-b border-gray-300">Name</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[30%] border-b border-gray-300">Stops</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%] border-b border-gray-300">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {routes.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-6 text-gray-500">
-                    No routes found.
-                  </td>
-                </tr>
-              ) : (
-                routes.map((route, index) => (
-                  <tr key={route.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap w-[10%] border-b border-gray-300">{index + 1}</td>
-                    <td className="px-6 py-4 whitespace-nowrap w-[45%] overflow-hidden text-ellipsis border-b border-gray-300">{route.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap w-[30%] border-b border-gray-300">{route.busStops.length}</td>
-                    <td className="px-6 py-4 whitespace-nowrap w-[15%] border-b border-gray-300">
-                      <div className="flex justify-center space-x-0">
-                        <button
-                          onClick={() => handleViewRoute(route.id)}
-                          className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-100 transition-colors duration-200"
-                          title="View Route"
-                        >
-                          <FaEye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(route)}
-                          className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-100 transition-colors duration-200"
-                          title="Delete Route"
-                        >
-                          <FaTrashAlt className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+      {/* MAIN CONTENT COLUMN */}
+      <div className="flex flex-col flex-1 h-screen">
+        {/* HEADER: sticky at top, does not scroll */}
+        <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
+          <div className="rounded-lg mb-2">
+            <RoutesHeader searchQuery={searchQuery ?? ""} onSearchChange={handleSearchChange} />
+          </div>
+        </div>
+
+        {/* BODY: fills remaining height, scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-white rounded-lg p-4">
+            <div className="rounded-lg border border-gray-300 overflow-hidden">
+              <table className="w-full divide-y divide-gray-300">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-300">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%]">Sr#</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[45%]">Name</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[30%]">Stops</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%]">Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          <div>
-            <div className="flex items-center justify-between m-6">
-              <div className="flex items-center">
-                <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
-                  Rows per page:
-                </label>
-                <select
-                  id="rowsPerPage"
-                  className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-                >
-                  <option>10</option>
-                  <option>20</option>
-                  <option>50</option>
-                </select>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                  &lt;
-                </button>
-                <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                  &gt;
-                </button>
+                </thead>
+                <tbody className="bg-white text-center">
+                  {routes.length === 0 ? (
+                    <tr className="border-b border-gray-300">
+                      <td colSpan={4} className="py-6 text-gray-500">
+                        No routes found.
+                      </td>
+                    </tr>
+                  ) : (
+                    routes.map((route, index) => (
+                      <tr key={route.id} className="hover:bg-gray-50 border-b border-gray-300">
+                        <td className="px-6 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[45%] overflow-hidden text-ellipsis">{route.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[30%]">{route.busStops.length}</td>
+                        <td className="px-20 py-4 flex items-center space-x-2 justify-center">
+                            <button
+                              className="text-white font-bold bg-blue-500 hover:bg-blue-700 rounded-lg px-4 py-2"
+                              onClick={() => handleViewRoute(route.id)}
+                              title="View Route"
+                            >
+                              View
+                            </button>
+                            <button
+                              className="text-white font-bold rounded-lg bg-slate-500 hover:bg-slate-700 px-4 py-2"
+                              onClick={() => handleDeleteClick(route)}
+                              title="Delete Route"
+                            >
+                              Delete
+                            </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <div>
+                <div className="flex items-center justify-between m-6">
+                  <div className="flex items-center">
+                    <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
+                      Rows per page:
+                    </label>
+                    <select
+                      id="rowsPerPage"
+                      className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
+                    >
+                      <option>10</option>
+                      <option>20</option>
+                      <option>50</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
+                      &lt;
+                    </button>
+                    <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
+                      &gt;
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div> 
+        </div>
+        {/* END BODY */}
       </div>
+      {/* END MAIN CONTENT */}
+
+      {/* Loading overlay for UI consistency */}
+      {loading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <LoadingIndicator message="Loading routes..." />
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && routeToDelete && (
         <DeleteModal
@@ -233,7 +243,6 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ routeName, onConfirm, onCance
         Are you sure to delete <span className="text-red-600 font-bold">{routeName}</span>?
       </div>
       <div className="flex justify-center space-x-4 mt-6">
-        {/* Cancel button first, then Ok button */}
         <button
           onClick={onCancel}
           className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition"
