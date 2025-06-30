@@ -2,14 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   DocumentSnapshot? _lastDocument;
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   NotificationService._internal();
 
   Future<void> init() async {
@@ -22,6 +22,7 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
   }
 
   Future<List<NotificationModel>> fetchInitialNotifications() async {
@@ -130,4 +131,8 @@ class NotificationService {
       'read': readStatus,
     });
   }
+}
+
+Future<void> handleNotification(RemoteMessage msg) async{
+
 }
