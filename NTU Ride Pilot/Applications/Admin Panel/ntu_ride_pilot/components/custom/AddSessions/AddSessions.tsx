@@ -254,7 +254,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-10 rounded focus:outline-none focus:shadow-outline"
             disabled={isProcessing}
           >
-            Reset
+            Clear
           </button>
           <button
             type="submit"

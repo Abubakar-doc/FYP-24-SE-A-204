@@ -14,10 +14,10 @@ const SessionFilterDropdown: React.FC<SessionFilterDropdownProps> = ({
   setFilterStatus,
   disabled 
 }) => {
-  const [filterStatusState, setFilterStatusState] = useState('active');
+  const [filterStatusState, setFilterStatusState] = useState('all'); // <-- Default to "all"
 
   useEffect(() => {
-    handleFilterChange({ target: { value: 'active' } } as React.ChangeEvent<HTMLSelectElement>);
+    handleFilterChange({ target: { value: 'all' } } as React.ChangeEvent<HTMLSelectElement>);
   }, []);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

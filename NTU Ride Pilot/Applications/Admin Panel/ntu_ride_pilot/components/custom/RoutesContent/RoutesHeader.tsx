@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
-import RouteFilterDropdown from './RouteFilterDropdown';
 import React from 'react';
 
 type RoutesHeaderProps = {
@@ -37,12 +36,7 @@ const RoutesHeader: React.FC<RoutesHeaderProps> = ({ searchQuery, onSearchChange
             </button>
           </div>
 
-          <RouteFilterDropdown
-            // allSessions={allSessions}
-            // setSessions={setSessions}
-            // setFilterStatus={setFilterStatus}
-            // disabled={isLoading}
-          />
+          
           
           <Link href="/dashboard/routes/add-route">
             <button

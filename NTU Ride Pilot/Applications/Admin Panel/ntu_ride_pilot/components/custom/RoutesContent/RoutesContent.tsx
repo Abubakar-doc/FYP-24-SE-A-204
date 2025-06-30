@@ -6,7 +6,7 @@ import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import RoutesHeader from './RoutesHeader';
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
-import { FaEye, FaTrashAlt } from 'react-icons/fa';
+import Pagination from "./Pagination"; 
 
 type RouteData = {
   id: string;
@@ -28,6 +28,11 @@ const RoutesContent: React.FC = () => {
   // Search query state
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Pagination state
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const rowsPerPageOptions = [10, 20, 30, 40, 50];
+  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+
   useEffect(() => {
     const fetchRoutes = async () => {
       setLoading(true);
@@ -46,6 +51,7 @@ const RoutesContent: React.FC = () => {
 
         setAllRoutes(fetchedRoutes);
         setRoutes(fetchedRoutes);
+        setCurrentLoadedCount(rowsPerPage);
       } catch (error) {
         console.error("Error fetching routes:", error);
       } finally {
@@ -54,12 +60,14 @@ const RoutesContent: React.FC = () => {
     };
 
     fetchRoutes();
+    // eslint-disable-next-line
   }, []);
 
   // Filter routes when searchQuery changes
   useEffect(() => {
     if (!searchQuery.trim()) {
       setRoutes(allRoutes);
+      setCurrentLoadedCount(rowsPerPage);
       return;
     }
 
@@ -73,7 +81,8 @@ const RoutesContent: React.FC = () => {
     });
 
     setRoutes(filtered);
-  }, [searchQuery, allRoutes]);
+    setCurrentLoadedCount(rowsPerPage);
+  }, [searchQuery, allRoutes, rowsPerPage]);
 
   const handleViewRoute = (id: string) => {
     router.push(`/dashboard/routes/add-route?view=${id}`);
@@ -112,6 +121,29 @@ const RoutesContent: React.FC = () => {
     setSearchQuery(value ?? "");
   };
 
+  // Pagination logic: progressive loading
+  const paginatedRoutes = routes.slice(0, currentLoadedCount);
+
+  const handleNext = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const newCount = Math.min(currentLoadedCount + rowsPerPage, routes.length);
+      setCurrentLoadedCount(newCount);
+      setLoading(false);
+    }, 500);
+  };
+
+  const handlePrev = () => {
+    setCurrentLoadedCount(rowsPerPage);
+  };
+
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentLoadedCount(rows);
+  };
+
+  const showPagination = routes.length > rowsPerPage;
+
   return (
     <div className="flex h-screen bg-white w-full">
       {/* ---- SIDEBAR (if you have one, place here) ---- */}
@@ -119,7 +151,14 @@ const RoutesContent: React.FC = () => {
       {/* End Sidebar */}
 
       {/* MAIN CONTENT COLUMN */}
-      <div className="flex flex-col flex-1 h-screen">
+      <div className="flex flex-col flex-1 h-screen relative">
+        {/* Loading overlay - covers only the routes content, not sidebar */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <LoadingIndicator message="Loading routes..." />
+          </div>
+        )}
+
         {/* HEADER: sticky at top, does not scroll */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
@@ -141,14 +180,14 @@ const RoutesContent: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white text-center">
-                  {routes.length === 0 ? (
+                  {paginatedRoutes.length === 0 ? (
                     <tr className="border-b border-gray-300">
                       <td colSpan={4} className="py-6 text-gray-500">
                         No routes found.
                       </td>
                     </tr>
                   ) : (
-                    routes.map((route, index) => (
+                    paginatedRoutes.map((route, index) => (
                       <tr key={route.id} className="hover:bg-gray-50 border-b border-gray-300">
                         <td className="px-6 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
                         <td className="px-6 py-4 whitespace-nowrap w-[45%] overflow-hidden text-ellipsis">{route.name}</td>
@@ -174,44 +213,26 @@ const RoutesContent: React.FC = () => {
                   )}
                 </tbody>
               </table>
-              <div>
-                <div className="flex items-center justify-between m-6">
-                  <div className="flex items-center">
-                    <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
-                      Rows per page:
-                    </label>
-                    <select
-                      id="rowsPerPage"
-                      className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-                    >
-                      <option>10</option>
-                      <option>20</option>
-                      <option>50</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                      &lt;
-                    </button>
-                    <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                      &gt;
-                    </button>
-                  </div>
-                </div>
-              </div>
+              {/* Pagination controls */}
+              {showPagination && (
+                <Pagination
+                  currentLoadedCount={currentLoadedCount}
+                  totalRows={routes.length}
+                  rowsPerPage={rowsPerPage}
+                  rowsPerPageOptions={rowsPerPageOptions}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  isNextDisabled={currentLoadedCount >= routes.length}
+                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                />
+              )}
             </div>
           </div>
         </div>
         {/* END BODY */}
       </div>
       {/* END MAIN CONTENT */}
-
-      {/* Loading overlay for UI consistency */}
-      {loading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <LoadingIndicator message="Loading routes..." />
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && routeToDelete && (

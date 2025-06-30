@@ -18,6 +18,10 @@ import {
 import { firestore } from '@/lib/firebase';
 
 import LoadingIndicator from '../LoadingIndicator/LoadingIndicator';
+import DashboardHeader from './DashboardHeader ';
+
+// React Icons
+import { MdPerson, MdAltRoute } from 'react-icons/md';
 
 // Register Chart.js components
 ChartJS.register(
@@ -50,14 +54,18 @@ interface StatCardProps {
   color: string;
   value: number;
   label: string;
+  iconBg?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, color, value, label }) => (
-  <div className={`bg-white rounded-xl shadow-md p-6 flex items-center gap-4 border-t-4 ${color}`}>
-    <div className="text-3xl">{icon}</div>
+// StatCard: fully transparent, no bg, no shadow, no border, no rounded
+const StatCard: React.FC<StatCardProps> = ({ icon, color, value, label, iconBg }) => (
+  <div className={`p-6 flex items-center gap-2`}>
+    <div className={`flex items-center justify-center rounded-lg ${iconBg ? iconBg : 'bg-blue-100'} w-14 h-14`}>
+      <span className="text-2xl rounded-lg p-2">{icon}</span>
+    </div>
     <div>
-      <div className="text-2xl font-bold">{value}</div>
       <div className="text-gray-500">{label}</div>
+      <div className="text-2xl font-bold">{value}</div>
     </div>
   </div>
 );
@@ -82,9 +90,14 @@ const DashboardContent: React.FC = () => {
     datasets: [],
   });
 
+  // Ongoing rides stats
+  const [activeBuses, setActiveBuses] = useState(0);
+  const [studentsOnboard, setStudentsOnboard] = useState(0);
+
   useEffect(() => {
     const fetchAllStats = async () => {
       try {
+        // Students
         const studentsCollectionRef = collection(
           firestore,
           'users',
@@ -105,29 +118,46 @@ const DashboardContent: React.FC = () => {
           else if (status === 'Inactive') inactiveStudents += 1;
         });
 
+        // Drivers
         const userRolesDocRef = doc(firestore, 'users', 'user_roles');
         const driversCollectionRef = collection(userRolesDocRef, 'drivers');
         const driversSnapshot = await getDocs(driversCollectionRef);
         const totalDrivers = driversSnapshot.size;
 
+        // Buses
         const busesCollectionRef = collection(firestore, 'buses');
         const busesSnapshot = await getDocs(busesCollectionRef);
         const totalBuses = busesSnapshot.size;
 
+        // Rides (for stats and for ongoing rides)
         const ridesCollectionRef = collection(firestore, 'rides');
         const ridesSnapshot = await getDocs(ridesCollectionRef);
         let completedRides = 0;
         let ridesArr: { created_at: Date }[] = [];
-        ridesSnapshot.forEach(doc => {
-          const data = doc.data();
+
+        // For ongoing rides
+        let ongoingActiveBuses = 0;
+        let allOnboardStudents: any[] = [];
+
+        ridesSnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          // For completed rides stats
           if (data.ride_status === 'completed') {
             completedRides += 1;
             if (data.created_at && data.created_at.toDate) {
               ridesArr.push({ created_at: data.created_at.toDate() });
             }
           }
+          // For ongoing rides stats
+          if (data.ride_status === 'inProgress') {
+            ongoingActiveBuses += 1;
+            const offlineOnBoard = Array.isArray(data.offlineOnBoard) ? data.offlineOnBoard : [];
+            const onlineOnBoard = Array.isArray(data.onlineOnBoard) ? data.onlineOnBoard : [];
+            allOnboardStudents = allOnboardStudents.concat(offlineOnBoard, onlineOnBoard);
+          }
         });
 
+        // Routes
         const routesCollectionRef = collection(firestore, 'routes');
         const routesSnapshot = await getDocs(routesCollectionRef);
         const totalRoutes = routesSnapshot.size;
@@ -147,15 +177,17 @@ const DashboardContent: React.FC = () => {
             routes: totalRoutes,
           },
         });
-
         setRidesData(ridesArr);
+
+        // Update ongoing rides stats
+        setActiveBuses(ongoingActiveBuses);
+        setStudentsOnboard(allOnboardStudents.length);
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchAllStats();
   }, []);
 
@@ -167,7 +199,6 @@ const DashboardContent: React.FC = () => {
       });
       return;
     }
-
     const now = new Date();
     let labels: string[] = [];
     let data: number[] = [];
@@ -221,7 +252,6 @@ const DashboardContent: React.FC = () => {
         data.push(ridesCount);
       }
     }
-
     setBarChartData({
       labels,
       datasets: [
@@ -272,15 +302,15 @@ const DashboardContent: React.FC = () => {
           selectedCategory === 'weekly'
             ? 20
             : selectedCategory === 'monthly'
-            ? 140
-            : 600,
+              ? 140
+              : 600,
         ticks: {
           stepSize:
             selectedCategory === 'weekly'
               ? 4
               : selectedCategory === 'monthly'
-              ? 28
-              : 120,
+                ? 28
+                : 120,
         },
         grid: { color: '#e0e7ef' },
       },
@@ -289,90 +319,84 @@ const DashboardContent: React.FC = () => {
       },
     },
   };
+ return (
+    <div className="flex h-screen bg-white w-full">
+      {/* MAIN CONTENT COLUMN */}
+      <div className="flex flex-col flex-1 h-screen relative">
+        {/* Loading overlay - covers only the dashboard content, not sidebar */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <LoadingIndicator message="Loading dashboard data..." />
+          </div>
+        )}
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-        <LoadingIndicator fullscreen message="Loading dashboard data..." />
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Students Stats */}
-      <h2 className="text-lg font-semibold mb-2 text-blue-800">Student Stats</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <StatCard
-          icon={<span role="img" aria-label="students">🎓</span>}
-          color="border-blue-400"
-          value={stats.students.total}
-          label="Total Registered Students"
-        />
-        <StatCard
-          icon={<span role="img" aria-label="active">🟢</span>}
-          color="border-green-400"
-          value={stats.students.active}
-          label="Active Bus Card Students"
-        />
-        <StatCard
-          icon={<span role="img" aria-label="inactive">🔴</span>}
-          color="border-red-400"
-          value={stats.students.inactive}
-          label="Inactive Bus Card Students"
-        />
-      </div>
-
-      {/* Transport Stats */}
-      <h2 className="text-lg font-semibold mb-2 text-blue-800">Transport Stats</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <StatCard
-          icon={<span role="img" aria-label="drivers">🧑‍✈️</span>}
-          color="border-indigo-400"
-          value={stats.transport.drivers}
-          label="Total Drivers"
-        />
-        <StatCard
-          icon={<span role="img" aria-label="buses">🚌</span>}
-          color="border-yellow-400"
-          value={stats.transport.buses}
-          label="Total Buses"
-        />
-      </div>
-
-      {/* Rides Stats */}
-      <h2 className="text-lg font-semibold mb-2 text-blue-800">Rides Stats</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <StatCard
-          icon={<span role="img" aria-label="rides">✅</span>}
-          color="border-purple-400"
-          value={stats.rides.completed}
-          label="Rides Completed"
-        />
-        <StatCard
-          icon={<span role="img" aria-label="routes">🗺️</span>}
-          color="border-pink-400"
-          value={stats.rides.routes}
-          label="Routes Defined"
-        />
-      </div>
-
-      {/* Rides Bar Chart */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-          <h3 className="text-lg font-semibold text-gray-800">Rides Completed</h3>
-          <select
-            className="w-56 px-4 py-2 rounded-lg border border-blue-300 bg-blue-50 text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value as 'weekly' | 'monthly' | 'yearly')}
-          >
-            <option value="weekly">Last 7 Days (Weekly)</option>
-            <option value="monthly">Last 4 Weeks (Monthly)</option>
-            <option value="yearly">Last 12 Months (Yearly)</option>
-          </select>
+        {/* HEADER: sticky at top, does not scroll */}
+        <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
+          <div className="rounded-lg mb-2">
+            <DashboardHeader activeBuses={activeBuses} studentsOnboard={studentsOnboard} />
+          </div>
         </div>
-        <Bar options={ridesChartOptions} data={barChartData} />
+        {/* BODY: fills remaining height, scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-white rounded-lg p-4">
+
+            {/* STATISTICS MAIN CONTAINER */}
+            <div className='bg-[#F5F5F5] rounded-md p-2 mb-8'>
+              <h2 className="text-lg font-semibold mb-1 ml-5 text-blue-800">Statistics</h2>
+              <div className="flex flex-row flex-wrap gap-28 mb-2 overflow-x-auto">
+                <StatCard
+                  icon={<MdPerson />}
+                  color="border-blue-400"
+                  label="Students"
+                  value={stats.students.total}
+                  iconBg="bg-green-500"
+                />
+                <StatCard
+                  icon={<MdPerson />}
+                  color="border-indigo-400"
+                  label="Drivers"
+                  value={stats.transport.drivers}
+                  iconBg="bg-purple-500"
+                />
+                <StatCard
+                  icon={<MdAltRoute />}
+                  color="border-pink-400"
+                  label="Routes"
+                  value={stats.rides.routes}
+                  iconBg="bg-orange-500"
+                />
+                <StatCard
+                  icon={<MdPerson />}
+                  color="border-purple-400"
+                  label="Total Rides"
+                  value={stats.rides.completed}
+                  iconBg="bg-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Rides Bar Chart */}
+            <div className="bg-[#F5F5F5] rounded-xl shadow-md p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
+                <h3 className="text-lg font-semibold text-gray-800">Rides Completed</h3>
+                <select
+                  className="w-56 px-4 py-2 rounded-lg border border-blue-300 bg-blue-50 text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value as 'weekly' | 'monthly' | 'yearly')}
+                >
+                  <option value="weekly">Last 7 Days (Weekly)</option>
+                  <option value="monthly">Last 4 Weeks (Monthly)</option>
+                  <option value="yearly">Last 12 Months (Yearly)</option>
+                </select>
+              </div>
+              <Bar options={ridesChartOptions} data={barChartData} />
+            </div>
+
+          </div>
+        </div>
+        {/* END BODY */}
       </div>
+      {/* END MAIN CONTENT */}
     </div>
   );
 };

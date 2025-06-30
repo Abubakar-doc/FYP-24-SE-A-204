@@ -7,6 +7,7 @@ import { FaEye, FaTrashAlt } from "react-icons/fa";
 import { firestore } from "@/lib/firebase";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
+import Pagination from "./Pagination"; // <-- Import reusable Pagination
 
 interface Announcement {
   id: string;
@@ -32,6 +33,11 @@ const AnnouncementsContent: React.FC = () => {
 
   // Delete All state
   const [deleteAllLoading, setDeleteAllLoading] = useState(false);
+
+  // Pagination state
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const rowsPerPageOptions = [10, 20, 30, 40, 50];
+  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
 
   const truncateMessage = (msg: string): string => {
     if (msg.length <= 50) return msg;
@@ -72,6 +78,7 @@ const AnnouncementsContent: React.FC = () => {
       });
       data.sort((a, b) => b.created_at?.seconds - a.created_at?.seconds);
       setAnnouncements(data);
+      setCurrentLoadedCount(rowsPerPage);
     } catch (error) {
       console.error("Error fetching announcements:", error);
     }
@@ -80,12 +87,56 @@ const AnnouncementsContent: React.FC = () => {
 
   useEffect(() => {
     fetchAnnouncements();
+    // eslint-disable-next-line
   }, []);
+
+  // --- SEARCH LOGIC ---
+  const filteredAnnouncements = announcements.filter((announcement) => {
+    const search = searchInput.toLowerCase();
+    let createdAtStr = "";
+    if (announcement.created_at) {
+      createdAtStr = formatTimestamp(announcement.created_at).toLowerCase();
+    }
+    return (
+      announcement.title.toLowerCase().includes(search) ||
+      announcement.message.toLowerCase().includes(search) ||
+      createdAtStr.includes(search)
+    );
+  });
+
+  // Reset loaded count when search/filter changes
+  useEffect(() => {
+    setCurrentLoadedCount(rowsPerPage);
+  }, [searchInput, rowsPerPage, announcements]);
+
+  // --- PAGINATION LOGIC ---
+  const paginatedAnnouncements = filteredAnnouncements.slice(0, currentLoadedCount);
+
+  const handleNext = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredAnnouncements.length);
+      setCurrentLoadedCount(newCount);
+      setLoading(false);
+    }, 500);
+  };
+
+  const handlePrev = () => {
+    setCurrentLoadedCount(rowsPerPage);
+  };
+
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentLoadedCount(rows);
+  };
+
+  const showPagination = filteredAnnouncements.length > rowsPerPage;
 
   // Handle view button click
   const handleView = (id: string) => {
     router.push(`/dashboard/announcements/add-announcements?view=${id}`);
   };
+
   // Handle delete button click (open modal)
   const handleDeleteClick = (announcement: Announcement) => {
     setAnnouncementToDelete(announcement);
@@ -150,7 +201,6 @@ const AnnouncementsContent: React.FC = () => {
           })
         );
       await Promise.all(mediaDeletePromises);
-
       // 2. Delete all announcements from Firestore
       const deleteDocPromises = announcements.map(a =>
         deleteDoc(doc(firestore, "announcements", a.id))
@@ -167,22 +217,6 @@ const AnnouncementsContent: React.FC = () => {
     }
   };
 
-  // --- SEARCH LOGIC ---
-  const filteredAnnouncements = announcements.filter((announcement) => {
-    const search = searchInput.toLowerCase();
-
-    // Format created_at for search
-    let createdAtStr = "";
-    if (announcement.created_at) {
-      createdAtStr = formatTimestamp(announcement.created_at).toLowerCase();
-    }
-    return (
-      announcement.title.toLowerCase().includes(search) ||
-      announcement.message.toLowerCase().includes(search) ||
-      createdAtStr.includes(search)
-    );
-  });
-
   return (
     <div className="flex h-screen bg-white w-full">
       {/* ---- SIDEBAR (if you have one, place here) ---- */}
@@ -190,7 +224,14 @@ const AnnouncementsContent: React.FC = () => {
       {/* End Sidebar */}
 
       {/* MAIN CONTENT COLUMN */}
-      <div className="flex flex-col flex-1 h-screen">
+      <div className="flex flex-col flex-1 h-screen relative">
+        {/* Loading overlay - covers only the announcements content, not sidebar */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <LoadingIndicator message="Loading announcements..." />
+          </div>
+        )}
+
         {/* HEADER: sticky at top, does not scroll */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
@@ -228,14 +269,14 @@ const AnnouncementsContent: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white text-center">
-                  {filteredAnnouncements.length === 0 ? (
+                  {paginatedAnnouncements.length === 0 ? (
                     <tr className="border-b border-gray-300">
                       <td colSpan={5} className="py-8 text-center text-gray-500">
                         {loading ? "Loading..." : "No announcements found."}
                       </td>
                     </tr>
                   ) : (
-                    filteredAnnouncements.map((announcement, index) => (
+                    paginatedAnnouncements.map((announcement, index) => (
                       <tr key={announcement.id} className="hover:bg-gray-50 border-b border-gray-300">
                         <td className="px-4 py-4 whitespace-nowrap w-[5%]">{index + 1}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[25%] overflow-hidden text-ellipsis">{announcement.title}</td>
@@ -264,42 +305,26 @@ const AnnouncementsContent: React.FC = () => {
                   )}
                 </tbody>
               </table>
-              <div className="flex items-center justify-between m-6">
-                <div className="flex items-center">
-                  <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
-                    Rows per page:
-                  </label>
-                  <select
-                    id="rowsPerPage"
-                    className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-                  >
-                    <option>10</option>
-                    <option>20</option>
-                    <option>50</option>
-                  </select>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                    &lt;
-                  </button>
-                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                    &gt;
-                  </button>
-                </div>
-              </div>
+              {/* Pagination controls */}
+              {showPagination && (
+                <Pagination
+                  currentLoadedCount={currentLoadedCount}
+                  totalRows={filteredAnnouncements.length}
+                  rowsPerPage={rowsPerPage}
+                  rowsPerPageOptions={rowsPerPageOptions}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  isNextDisabled={currentLoadedCount >= filteredAnnouncements.length}
+                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                />
+              )}
             </div>
           </div>
         </div>
         {/* END BODY */}
       </div>
       {/* END MAIN CONTENT */}
-
-      {/* Loading overlay for UI consistency */}
-      {loading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <LoadingIndicator message="Loading announcements..." />
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       {showModal && announcementToDelete && (

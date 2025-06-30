@@ -475,7 +475,7 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                Reset
+                Clear
               </button>
               <button
                 type="submit"

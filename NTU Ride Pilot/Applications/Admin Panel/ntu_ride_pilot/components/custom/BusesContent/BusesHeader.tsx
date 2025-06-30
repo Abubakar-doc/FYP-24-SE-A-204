@@ -1,7 +1,6 @@
 "use client";
 import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
-import BusFilterDropdown from './BusFilterDropdown';
 import { useState } from 'react';
 
 type BusesHeaderProps = {
@@ -42,7 +41,7 @@ const BusesHeader: React.FC<BusesHeaderProps> = ({ onSearch }) => {
                         </button>
                     </div>
 
-                    <BusFilterDropdown />
+                    
                     <Link href="/dashboard/buses/add-bus">
                         <button
                             className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"

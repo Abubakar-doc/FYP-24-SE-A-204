@@ -556,7 +556,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
             disabled={loading}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-10 rounded focus:outline-none focus:shadow-outline"
           >
-            Reset
+            Clear
           </button>
           <button
             type="submit"

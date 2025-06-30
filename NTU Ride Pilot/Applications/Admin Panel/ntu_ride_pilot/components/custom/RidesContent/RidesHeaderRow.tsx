@@ -41,7 +41,7 @@ const RidesHeaderRow: React.FC<RidesHeaderRowProps> = ({ routeOptions }) => {
           onChange={handleChange}
         >
           <option value="">
-            {routeOptions.length === 0 ? "No active routes" : "Please Select a Route!"}
+            {routeOptions.length === 0 ? "No active rides at the moment" : "Please Select a Route!"}
           </option>
           {routeOptions.length > 0 &&
             routeOptions.map(option => (

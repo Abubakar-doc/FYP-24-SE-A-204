@@ -6,7 +6,7 @@ type RollNumberEmailRowProps = {
   email: string;
   setEmail: React.Dispatch<React.SetStateAction<string>>;
   disabled: boolean;
-  disableRollEmail?: boolean; // You can remove this prop if unused now
+  disableRollEmail?: boolean;
 };
 
 const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
@@ -15,9 +15,32 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
   email,
   setEmail,
   disabled,
-  disableRollEmail = false, // default false
+  disableRollEmail = false,
 }) => {
   const normalizeSpaces = (str: string) => str.replace(/^\s+/, '').replace(/\s+/g, ' ');
+
+  // Always split into 4 parts: [YY, 'NTU', AB, 1234]
+  const rollParts = (() => {
+    const parts = rollNumber.split('-');
+    return [
+      parts[0] || '',
+      'NTU',
+      parts[2] || '',
+      parts[3] || ''
+    ];
+  })();
+
+  // Helper to update roll number
+  const updateRollNumber = (i: 0 | 2 | 3, value: string) => {
+    const parts = [
+      rollParts[0],
+      'NTU',
+      rollParts[2],
+      rollParts[3]
+    ];
+    parts[i] = value;
+    setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -31,17 +54,17 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             maxLength={2}
             pattern="\d{2}"
             title="Enter 2 digits"
+            placeholder="YY"
             className="w-12 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
-            value={rollNumber.split('-')[0] || ''}
+            value={rollParts[0]}
             onChange={(e) => {
               if (disableRollEmail) return;
               const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-              const parts = rollNumber.split('-');
-              parts[0] = val;
-              setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+              updateRollNumber(0, val);
             }}
             required
-            disabled={disabled /* && disableRollEmail removed */}
+            disabled={disabled}
+            autoComplete="off"
           />
 
           <span className="text-2xl font-bold">-NTU-</span>
@@ -51,17 +74,17 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             maxLength={2}
             pattern="[A-Za-z]{2}"
             title="Enter 2 letters"
+            placeholder="AB"
             className="w-12 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3 uppercase"
-            value={rollNumber.split('-')[2] || ''}
+            value={rollParts[2]}
             onChange={(e) => {
               if (disableRollEmail) return;
               const val = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
-              const parts = rollNumber.split('-');
-              parts[2] = val;
-              setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+              updateRollNumber(2, val);
             }}
             required
-            disabled={disabled /* && disableRollEmail removed */}
+            disabled={disabled}
+            autoComplete="off"
           />
 
           <span className="text-2xl font-bold">-</span>
@@ -71,17 +94,17 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             maxLength={4}
             pattern="\d{4}"
             title="Enter 4 digits"
+            placeholder="1234"
             className="w-16 text-center rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3"
-            value={rollNumber.split('-')[3] || ''}
+            value={rollParts[3]}
             onChange={(e) => {
               if (disableRollEmail) return;
               const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-              const parts = rollNumber.split('-');
-              parts[3] = val;
-              setRollNumber(`${parts[0] || ''}-NTU-${parts[2] || ''}-${parts[3] || ''}`);
+              updateRollNumber(3, val);
             }}
             required
-            disabled={disabled /* && disableRollEmail removed */}
+            disabled={disabled}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -104,7 +127,7 @@ const RollNumberEmailRow: React.FC<RollNumberEmailRowProps> = ({
             setEmail(normalizeSpaces(e.target.value.trim()));
           }}
           required
-          disabled={disabled /* removed disableRollEmail */}
+          disabled={disabled}
         />
       </div>
     </div>

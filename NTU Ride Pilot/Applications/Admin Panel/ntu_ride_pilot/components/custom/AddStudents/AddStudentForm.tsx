@@ -56,7 +56,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const sessionId = searchParams.get('sessionId');
   const studentId = searchParams.get('studentId');
 
-  const [rollNumber, setRollNumber] = useState('00-NTU-AA-0000');
+  const [rollNumber, setRollNumber] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [feePaid] = useState('Yes');
@@ -189,7 +189,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   };
 
   const resetForm = () => {
-    setRollNumber('00-NTU-AA-0000');
+    setRollNumber('');
     setName('');
     setEmail('');
     setBusCardStatus('Inactive');
@@ -621,19 +621,17 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             type="button"
             onClick={resetForm}
             disabled={loading}
-            className={`bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-10 rounded focus:outline-none focus:shadow-outline ${
-              loading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-10 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
-            Reset
+            Clear
           </button>
           <button
             type="submit"
             ref={submitButtonRef}
             disabled={loading}
-            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-16 rounded focus:outline-none focus:shadow-outline ${
-              loading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-16 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
             {loading ? 'Saving...' : isEditMode ? 'Update' : 'Add'}
           </button>
@@ -642,9 +640,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
       {showNotification && (
         <div
-          className={`fixed bottom-4 right-4 z-50 p-8 rounded-lg shadow-lg ${
-            successMessage ? 'bg-green-500' : 'bg-red-500'
-          } text-white font-bold transition duration-600 animate-out`}
+          className={`fixed bottom-4 right-4 z-50 p-8 rounded-lg shadow-lg ${successMessage ? 'bg-green-500' : 'bg-red-500'
+            } text-white font-bold transition duration-600 animate-out`}
         >
           {successMessage || errorMessage}
         </div>

@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import HeaderIcons from "../HeaderIcons/HeaderIcons";
-import DriverFilterDropdown from "./DriverFilterDropdown";
 import React from "react";
 
 type DriversHeaderProps = {
@@ -35,7 +34,7 @@ const DriversHeader: React.FC<DriversHeaderProps> = ({ searchQuery, setSearchQue
             </button>
           </div>
 
-          <DriverFilterDropdown />
+          
           <Link href="/dashboard/drivers/add-driver">
             <button
               className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"

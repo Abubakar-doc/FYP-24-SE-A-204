@@ -5,6 +5,7 @@ import { firestore } from "@/lib/firebase";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import BusesHeader from "./BusesHeader";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
+import Pagination from "./Pagination"; // Import the reusable Pagination component
 
 type BusData = {
   id: string;
@@ -21,6 +22,11 @@ const BusesContent: React.FC = () => {
   const [busToDelete, setBusToDelete] = useState<BusData | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination state
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const rowsPerPageOptions = [10, 20, 30, 40, 50];
+  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
 
   useEffect(() => {
     const fetchBuses = async () => {
@@ -40,6 +46,7 @@ const BusesContent: React.FC = () => {
         });
         setBuses(fetchedBuses);
         setFilteredBuses(fetchedBuses);
+        setCurrentLoadedCount(rowsPerPage);
       } catch (error) {
         console.error("Error fetching buses:", error);
       } finally {
@@ -48,19 +55,22 @@ const BusesContent: React.FC = () => {
     };
 
     fetchBuses();
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredBuses(buses);
+      setCurrentLoadedCount(rowsPerPage);
     } else {
       const filtered = buses.filter(bus => 
         bus.busId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.seatCapacity.toString().includes(searchTerm)
       );
       setFilteredBuses(filtered);
+      setCurrentLoadedCount(rowsPerPage);
     }
-  }, [searchTerm, buses]);
+  }, [searchTerm, buses, rowsPerPage]);
 
   const handleDeleteClick = (bus: BusData) => {
     setBusToDelete(bus);
@@ -92,6 +102,29 @@ const BusesContent: React.FC = () => {
     setSearchTerm(term);
   };
 
+  // Pagination logic: progressive loading
+  const paginatedBuses = filteredBuses.slice(0, currentLoadedCount);
+
+  const handleNext = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredBuses.length);
+      setCurrentLoadedCount(newCount);
+      setLoading(false);
+    }, 500);
+  };
+
+  const handlePrev = () => {
+    setCurrentLoadedCount(rowsPerPage);
+  };
+
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentLoadedCount(rows);
+  };
+
+  const showPagination = filteredBuses.length > rowsPerPage;
+
   return (
     <div className="flex h-screen bg-white w-full">
       {/* ---- SIDEBAR (if you have one, place here) ---- */}
@@ -99,7 +132,14 @@ const BusesContent: React.FC = () => {
       {/* End Sidebar */}
 
       {/* MAIN CONTENT COLUMN */}
-      <div className="flex flex-col flex-1 h-screen">
+      <div className="flex flex-col flex-1 h-screen relative">
+        {/* Loading overlay - covers only the buses content, not sidebar */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <LoadingIndicator message="Loading buses..." />
+          </div>
+        )}
+
         {/* HEADER: sticky at top, does not scroll */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
@@ -120,14 +160,14 @@ const BusesContent: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white text-center">
-                  {filteredBuses.length === 0 ? (
+                  {paginatedBuses.length === 0 ? (
                     <tr className="border-b border-gray-300">
                       <td colSpan={4} className="py-6 text-gray-500">
                         {searchTerm ? "No buses match your search." : "No buses found."}
                       </td>
                     </tr>
                   ) : (
-                    filteredBuses.map((bus, index) => (
+                    paginatedBuses.map((bus, index) => (
                       <tr key={bus.id} className="hover:bg-gray-50 border-b border-gray-300">
                         <td className="px-4 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[60%] overflow-hidden text-ellipsis">{bus.busId}</td>
@@ -145,42 +185,26 @@ const BusesContent: React.FC = () => {
                   )}
                 </tbody>
               </table>
-              <div className="flex items-center justify-between m-6">
-                <div className="flex items-center">
-                  <label htmlFor="rowsPerPage" className="mr-2 text-sm text-gray-700">
-                    Rows per page:
-                  </label>
-                  <select
-                    id="rowsPerPage"
-                    className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-                  >
-                    <option>10</option>
-                    <option>20</option>
-                    <option>50</option>
-                  </select>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                    &lt;
-                  </button>
-                  <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                    &gt;
-                  </button>
-                </div>
-              </div>
+              {/* Pagination controls */}
+              {showPagination && (
+                <Pagination
+                  currentLoadedCount={currentLoadedCount}
+                  totalRows={filteredBuses.length}
+                  rowsPerPage={rowsPerPage}
+                  rowsPerPageOptions={rowsPerPageOptions}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  isNextDisabled={currentLoadedCount >= filteredBuses.length}
+                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                />
+              )}
             </div>
           </div>
         </div>
         {/* END BODY */}
       </div>
       {/* END MAIN CONTENT */}
-      {/* Loading overlay for UI consistency */}
-      {loading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <LoadingIndicator message="Loading buses..." />
-        </div>
-      )}
-
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && busToDelete && (
         <DeleteModal

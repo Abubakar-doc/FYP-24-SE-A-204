@@ -14,6 +14,7 @@ import SessionsHeader from "./SessionComponents/SessionsHeader";
 import ConfirmationModal from "./SessionComponents/ConfirmationModal";
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
+import Pagination from "./SessionComponents/Pagination"; 
 
 type Session = {
   id: string;
@@ -34,11 +35,16 @@ const SessionsContent: React.FC = () => {
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeactivating, setIsDeactivating] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("active");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionToDeactivate, setSessionToDeactivate] = useState<Session | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [activationError, setActivationError] = useState<string>("");
+
+  // Pagination state
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const rowsPerPageOptions = [10, 20, 30, 40, 50];
+  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
 
   const previousRollNoRef = useRef<string[]>([]);
   const activeSession = sessions.find((s) => s.session_status === "active") || null;
@@ -67,12 +73,9 @@ const SessionsContent: React.FC = () => {
           return b.start_date.getTime() - a.start_date.getTime();
         });
         setAllSessions(sortedSessions);
-
-        const activeSessions = sortedSessions.filter(
-          (session) => session.session_status === "active"
-        );
-        setSessions(activeSessions);
-        setFilteredSessions(activeSessions);
+        setSessions(sortedSessions);
+        setFilteredSessions(sortedSessions);
+        setCurrentLoadedCount(10);
       } catch (error) {
         console.error("Error fetching sessions:", error);
       } finally {
@@ -82,6 +85,7 @@ const SessionsContent: React.FC = () => {
 
     fetchSessions();
   }, []);
+
   useEffect(() => {
     if (!activeSession) {
       previousRollNoRef.current = [];
@@ -182,6 +186,7 @@ const SessionsContent: React.FC = () => {
       setSessions(updatedActiveSessions);
       setFilteredSessions(updatedActiveSessions);
       setFilterStatus("active");
+      setCurrentLoadedCount(10);
     } catch (error) {
       console.error("Error deactivating session:", error);
     } finally {
@@ -212,7 +217,6 @@ const SessionsContent: React.FC = () => {
         session_status: "active",
         updated_at: Timestamp.now(),
       });
-
       const studentsCollection = collection(
         firestore,
         "users",
@@ -256,6 +260,7 @@ const SessionsContent: React.FC = () => {
       setSessions(updatedActiveSessions);
       setFilteredSessions(updatedActiveSessions);
       setFilterStatus("active");
+      setCurrentLoadedCount(10);
     } catch (error) {
       console.error("Error activating session:", error);
       setActivationError("Failed to activate session.");
@@ -289,15 +294,18 @@ const SessionsContent: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value.toLowerCase();
     setSearchInput(inputValue);
-    if (inputValue === "") {
-      setFilteredSessions(sessions);
+    let sessionsToFilter: Session[] = [];
+    if (filterStatus === "all") {
+      sessionsToFilter = allSessions;
+    } else if (filterStatus === "suspended") {
+      sessionsToFilter = allSessions.filter((session) => session.session_status === "inactive");
     } else {
-      const sessionsToFilter =
-        filterStatus === "all"
-          ? allSessions
-          : filterStatus === "suspended"
-          ? allSessions.filter((session) => session.session_status === "inactive")
-          : sessions;
+      sessionsToFilter = sessions;
+    }
+    if (inputValue === "") {
+      setFilteredSessions(sessionsToFilter);
+      setCurrentLoadedCount(rowsPerPage);
+    } else {
       const filtered = sessionsToFilter.filter((session) => {
         const name = session.name?.toLowerCase() ?? "";
         const startDate = session.start_date
@@ -313,41 +321,39 @@ const SessionsContent: React.FC = () => {
         );
       });
       setFilteredSessions(filtered);
+      setCurrentLoadedCount(rowsPerPage);
     }
   };
+
   const handleFilterChange = (newFilterStatus: string) => {
     setFilterStatus(newFilterStatus);
+    let sortedSessions: Session[] = [];
     if (newFilterStatus === "all") {
-      const sortedSessions = allSessions.sort((a, b) => {
+      sortedSessions = [...allSessions].sort((a, b) => {
         if (a.start_date === null) return 1;
         if (b.start_date === null) return -1;
         return b.start_date.getTime() - a.start_date.getTime();
       });
-      setSessions(sortedSessions);
-      setFilteredSessions(sortedSessions);
     } else if (newFilterStatus === "active") {
-      const activeSessions = allSessions.filter(
+      sortedSessions = allSessions.filter(
         (session) => session.session_status === "active"
-      );
-      const sortedSessions = activeSessions.sort((a, b) => {
+      ).sort((a, b) => {
         if (a.start_date === null) return 1;
         if (b.start_date === null) return -1;
         return b.start_date.getTime() - a.start_date.getTime();
       });
-      setSessions(sortedSessions);
-      setFilteredSessions(sortedSessions);
     } else if (newFilterStatus === "suspended") {
-      const inactiveSessions = allSessions.filter(
+      sortedSessions = allSessions.filter(
         (session) => session.session_status === "inactive"
-      );
-      const sortedSessions = inactiveSessions.sort((a, b) => {
+      ).sort((a, b) => {
         if (a.start_date === null) return 1;
         if (b.start_date === null) return -1;
         return b.start_date.getTime() - a.start_date.getTime();
       });
-      setSessions(sortedSessions);
-      setFilteredSessions(sortedSessions);
     }
+    setSessions(sortedSessions);
+    setFilteredSessions(sortedSessions);
+    setCurrentLoadedCount(rowsPerPage);
   };
 
   const canActivate = (session: Session) => {
@@ -357,12 +363,43 @@ const SessionsContent: React.FC = () => {
     return session.end_date >= today;
   };
 
+  // Pagination logic: progressive loading
+  const paginatedSessions = filteredSessions.slice(0, currentLoadedCount);
+
+  const handleNext = () => {
+    // Simulate async loading
+    setIsLoading(true);
+    setTimeout(() => {
+      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredSessions.length);
+      setCurrentLoadedCount(newCount);
+      setIsLoading(false);
+    }, 500);
+  };
+
+  const handlePrev = () => {
+    // Reset to first "page"
+    setCurrentLoadedCount(rowsPerPage);
+  };
+
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentLoadedCount(rows);
+  };
+
+  const showPagination = filteredSessions.length > rowsPerPage;
+
   return (
     <div className="flex h-screen bg-white w-full">
       {/* ---- SIDEBAR (if you have one, place here) ---- */}
       {/* <Sidebar /> */}
       {/* End Sidebar */}
-      <div className="flex flex-col flex-1 h-screen">
+      <div className="flex flex-col flex-1 h-screen relative">
+        {/* Loading overlay - covers only the session content, not sidebar */}
+        {(isLoading && !isDeactivating) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <LoadingIndicator message="Loading sessions..." />
+          </div>
+        )}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
             <SessionsHeader
@@ -385,7 +422,7 @@ const SessionsContent: React.FC = () => {
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%]">
                       Sr#
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[40%]">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[35%]">
                       Name
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%]">
@@ -394,7 +431,7 @@ const SessionsContent: React.FC = () => {
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%]">
                       Ending Date
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%]">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%]">
                       Session Status
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[15%]">
@@ -403,15 +440,15 @@ const SessionsContent: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSessions.map((session, index) => (
+                  {paginatedSessions.map((session, index) => (
                     <tr
                       key={session.id}
-                      className="hover:bg-gray-50 border-b border-gray-300"
+                      className="hover:bg-gray-50 border-b border-gray-300 text-center"
                     >
                       <td className="px-6 py-4 whitespace-nowrap w-[5%]">
                         {index + 1}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">
+                      <td className="px-6 py-4 whitespace-nowrap w-[35%] overflow-hidden text-ellipsis">
                         {session.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap w-[15%]">
@@ -422,7 +459,7 @@ const SessionsContent: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap w-[15%]">
                         {session.end_date ? session.end_date.toLocaleDateString() : "N/A"}
                       </td>
-                      <td className="px-9 py-4 whitespace-nowrap w-[10%]">
+                      <td className="px-12 py-4 whitespace-nowrap w-[15%]">
                         <span
                           className={`px-3 py-1 text-sm font-semibold rounded-full ${
                             session.session_status === "active"
@@ -477,33 +514,19 @@ const SessionsContent: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-              {(filterStatus === "all" || filterStatus === "suspended") && (
-                <div className="flex items-center justify-between m-6">
-                  <div className="flex items-center">
-                    <label
-                      htmlFor="rowsPerPage"
-                      className="mr-2 text-sm text-gray-700"
-                    >
-                      Rows per page:
-                    </label>
-                    <select
-                      id="rowsPerPage"
-                      className="px-3 py-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300 text-sm"
-                    >
-                      <option>10</option>
-                      <option>20</option>
-                      <option>50</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                      &lt;
-                    </button>
-                    <button className="px-3 py-1 border rounded-md hover:bg-gray-100">
-                      &gt;
-                    </button>
-                  </div>
-                </div>
+              {/* Pagination controls */}
+              {showPagination && (
+                <Pagination
+                  currentLoadedCount={currentLoadedCount}
+                  totalRows={filteredSessions.length}
+                  rowsPerPage={rowsPerPage}
+                  rowsPerPageOptions={rowsPerPageOptions}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  isNextDisabled={currentLoadedCount >= filteredSessions.length}
+                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                />
               )}
             </div>
             {activationError && (
@@ -513,11 +536,6 @@ const SessionsContent: React.FC = () => {
             )}
           </div>
         </div>
-        {(isLoading && !isDeactivating) && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <LoadingIndicator />
-          </div>
-        )}
         {sessionToDeactivate && (
           <ConfirmationModal
             isOpen={isModalOpen}
