@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
@@ -95,6 +96,8 @@ class AuthService extends GetxController {
 
   Future<void> logout(BuildContext context) async {
     try {
+      await FirebaseMessaging.instance.unsubscribeFromTopic('announcements');
+      await FirebaseAuth.instance.signOut();
       // Delete the 'rides' box if it exists.
       if (Hive.isBoxOpen('rides')) {
         final rideBox = Hive.box<RideModel>('rides');
@@ -120,14 +123,7 @@ class AuthService extends GetxController {
         // await busCardBox.close();
         await Hive.deleteBoxFromDisk('bus_cards');
       }
-
-      // Sign out from Firebase and navigate to the welcome screen.
-      await FirebaseAuth.instance.signOut();
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => WelcomeScreen()),
-        (Route<dynamic> route) => false, // This removes all previous routes
-      );
+      Get.offAll(() => WelcomeScreen());
     } catch (e) {
       SnackbarUtil.showError(
           "Logout Error", "Unexpected error: ${e.toString()}");

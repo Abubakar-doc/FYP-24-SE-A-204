@@ -41,11 +41,6 @@ class FCMService {
     FirebaseMessaging.onMessage.listen(_onMessageHandler);
     FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _navigateToNotification(initialMessage.data);
-    }
-
     _messaging.onTokenRefresh.listen((token) {
       print('Refreshed FCM token: $token');
       // TODO: send token to your server
@@ -53,7 +48,6 @@ class FCMService {
 
     final token = await _messaging.getToken();
     print('Initial FCM token: $token');
-
 
     await _messaging.subscribeToTopic('announcements');
     print('Subscribed to announcements topic');
@@ -74,7 +68,7 @@ class FCMService {
       'high_importance_channel',
       'High Importance Notifications',
       description: 'Used for important notifications.',
-      importance: Importance.high,
+      importance: Importance.max,
     );
 
     await _localNotificationsPlugin
@@ -90,19 +84,14 @@ class FCMService {
 
   void _onMessageOpenedApp(RemoteMessage message) {
     print('Notification tapped (app open): ${message.messageId}');
-    _navigateToNotification(message.data);
+    Get.to(() => NotificationScreen());
   }
 
   void _handleNotificationResponse(NotificationResponse response) {
     print('Notification tapped with payload: ${response.payload}');
-    _navigateToNotification(
-        response.payload != null ? {'payload': response.payload} : {});
+    Get.to(() => NotificationScreen());
   }
 
-  void _navigateToNotification(Map<String, dynamic> data) {
-    // Always navigate to NotificationScreen
-    Get.to(() => NotificationScreen(), arguments: data);
-  }
 
   Future<void> _showNotification(RemoteMessage message) async {
     final notification = message.notification;

@@ -7,6 +7,7 @@ import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_start.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/widget/live_location.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
+import 'package:ntu_ride_pilot/widget/drawer/drawer_button.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/model/bus/bus.dart';
@@ -195,12 +196,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
                       : lightBackgroundColor,
                   shape: BoxShape.circle,
                 ),
-                child: IconButton(
-                  onPressed: () {
-                    _scaffoldKey.currentState?.openDrawer();
-                  },
-                  icon: const Icon(Icons.menu),
-                ),
+                child: CustomDrawerButton(scaffoldKey: _scaffoldKey),
               ),
             ),
             // Bottom panel with dropdowns, error messages, and Next button.

@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:ntu_ride_pilot/screens/common/home/home_screen.dart';
 import 'package:ntu_ride_pilot/services/common/authentication/common_auth.dart';
-import 'package:ntu_ride_pilot/services/common/fcmService/fcmService.dart';
 import 'package:ntu_ride_pilot/services/common/hive/hive_services.dart';
 import 'package:ntu_ride_pilot/services/common/media/media_service.dart';
 import 'package:ntu_ride_pilot/services/common/notification/notification_service.dart';
@@ -23,7 +22,6 @@ void main() async {
   await LocationService.init();
   await NotificationService().init();
   runApp(MyApp());
-  await FCMService.instance.initialize();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

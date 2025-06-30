@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'package:ntu_ride_pilot/services/common/notification/notification_service.dart';
@@ -10,6 +12,10 @@ import 'dart:typed_data';
 
 class MediaService {
   final MediaPermission _mediaPermission = MediaPermission();
+  final String cloudinaryCloudName = 'dytxo7qt1';
+  final String cloudinaryUploadPreset = 'unsigned_preset';
+  final String cloudinaryApiKey = '665531396735773';
+  final String cloudinaryApiSecret = 'TjO9eDlXm8gAaFPhTyfcVt5ndx0';
 
   void preCacheImages(BuildContext context) {
     precacheImage(const AssetImage('assets/pictures/logoDark.jpg'), context);
@@ -102,5 +108,37 @@ class MediaService {
 
   int generateNotificationId(String url) {
     return url.hashCode;
+  }
+
+  Future<Map<String, List<String>>> uploadImagesToCloudinary(
+      List<String> imagePaths) async {
+    List<String> imageUrls = [];
+    List<String> publicIds = [];
+
+    for (String imagePath in imagePaths) {
+      var uri = Uri.parse(
+          'https://api.cloudinary.com/v1_1/$cloudinaryCloudName/image/upload');
+      var request = http.MultipartRequest('POST', uri);
+      request.fields['upload_preset'] = cloudinaryUploadPreset;
+      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+
+      // Send the request to Cloudinary
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+      var jsonResponse = json.decode(responseBody);
+
+      if (jsonResponse['secure_url'] != null &&
+          jsonResponse['public_id'] != null) {
+        imageUrls.add(jsonResponse['secure_url']);
+        publicIds.add(jsonResponse['public_id']);
+      } else {
+        throw Exception('Failed to upload image');
+      }
+    }
+
+    return {
+      'urls': imageUrls,
+      'publicIds': publicIds,
+    };
   }
 }
