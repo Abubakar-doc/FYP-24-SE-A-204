@@ -299,6 +299,12 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
         mediaPublicIds: mediaPublicIds.length > 0 ? mediaPublicIds : [],
         created_at: serverTimestamp(),
       });
+      await fetch('/api/sendNotification', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ title, message }),
+})
+
 
       showNotificationMessage('Announcement Added Successfully!', 'success');
       handleReset();
