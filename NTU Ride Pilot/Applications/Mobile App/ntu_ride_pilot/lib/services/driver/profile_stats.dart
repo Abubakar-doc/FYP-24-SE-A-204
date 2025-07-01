@@ -8,7 +8,7 @@ class ProfileStatsService {
 
   Future<Map<String, dynamic>> fetchRideStats() async {
     // Get the current driver.
-    DriverModel? driver = _driverService.getCurrentDriver();
+    DriverModel? driver = await _driverService.getCurrentDriver();
     if (driver == null) {
       return {'totalRides': 0, 'totalHours': "0.0"};
     }

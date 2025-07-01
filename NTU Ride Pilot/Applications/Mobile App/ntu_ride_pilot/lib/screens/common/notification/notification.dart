@@ -5,7 +5,6 @@ import 'package:ntu_ride_pilot/controllers/notification_controller.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'package:ntu_ride_pilot/screens/common/notification/widget/notifcation_list.dart';
 import 'package:ntu_ride_pilot/screens/common/notification/widget/notification_list_loading_placeholder.dart';
-import 'package:ntu_ride_pilot/services/common/media/media_service.dart';
 import 'package:ntu_ride_pilot/services/common/permission/notification_permission.dart';
 
 class NotificationScreen extends StatefulWidget {

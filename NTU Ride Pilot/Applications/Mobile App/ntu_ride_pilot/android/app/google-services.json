@@ -12,7 +12,20 @@
           "package_name": "com.example.ntu_ride_pilot"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "486360365924-i39o9787b08ekn420049gk1taidk6qoe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ntu_ride_pilot",
+            "certificate_hash": "1958ccd6af76501555d3293c10192854ac34ea08"
+          }
+        },
+        {
+          "client_id": "486360365924-gsh9it0tebe263f067eumhu11f10cbp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBx2E-USCg4Qf4e_vmPN2kNiQD3M80VcRw"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "486360365924-gsh9it0tebe263f067eumhu11f10cbp0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

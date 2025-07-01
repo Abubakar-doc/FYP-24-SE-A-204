@@ -44,7 +44,6 @@ class _StartRideScreenState extends State<StartRideScreen> {
   void initState() {
     super.initState();
     fetchBusesAndRoutes();
-    Get.put(DriverProfileController());
     _loadMarkerImages();
   }
 

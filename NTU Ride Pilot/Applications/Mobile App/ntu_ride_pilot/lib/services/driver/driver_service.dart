@@ -37,7 +37,8 @@ class DriverService {
     try {
       final driverDoc = await getDriverByEmail(email);
       if (driverDoc != null) {
-        final box = Hive.box<DriverModel>('driverBox');
+        // Check if the box is opened already, if not, open it
+        final box = await _getDriverBox();
         box.put('current_driver', driverDoc);
         return true;
       } else {
@@ -51,9 +52,22 @@ class DriverService {
     }
   }
 
+// Helper method to open or get the Hive box for driver
+  Future<Box<DriverModel>> _getDriverBox() async {
+    if (!Hive.isBoxOpen('driverBox')) {
+      await Hive.openBox<DriverModel>('driverBox');
+    }
+    return Hive.box<DriverModel>('driverBox');
+  }
 
-  DriverModel? getCurrentDriver() {
-    final box = Hive.box<DriverModel>('driverBox');
-    return box.get('current_driver');
+  Future<DriverModel?> getCurrentDriver() async {
+    try {
+      // Check if the box is opened, if not, open it
+      final box = await _getDriverBox();
+      return box.get('current_driver');
+    } catch (e) {
+      SnackbarUtil.showError("Error Fetching Driver", e.toString());
+      return null;
+    }
   }
 }

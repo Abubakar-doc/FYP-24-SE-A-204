@@ -215,7 +215,7 @@ class _LiveLocationState extends State<LiveLocation> {
 
       pointAnnotationManager.create(annotationOptions);
     }
-    await _updateBusStopMarkers;
+    _updateBusStopMarkers;
   }
 
   Future<void> _setCameraToFitAllMarkers() async {

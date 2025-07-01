@@ -2,13 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/driver/driver.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/student/student.dart';
 import 'package:ntu_ride_pilot/screens/common/welcome/welcome.dart';
-import 'package:ntu_ride_pilot/screens/driver/home/driver_home_screen.dart';
+import 'package:ntu_ride_pilot/screens/driver/driver_home/driver_home_screen.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/ride_control.dart';
 import 'package:ntu_ride_pilot/screens/student/student_home/student_home_screen.dart';
 import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
@@ -77,6 +78,7 @@ class AuthService extends GetxController {
       }
       SnackbarUtil.showError(
           "Login Issue", "User role not found. Please log in again.");
+      Get.offAll(WelcomeScreen());
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-disabled') {
         SnackbarUtil.showError(
@@ -94,35 +96,110 @@ class AuthService extends GetxController {
     }
   }
 
+  // Future<void> logout(BuildContext context) async {
+  //   try {
+  //     // Unsubscribe from topic
+  //     await FirebaseMessaging.instance.unsubscribeFromTopic('announcements');
+  //
+  //     // Sign out from Firebase Authentication
+  //     await FirebaseAuth.instance.signOut();
+  //
+  //     // Check if the user is signed in with Google
+  //     final GoogleSignIn googleSignIn = GoogleSignIn();
+  //     if (await googleSignIn.isSignedIn()) {
+  //       // Sign out from Google
+  //       await googleSignIn.signOut();
+  //     }
+  //
+  //     // Clear and delete Hive boxes if they exist
+  //     if (Hive.isBoxOpen('rides')) {
+  //       final rideBox = Hive.box<RideModel>('rides');
+  //       await rideBox.clear();
+  //       await Hive.deleteBoxFromDisk('rides');
+  //     } else if (await Hive.boxExists('rides')) {
+  //       final rideBox = await Hive.openBox<RideModel>('rides');
+  //       await rideBox.clear();
+  //       await Hive.deleteBoxFromDisk('rides');
+  //     }
+  //
+  //     if (Hive.isBoxOpen('bus_cards')) {
+  //       final busCardBox = Hive.box<BusCardModel>('bus_cards');
+  //       await busCardBox.clear();
+  //       await Hive.deleteBoxFromDisk('bus_cards');
+  //     } else if (await Hive.boxExists('bus_cards')) {
+  //       final busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
+  //       await busCardBox.clear();
+  //       await Hive.deleteBoxFromDisk('bus_cards');
+  //     }
+  //
+  //     // Navigate to Welcome screen
+  //     Get.offAll(() => WelcomeScreen());
+  //   } catch (e) {
+  //     SnackbarUtil.showError(
+  //         "Logout Error", "Unexpected error: ${e.toString()}");
+  //   }
+  // }
   Future<void> logout(BuildContext context) async {
     try {
+      // Unsubscribe from topic
       await FirebaseMessaging.instance.unsubscribeFromTopic('announcements');
+
+      // Sign out from Firebase Authentication
       await FirebaseAuth.instance.signOut();
-      // Delete the 'rides' box if it exists.
+
+      // Check if the user is signed in with Google
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        // Sign out from Google
+        await googleSignIn.signOut();
+      }
+
+      // Clear and delete Hive boxes if they exist
+      // For 'rides' box
       if (Hive.isBoxOpen('rides')) {
         final rideBox = Hive.box<RideModel>('rides');
         await rideBox.clear();
-        // await rideBox.close();
         await Hive.deleteBoxFromDisk('rides');
       } else if (await Hive.boxExists('rides')) {
         final rideBox = await Hive.openBox<RideModel>('rides');
         await rideBox.clear();
-        // await rideBox.close();
         await Hive.deleteBoxFromDisk('rides');
       }
 
-      // Delete the 'bus_cards' box if it exists.
+      // For 'bus_cards' box
       if (Hive.isBoxOpen('bus_cards')) {
         final busCardBox = Hive.box<BusCardModel>('bus_cards');
         await busCardBox.clear();
-        // await busCardBox.close();
         await Hive.deleteBoxFromDisk('bus_cards');
       } else if (await Hive.boxExists('bus_cards')) {
         final busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
         await busCardBox.clear();
-        // await busCardBox.close();
         await Hive.deleteBoxFromDisk('bus_cards');
       }
+
+      // For 'driverBox' - Delete driver data if it exists
+      if (Hive.isBoxOpen('driverBox')) {
+        final driverBox = Hive.box<DriverModel>('driverBox');
+        await driverBox.clear();
+        await Hive.deleteBoxFromDisk('driverBox');
+      } else if (await Hive.boxExists('driverBox')) {
+        final driverBox = await Hive.openBox<DriverModel>('driverBox');
+        await driverBox.clear();
+        await Hive.deleteBoxFromDisk('driverBox');
+      }
+
+      // For 'studentBox' - Delete student data if it exists
+      if (Hive.isBoxOpen('studentBox')) {
+        final studentBox = Hive.box<StudentModel>('studentBox');
+        await studentBox.clear();
+        await Hive.deleteBoxFromDisk('studentBox');
+      } else if (await Hive.boxExists('studentBox')) {
+        final studentBox = await Hive.openBox<StudentModel>('studentBox');
+        await studentBox.clear();
+        await Hive.deleteBoxFromDisk('studentBox');
+      }
+
+      // Navigate to Welcome screen
       Get.offAll(() => WelcomeScreen());
     } catch (e) {
       SnackbarUtil.showError(

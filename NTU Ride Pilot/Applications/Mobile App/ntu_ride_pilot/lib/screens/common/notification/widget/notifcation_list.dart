@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
 import 'package:ntu_ride_pilot/screens/common/notification/widget/notifcation_item.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class NotificationList extends StatelessWidget {
   final ScrollController scrollController;

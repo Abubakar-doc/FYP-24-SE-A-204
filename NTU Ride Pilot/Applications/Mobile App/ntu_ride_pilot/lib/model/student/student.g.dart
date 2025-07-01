@@ -21,7 +21,8 @@ class StudentModelAdapter extends TypeAdapter<StudentModel> {
       name: fields[1] as String,
       rollNo: fields[2] as String,
       feePaid: fields[3] as bool,
-      busCardId: fields[4] as String,
+      busCardId: fields[4] as String?,
+      profilePicLink: fields[5] as String?,
       role: fields[6] as String,
     );
   }
@@ -29,7 +30,7 @@ class StudentModelAdapter extends TypeAdapter<StudentModel> {
   @override
   void write(BinaryWriter writer, StudentModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.email)
       ..writeByte(1)
@@ -40,6 +41,8 @@ class StudentModelAdapter extends TypeAdapter<StudentModel> {
       ..write(obj.feePaid)
       ..writeByte(4)
       ..write(obj.busCardId)
+      ..writeByte(5)
+      ..write(obj.profilePicLink)
       ..writeByte(6)
       ..write(obj.role);
   }

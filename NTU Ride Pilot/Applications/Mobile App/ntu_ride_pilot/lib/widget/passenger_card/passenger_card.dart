@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class PassengerCard extends StatelessWidget {
@@ -10,12 +9,12 @@ class PassengerCard extends StatelessWidget {
   final bool isLoading;
 
   const PassengerCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.studentId,
     required this.isDarkMode,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
