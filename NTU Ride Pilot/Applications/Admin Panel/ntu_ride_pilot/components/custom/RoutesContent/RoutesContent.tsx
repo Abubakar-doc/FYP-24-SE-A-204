@@ -31,7 +31,7 @@ const RoutesContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1); // Changed from currentLoadedCount
 
   useEffect(() => {
     const fetchRoutes = async () => {
@@ -51,7 +51,7 @@ const RoutesContent: React.FC = () => {
 
         setAllRoutes(fetchedRoutes);
         setRoutes(fetchedRoutes);
-        setCurrentLoadedCount(rowsPerPage);
+        setCurrentPage(1);
       } catch (error) {
         console.error("Error fetching routes:", error);
       } finally {
@@ -67,7 +67,7 @@ const RoutesContent: React.FC = () => {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setRoutes(allRoutes);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
       return;
     }
 
@@ -81,8 +81,8 @@ const RoutesContent: React.FC = () => {
     });
 
     setRoutes(filtered);
-    setCurrentLoadedCount(rowsPerPage);
-  }, [searchQuery, allRoutes, rowsPerPage]);
+    setCurrentPage(1);
+  }, [searchQuery, allRoutes]);
 
   const handleViewRoute = (id: string) => {
     router.push(`/dashboard/routes/add-route?view=${id}`);
@@ -110,6 +110,7 @@ const RoutesContent: React.FC = () => {
       setDeleting(false);
     }
   };
+
   // Cancel deletion
   const handleCancelDelete = () => {
     setDeleteModalOpen(false);
@@ -121,25 +122,36 @@ const RoutesContent: React.FC = () => {
     setSearchQuery(value ?? "");
   };
 
-  // Pagination logic: progressive loading
-  const paginatedRoutes = routes.slice(0, currentLoadedCount);
+  // Pagination logic: show only current page rows
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedRoutes = routes.slice(startIndex, endIndex);
+
+  const totalPages = Math.ceil(routes.length / rowsPerPage);
 
   const handleNext = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const newCount = Math.min(currentLoadedCount + rowsPerPage, routes.length);
-      setCurrentLoadedCount(newCount);
-      setLoading(false);
-    }, 500);
+    if (currentPage < totalPages) {
+      setLoading(true);
+      setTimeout(() => {
+        setCurrentPage(prev => prev + 1);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   const handlePrev = () => {
-    setCurrentLoadedCount(rowsPerPage);
+    if (currentPage > 1) {
+      setLoading(true);
+      setTimeout(() => {
+        setCurrentPage(prev => prev - 1);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setCurrentLoadedCount(rows);
+    setCurrentPage(1);
   };
 
   const showPagination = routes.length > rowsPerPage;
@@ -158,7 +170,6 @@ const RoutesContent: React.FC = () => {
             <LoadingIndicator message="Loading routes..." />
           </div>
         )}
-
         {/* HEADER: sticky at top, does not scroll */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
@@ -189,7 +200,7 @@ const RoutesContent: React.FC = () => {
                   ) : (
                     paginatedRoutes.map((route, index) => (
                       <tr key={route.id} className="hover:bg-gray-50 border-b border-gray-300">
-                        <td className="px-6 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[10%]">{startIndex + index + 1}</td>
                         <td className="px-6 py-4 whitespace-nowrap w-[45%] overflow-hidden text-ellipsis">{route.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap w-[30%]">{route.busStops.length}</td>
                         <td className="px-20 py-4 flex items-center space-x-2 justify-center">
@@ -216,15 +227,15 @@ const RoutesContent: React.FC = () => {
               {/* Pagination controls */}
               {showPagination && (
                 <Pagination
-                  currentLoadedCount={currentLoadedCount}
+                  currentLoadedCount={currentPage * rowsPerPage}
                   totalRows={routes.length}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={rowsPerPageOptions}
                   onRowsPerPageChange={handleRowsPerPageChange}
                   onNext={handleNext}
                   onPrev={handlePrev}
-                  isNextDisabled={currentLoadedCount >= routes.length}
-                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                  isNextDisabled={currentPage >= totalPages}
+                  isPrevDisabled={currentPage <= 1}
                 />
               )}
             </div>

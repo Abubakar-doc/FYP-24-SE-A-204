@@ -10,6 +10,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
+
 import {
   collection,
   getDocs,
@@ -17,11 +18,14 @@ import {
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
+
 import LoadingIndicator from '../LoadingIndicator/LoadingIndicator';
 import DashboardHeader from './DashboardHeader ';
 
+
 // React Icons
 import { MdPerson, MdAltRoute } from 'react-icons/md';
+
 
 // Register Chart.js components
 ChartJS.register(
@@ -32,6 +36,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+
 
 const initialStats = {
   students: {
@@ -49,6 +54,7 @@ const initialStats = {
   },
 };
 
+
 interface StatCardProps {
   icon: ReactNode;
   color: string;
@@ -56,6 +62,7 @@ interface StatCardProps {
   label: string;
   iconBg?: string;
 }
+
 
 // StatCard: fully transparent, no bg, no shadow, no border, no rounded
 const StatCard: React.FC<StatCardProps> = ({ icon, color, value, label, iconBg }) => (
@@ -70,18 +77,23 @@ const StatCard: React.FC<StatCardProps> = ({ icon, color, value, label, iconBg }
   </div>
 );
 
+
 const formatDate = (date: Date) =>
   date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
 
 const formatWeek = (start: Date, end: Date) =>
   `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
+
 const formatMonth = (date: Date) =>
   date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+
 
 const DashboardContent: React.FC = () => {
   const [stats, setStats] = useState(initialStats);
   const [isLoading, setIsLoading] = useState(true);
+
 
   const [ridesData, setRidesData] = useState<{ created_at: Date }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
@@ -90,9 +102,11 @@ const DashboardContent: React.FC = () => {
     datasets: [],
   });
 
+
   // Ongoing rides stats
   const [activeBuses, setActiveBuses] = useState(0);
   const [studentsOnboard, setStudentsOnboard] = useState(0);
+
 
   useEffect(() => {
     const fetchAllStats = async () => {
@@ -106,9 +120,11 @@ const DashboardContent: React.FC = () => {
         );
         const studentsSnapshot = await getDocs(studentsCollectionRef);
 
+
         let totalStudents = 0;
         let activeStudents = 0;
         let inactiveStudents = 0;
+
 
         studentsSnapshot.forEach(doc => {
           totalStudents += 1;
@@ -118,16 +134,19 @@ const DashboardContent: React.FC = () => {
           else if (status === 'Inactive') inactiveStudents += 1;
         });
 
+
         // Drivers
         const userRolesDocRef = doc(firestore, 'users', 'user_roles');
         const driversCollectionRef = collection(userRolesDocRef, 'drivers');
         const driversSnapshot = await getDocs(driversCollectionRef);
         const totalDrivers = driversSnapshot.size;
 
+
         // Buses
         const busesCollectionRef = collection(firestore, 'buses');
         const busesSnapshot = await getDocs(busesCollectionRef);
         const totalBuses = busesSnapshot.size;
+
 
         // Rides (for stats and for ongoing rides)
         const ridesCollectionRef = collection(firestore, 'rides');
@@ -135,9 +154,11 @@ const DashboardContent: React.FC = () => {
         let completedRides = 0;
         let ridesArr: { created_at: Date }[] = [];
 
+
         // For ongoing rides
         let ongoingActiveBuses = 0;
         let allOnboardStudents: any[] = [];
+
 
         ridesSnapshot.forEach(docSnap => {
           const data = docSnap.data();
@@ -156,11 +177,11 @@ const DashboardContent: React.FC = () => {
             allOnboardStudents = allOnboardStudents.concat(offlineOnBoard, onlineOnBoard);
           }
         });
-
         // Routes
         const routesCollectionRef = collection(firestore, 'routes');
         const routesSnapshot = await getDocs(routesCollectionRef);
         const totalRoutes = routesSnapshot.size;
+
 
         setStats({
           students: {
@@ -179,6 +200,7 @@ const DashboardContent: React.FC = () => {
         });
         setRidesData(ridesArr);
 
+
         // Update ongoing rides stats
         setActiveBuses(ongoingActiveBuses);
         setStudentsOnboard(allOnboardStudents.length);
@@ -191,6 +213,7 @@ const DashboardContent: React.FC = () => {
     fetchAllStats();
   }, []);
 
+
   useEffect(() => {
     if (!ridesData.length) {
       setBarChartData({
@@ -202,6 +225,7 @@ const DashboardContent: React.FC = () => {
     const now = new Date();
     let labels: string[] = [];
     let data: number[] = [];
+
 
     if (selectedCategory === 'weekly') {
       labels = [];
@@ -228,6 +252,7 @@ const DashboardContent: React.FC = () => {
         endOfWeek.setDate(now.getDate() - i * 7);
         const startOfWeek = new Date(endOfWeek);
         startOfWeek.setDate(endOfWeek.getDate() - 6);
+
 
         labels.push(formatWeek(startOfWeek, endOfWeek));
         const ridesCount = ridesData.filter(ride => {
@@ -278,7 +303,6 @@ const DashboardContent: React.FC = () => {
       ],
     });
   }, [ridesData, selectedCategory]);
-
   const ridesChartOptions = {
     responsive: true,
     plugins: {
@@ -319,8 +343,8 @@ const DashboardContent: React.FC = () => {
       },
     },
   };
- return (
-    <div className="flex h-screen bg-white w-full">
+  return (
+    <div className="flex h-screen bg-white w-full overflow-x-hidden"> {/* Added overflow-x-hidden here */}
       {/* MAIN CONTENT COLUMN */}
       <div className="flex flex-col flex-1 h-screen relative">
         {/* Loading overlay - covers only the dashboard content, not sidebar */}
@@ -330,6 +354,7 @@ const DashboardContent: React.FC = () => {
           </div>
         )}
 
+
         {/* HEADER: sticky at top, does not scroll */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
@@ -337,13 +362,14 @@ const DashboardContent: React.FC = () => {
           </div>
         </div>
         {/* BODY: fills remaining height, scrollable */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto"> {/* Added flex-1 min-h-0 overflow-y-auto here */}
           <div className="bg-white rounded-lg p-4">
+
 
             {/* STATISTICS MAIN CONTAINER */}
             <div className='bg-[#F5F5F5] rounded-md p-2 mb-8'>
               <h2 className="text-lg font-semibold mb-1 ml-5 text-blue-800">Statistics</h2>
-              <div className="flex flex-row flex-wrap gap-28 mb-2 overflow-x-auto">
+              <div className="flex flex-row flex-wrap gap-28 mb-2 overflow-x-hidden">
                 <StatCard
                   icon={<MdPerson />}
                   color="border-blue-400"
@@ -375,6 +401,7 @@ const DashboardContent: React.FC = () => {
               </div>
             </div>
 
+
             {/* Rides Bar Chart */}
             <div className="bg-[#F5F5F5] rounded-xl shadow-md p-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
@@ -392,6 +419,7 @@ const DashboardContent: React.FC = () => {
               <Bar options={ridesChartOptions} data={barChartData} />
             </div>
 
+
           </div>
         </div>
         {/* END BODY */}
@@ -400,5 +428,6 @@ const DashboardContent: React.FC = () => {
     </div>
   );
 };
+
 
 export default DashboardContent;
