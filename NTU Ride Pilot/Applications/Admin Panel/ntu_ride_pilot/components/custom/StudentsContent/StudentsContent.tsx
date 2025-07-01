@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { firestore } from "@/lib/firebase";
-import { collection, getDocs, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
 import StudentsHeader from "./StudentComponents/StudentsHeader";
 import StudentEditButton from "./StudentEditButton";
@@ -18,7 +18,7 @@ const StudentsContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1); // Track current page number
 
   // Fetch all students on first load
   const fetchStudents = async () => {
@@ -33,8 +33,8 @@ const StudentsContent: React.FC = () => {
       const studentsSnapshot = await getDocs(studentsCollection);
       const studentsList = studentsSnapshot.docs.map((doc) => doc.data());
       setAllStudents(studentsList);
+      setCurrentPage(1);
       setStudents(studentsList.slice(0, rowsPerPage));
-      setCurrentLoadedCount(rowsPerPage);
     } catch (error) {
       console.error("Error fetching students:", error);
     } finally {
@@ -70,41 +70,42 @@ const StudentsContent: React.FC = () => {
     );
   });
 
-  // When filter/search or rowsPerPage changes, reset loaded count and students
+  // Update displayed students whenever filters/search/page/rowsPerPage/allStudents change
   useEffect(() => {
-    setStudents(searchedStudents.slice(0, rowsPerPage));
-    setCurrentLoadedCount(rowsPerPage);
-    // eslint-disable-next-line
-  }, [busCardFilter, searchTerm, rowsPerPage, allStudents]);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    setStudents(searchedStudents.slice(startIndex, endIndex));
+  }, [busCardFilter, searchTerm, rowsPerPage, currentPage, allStudents]);
 
-  // Handler for loading more students
-  const handleNext = async () => {
-    setIsPaginating(true);
-    // Simulate async loading (since all records are already fetched)
-    setTimeout(() => {
-      const newCount = Math.min(currentLoadedCount + rowsPerPage, searchedStudents.length);
-      setStudents(searchedStudents.slice(0, newCount));
-      setCurrentLoadedCount(newCount);
-      setIsPaginating(false);
-    }, 500); // Simulate network delay for loading indicator
+  // Handler for loading next page
+  const handleNext = () => {
+    if (currentPage < Math.ceil(searchedStudents.length / rowsPerPage)) {
+      setIsPaginating(true);
+      setTimeout(() => {
+        setCurrentPage((prev) => prev + 1);
+        setIsPaginating(false);
+      }, 300); // simulate loading delay
+    }
   };
 
-  // Handler for changing rows per page
+  // Handler for loading previous page
+  const handlePrev = () => {
+    if (currentPage > 1) {
+      setIsPaginating(true);
+      setTimeout(() => {
+        setCurrentPage((prev) => prev - 1);
+        setIsPaginating(false);
+      }, 300); // simulate loading delay
+    }
+  };
+
+  // Handler for changing rows per page, reset to page 1
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setStudents(searchedStudents.slice(0, rows));
-    setCurrentLoadedCount(rows);
+    setCurrentPage(1);
   };
 
-  // Handler for "Previous" (optional: can reset to first page)
-  const handlePrev = () => {
-    // Optional: You can implement logic to remove last "page" of items if needed.
-    // For now, let's just reset to the first page
-    setStudents(searchedStudents.slice(0, rowsPerPage));
-    setCurrentLoadedCount(rowsPerPage);
-  };
-
-  // If less than or equal to rowsPerPage, don't show pagination
+  // Show pagination only if total searched students exceed rowsPerPage
   const showPagination = searchedStudents.length > rowsPerPage;
 
   return (
@@ -163,7 +164,7 @@ const StudentsContent: React.FC = () => {
                   {students.map((student, index) => (
                     <tr key={index} className="hover:bg-gray-50 border-b border-gray-300">
                       <td className="px-4 py-4 whitespace-nowrap w-[5%]">
-                        {index + 1}
+                        {(currentPage - 1) * rowsPerPage + index + 1}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">
                         {student.name}
@@ -201,15 +202,15 @@ const StudentsContent: React.FC = () => {
               {/* Pagination controls */}
               {showPagination && (
                 <Pagination
-                  currentLoadedCount={currentLoadedCount}
+                  currentLoadedCount={currentPage * rowsPerPage}
                   totalRows={searchedStudents.length}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={rowsPerPageOptions}
                   onRowsPerPageChange={handleRowsPerPageChange}
                   onNext={handleNext}
                   onPrev={handlePrev}
-                  isNextDisabled={currentLoadedCount >= searchedStudents.length}
-                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                  isNextDisabled={currentPage >= Math.ceil(searchedStudents.length / rowsPerPage)}
+                  isPrevDisabled={currentPage <= 1}
                 />
               )}
             </div>

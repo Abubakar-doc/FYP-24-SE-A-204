@@ -14,7 +14,7 @@ import SessionsHeader from "./SessionComponents/SessionsHeader";
 import ConfirmationModal from "./SessionComponents/ConfirmationModal";
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
-import Pagination from "./SessionComponents/Pagination"; 
+import Pagination from "./SessionComponents/Pagination";
 
 type Session = {
   id: string;
@@ -44,7 +44,7 @@ const SessionsContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1); // Changed from currentLoadedCount
 
   const previousRollNoRef = useRef<string[]>([]);
   const activeSession = sessions.find((s) => s.session_status === "active") || null;
@@ -75,7 +75,7 @@ const SessionsContent: React.FC = () => {
         setAllSessions(sortedSessions);
         setSessions(sortedSessions);
         setFilteredSessions(sortedSessions);
-        setCurrentLoadedCount(10);
+        setCurrentPage(1);
       } catch (error) {
         console.error("Error fetching sessions:", error);
       } finally {
@@ -186,7 +186,7 @@ const SessionsContent: React.FC = () => {
       setSessions(updatedActiveSessions);
       setFilteredSessions(updatedActiveSessions);
       setFilterStatus("active");
-      setCurrentLoadedCount(10);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error deactivating session:", error);
     } finally {
@@ -260,7 +260,7 @@ const SessionsContent: React.FC = () => {
       setSessions(updatedActiveSessions);
       setFilteredSessions(updatedActiveSessions);
       setFilterStatus("active");
-      setCurrentLoadedCount(10);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error activating session:", error);
       setActivationError("Failed to activate session.");
@@ -304,7 +304,7 @@ const SessionsContent: React.FC = () => {
     }
     if (inputValue === "") {
       setFilteredSessions(sessionsToFilter);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
     } else {
       const filtered = sessionsToFilter.filter((session) => {
         const name = session.name?.toLowerCase() ?? "";
@@ -321,7 +321,7 @@ const SessionsContent: React.FC = () => {
         );
       });
       setFilteredSessions(filtered);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
     }
   };
 
@@ -353,7 +353,7 @@ const SessionsContent: React.FC = () => {
     }
     setSessions(sortedSessions);
     setFilteredSessions(sortedSessions);
-    setCurrentLoadedCount(rowsPerPage);
+    setCurrentPage(1);
   };
 
   const canActivate = (session: Session) => {
@@ -363,27 +363,36 @@ const SessionsContent: React.FC = () => {
     return session.end_date >= today;
   };
 
-  // Pagination logic: progressive loading
-  const paginatedSessions = filteredSessions.slice(0, currentLoadedCount);
+  // Pagination logic: show only current page rows
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedSessions = filteredSessions.slice(startIndex, endIndex);
+
+  const totalPages = Math.ceil(filteredSessions.length / rowsPerPage);
 
   const handleNext = () => {
-    // Simulate async loading
-    setIsLoading(true);
-    setTimeout(() => {
-      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredSessions.length);
-      setCurrentLoadedCount(newCount);
-      setIsLoading(false);
-    }, 500);
+    if (currentPage < totalPages) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setCurrentPage((prev) => prev + 1);
+        setIsLoading(false);
+      }, 500);
+    }
   };
 
   const handlePrev = () => {
-    // Reset to first "page"
-    setCurrentLoadedCount(rowsPerPage);
+    if (currentPage > 1) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setCurrentPage((prev) => prev - 1);
+        setIsLoading(false);
+      }, 500);
+    }
   };
 
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setCurrentLoadedCount(rows);
+    setCurrentPage(1);
   };
 
   const showPagination = filteredSessions.length > rowsPerPage;
@@ -446,7 +455,7 @@ const SessionsContent: React.FC = () => {
                       className="hover:bg-gray-50 border-b border-gray-300 text-center"
                     >
                       <td className="px-6 py-4 whitespace-nowrap w-[5%]">
-                        {index + 1}
+                        {(currentPage - 1) * rowsPerPage + index + 1}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap w-[35%] overflow-hidden text-ellipsis">
                         {session.name}
@@ -517,15 +526,15 @@ const SessionsContent: React.FC = () => {
               {/* Pagination controls */}
               {showPagination && (
                 <Pagination
-                  currentLoadedCount={currentLoadedCount}
+                  currentLoadedCount={currentPage * rowsPerPage}
                   totalRows={filteredSessions.length}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={rowsPerPageOptions}
                   onRowsPerPageChange={handleRowsPerPageChange}
                   onNext={handleNext}
                   onPrev={handlePrev}
-                  isNextDisabled={currentLoadedCount >= filteredSessions.length}
-                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                  isNextDisabled={currentPage >= totalPages}
+                  isPrevDisabled={currentPage <= 1}
                 />
               )}
             </div>

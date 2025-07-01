@@ -26,7 +26,7 @@ const BusesContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1); // Changed from currentLoadedCount
 
   useEffect(() => {
     const fetchBuses = async () => {
@@ -46,7 +46,7 @@ const BusesContent: React.FC = () => {
         });
         setBuses(fetchedBuses);
         setFilteredBuses(fetchedBuses);
-        setCurrentLoadedCount(rowsPerPage);
+        setCurrentPage(1);
       } catch (error) {
         console.error("Error fetching buses:", error);
       } finally {
@@ -61,16 +61,16 @@ const BusesContent: React.FC = () => {
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredBuses(buses);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
     } else {
-      const filtered = buses.filter(bus => 
+      const filtered = buses.filter(bus =>
         bus.busId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.seatCapacity.toString().includes(searchTerm)
       );
       setFilteredBuses(filtered);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
     }
-  }, [searchTerm, buses, rowsPerPage]);
+  }, [searchTerm, buses]);
 
   const handleDeleteClick = (bus: BusData) => {
     setBusToDelete(bus);
@@ -102,25 +102,36 @@ const BusesContent: React.FC = () => {
     setSearchTerm(term);
   };
 
-  // Pagination logic: progressive loading
-  const paginatedBuses = filteredBuses.slice(0, currentLoadedCount);
+  // Pagination logic: show only current page rows
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedBuses = filteredBuses.slice(startIndex, endIndex);
+
+  const totalPages = Math.ceil(filteredBuses.length / rowsPerPage);
 
   const handleNext = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredBuses.length);
-      setCurrentLoadedCount(newCount);
-      setLoading(false);
-    }, 500);
+    if (currentPage < totalPages) {
+      setLoading(true);
+      setTimeout(() => {
+        setCurrentPage(prev => prev + 1);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   const handlePrev = () => {
-    setCurrentLoadedCount(rowsPerPage);
+    if (currentPage > 1) {
+      setLoading(true);
+      setTimeout(() => {
+        setCurrentPage(prev => prev - 1);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setCurrentLoadedCount(rows);
+    setCurrentPage(1);
   };
 
   const showPagination = filteredBuses.length > rowsPerPage;
@@ -169,7 +180,7 @@ const BusesContent: React.FC = () => {
                   ) : (
                     paginatedBuses.map((bus, index) => (
                       <tr key={bus.id} className="hover:bg-gray-50 border-b border-gray-300">
-                        <td className="px-4 py-4 whitespace-nowrap w-[10%]">{index + 1}</td>
+                        <td className="px-4 py-4 whitespace-nowrap w-[10%]">{startIndex + index + 1}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[60%] overflow-hidden text-ellipsis">{bus.busId}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[60%] overflow-hidden text-ellipsis">{bus.seatCapacity}</td>
                         <td className="px-16 py-4 flex items-center  w-[30%] ">
@@ -188,15 +199,15 @@ const BusesContent: React.FC = () => {
               {/* Pagination controls */}
               {showPagination && (
                 <Pagination
-                  currentLoadedCount={currentLoadedCount}
+                  currentLoadedCount={currentPage * rowsPerPage}
                   totalRows={filteredBuses.length}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={rowsPerPageOptions}
                   onRowsPerPageChange={handleRowsPerPageChange}
                   onNext={handleNext}
                   onPrev={handlePrev}
-                  isNextDisabled={currentLoadedCount >= filteredBuses.length}
-                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                  isNextDisabled={currentPage >= totalPages}
+                  isPrevDisabled={currentPage <= 1}
                 />
               )}
             </div>
@@ -227,7 +238,6 @@ type DeleteModalProps = {
   onCancel: () => void;
   deleting: boolean;
 };
-
 const DeleteModal: React.FC<DeleteModalProps> = ({ busId, onConfirm, onCancel, deleting }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
     <div className="bg-white rounded-lg shadow-lg p-6 min-w-[300px]">

@@ -37,7 +37,7 @@ const AnnouncementsContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1); // Changed from currentLoadedCount
 
   const truncateMessage = (msg: string): string => {
     if (msg.length <= 50) return msg;
@@ -78,7 +78,7 @@ const AnnouncementsContent: React.FC = () => {
       });
       data.sort((a, b) => b.created_at?.seconds - a.created_at?.seconds);
       setAnnouncements(data);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error fetching announcements:", error);
     }
@@ -104,30 +104,41 @@ const AnnouncementsContent: React.FC = () => {
     );
   });
 
-  // Reset loaded count when search/filter changes
+  // Reset currentPage when search/filter changes
   useEffect(() => {
-    setCurrentLoadedCount(rowsPerPage);
+    setCurrentPage(1);
   }, [searchInput, rowsPerPage, announcements]);
 
   // --- PAGINATION LOGIC ---
-  const paginatedAnnouncements = filteredAnnouncements.slice(0, currentLoadedCount);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedAnnouncements = filteredAnnouncements.slice(startIndex, endIndex);
+
+  const totalPages = Math.ceil(filteredAnnouncements.length / rowsPerPage);
 
   const handleNext = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredAnnouncements.length);
-      setCurrentLoadedCount(newCount);
-      setLoading(false);
-    }, 500);
+    if (currentPage < totalPages) {
+      setLoading(true);
+      setTimeout(() => {
+        setCurrentPage(prev => prev + 1);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   const handlePrev = () => {
-    setCurrentLoadedCount(rowsPerPage);
+    if (currentPage > 1) {
+      setLoading(true);
+      setTimeout(() => {
+        setCurrentPage(prev => prev - 1);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setCurrentLoadedCount(rows);
+    setCurrentPage(1);
   };
 
   const showPagination = filteredAnnouncements.length > rowsPerPage;
@@ -278,7 +289,7 @@ const AnnouncementsContent: React.FC = () => {
                   ) : (
                     paginatedAnnouncements.map((announcement, index) => (
                       <tr key={announcement.id} className="hover:bg-gray-50 border-b border-gray-300">
-                        <td className="px-4 py-4 whitespace-nowrap w-[5%]">{index + 1}</td>
+                        <td className="px-4 py-4 whitespace-nowrap w-[5%]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[25%] overflow-hidden text-ellipsis">{announcement.title}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">{truncateMessage(announcement.message)}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[20%] overflow-hidden text-ellipsis">
@@ -308,15 +319,15 @@ const AnnouncementsContent: React.FC = () => {
               {/* Pagination controls */}
               {showPagination && (
                 <Pagination
-                  currentLoadedCount={currentLoadedCount}
+                  currentLoadedCount={currentPage * rowsPerPage}
                   totalRows={filteredAnnouncements.length}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={rowsPerPageOptions}
                   onRowsPerPageChange={handleRowsPerPageChange}
                   onNext={handleNext}
                   onPrev={handlePrev}
-                  isNextDisabled={currentLoadedCount >= filteredAnnouncements.length}
-                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                  isNextDisabled={currentPage >= Math.ceil(filteredAnnouncements.length / rowsPerPage)}
+                  isPrevDisabled={currentPage <= 1}
                 />
               )}
             </div>

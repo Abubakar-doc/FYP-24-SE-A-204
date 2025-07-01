@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick })
   ];
 
   return (
-    <div className={`${className} flex flex-col h-screen justify-between bg-[#023955] text-white rounded-sm`}>
+    <div className={`${className} flex flex-col h-screen justify-between bg-[#023955] text-white rounded-r-sm`}>
       <div className="p-2  pl-6">
         <h1 className="text-lg font-bold">NTU RIDE PILOT</h1>
       </div>

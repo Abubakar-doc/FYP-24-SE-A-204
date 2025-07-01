@@ -5,7 +5,7 @@ import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import DriversHeader from "./DriversHeader";
 import { useRouter } from "next/navigation";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
-import Pagination from "./Pagination"; 
+import Pagination from "./Pagination";
 
 const DriversContent: React.FC = () => {
   const router = useRouter();
@@ -17,7 +17,7 @@ const DriversContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentLoadedCount, setCurrentLoadedCount] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1); // Changed from currentLoadedCount
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -41,7 +41,7 @@ const DriversContent: React.FC = () => {
       }));
       setDrivers(driversList);
       setFilteredDrivers(driversList);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error fetching drivers:", error);
     } finally {
@@ -58,7 +58,7 @@ const DriversContent: React.FC = () => {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredDrivers(drivers);
-      setCurrentLoadedCount(rowsPerPage);
+      setCurrentPage(1);
       return;
     }
     const lowerQuery = searchQuery.toLowerCase();
@@ -70,8 +70,8 @@ const DriversContent: React.FC = () => {
       );
     });
     setFilteredDrivers(filtered);
-    setCurrentLoadedCount(rowsPerPage);
-  }, [searchQuery, drivers, rowsPerPage]);
+    setCurrentPage(1);
+  }, [searchQuery, drivers]);
 
   // Navigate to /dashboard/drivers/add-driver with driver data for editing
   const handleEdit = (driver: any) => {
@@ -163,25 +163,36 @@ const DriversContent: React.FC = () => {
     setDriverToDelete(null);
   };
 
-  // Pagination logic: progressive loading
-  const paginatedDrivers = filteredDrivers.slice(0, currentLoadedCount);
+  // Pagination logic: show only current page rows
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedDrivers = filteredDrivers.slice(startIndex, endIndex);
+
+  const totalPages = Math.ceil(filteredDrivers.length / rowsPerPage);
 
   const handleNext = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const newCount = Math.min(currentLoadedCount + rowsPerPage, filteredDrivers.length);
-      setCurrentLoadedCount(newCount);
-      setIsLoading(false);
-    }, 500);
+    if (currentPage < totalPages) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setCurrentPage((prev) => prev + 1);
+        setIsLoading(false);
+      }, 500);
+    }
   };
 
   const handlePrev = () => {
-    setCurrentLoadedCount(rowsPerPage);
+    if (currentPage > 1) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setCurrentPage((prev) => prev - 1);
+        setIsLoading(false);
+      }, 500);
+    }
   };
 
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setCurrentLoadedCount(rows);
+    setCurrentPage(1);
   };
 
   const showPagination = filteredDrivers.length > rowsPerPage;
@@ -235,7 +246,7 @@ const DriversContent: React.FC = () => {
                 <tbody className="bg-white text-center">
                   {paginatedDrivers.map((driver, index) => (
                     <tr key={driver.id} className="hover:bg-gray-50 border-b border-gray-300">
-                      <td className="px-4 py-4 whitespace-nowrap">{index + 1}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                       <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis">{driver.name}</td>
                       <td className="px-4 py-4 whitespace-nowrap">{driver.contactNo}</td>
                       <td className="px-4 py-4 whitespace-nowrap w-[40%]">{driver.email}</td>
@@ -267,15 +278,15 @@ const DriversContent: React.FC = () => {
               {/* Pagination controls */}
               {showPagination && (
                 <Pagination
-                  currentLoadedCount={currentLoadedCount}
+                  currentLoadedCount={currentPage * rowsPerPage}
                   totalRows={filteredDrivers.length}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={rowsPerPageOptions}
                   onRowsPerPageChange={handleRowsPerPageChange}
                   onNext={handleNext}
                   onPrev={handlePrev}
-                  isNextDisabled={currentLoadedCount >= filteredDrivers.length}
-                  isPrevDisabled={currentLoadedCount <= rowsPerPage}
+                  isNextDisabled={currentPage >= totalPages}
+                  isPrevDisabled={currentPage <= 1}
                 />
               )}
             </div>
