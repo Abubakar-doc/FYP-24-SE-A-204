@@ -51,6 +51,12 @@ ThemeData lightTheme = ThemeData(
       borderRadius: BorderRadius.circular(10),
       borderSide: BorderSide.none,
     ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(
+        color: Colors.red,
+      ),
+    ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
       borderSide: BorderSide.none,

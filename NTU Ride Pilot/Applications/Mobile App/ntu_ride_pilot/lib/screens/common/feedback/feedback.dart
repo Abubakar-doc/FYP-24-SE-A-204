@@ -1,11 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ntu_ride_pilot/screens/common/help/common/help_feedback.dart';
 import 'package:ntu_ride_pilot/services/common/feedback/feedback.dart';
 import 'package:ntu_ride_pilot/services/common/permission/media_permission.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
-import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 
 class FeedbackScreen extends StatefulWidget {
@@ -19,31 +19,25 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _feedbackController = TextEditingController();
   bool _isLoading = false;
-  List<XFile>? _imageFiles = [];  // To store selected images
+  List<XFile>? _imageFiles = [];
 
   final ImagePicker _picker = ImagePicker();
   final MediaPermission _mediaPermission = MediaPermission();
-  final FeedbackService _feedbackService = FeedbackService(); // Feedback service instance
-
-  // Function to pick images from gallery and restrict selection to 4 images
+  final FeedbackService _feedbackService =
+      FeedbackService();
   Future<void> _pickImages() async {
     final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles != null) {
-      if (pickedFiles.length > 4) {
-        // Show error snackbar if more than 4 images are selected
-        SnackbarUtil.showError(
-            "Image Limit Exceeded",
-            "You can only select up to 4 images."
-        );
-      } else {
-        setState(() {
-          _imageFiles = pickedFiles; // Update image files
-        });
-      }
+    if (pickedFiles.length > 4) {
+      // Show error snackbar if more than 4 images are selected
+      SnackbarUtil.showError(
+          "Image Limit Exceeded", "You can only select up to 4 images.");
+    } else {
+      setState(() {
+        _imageFiles = pickedFiles; // Update image files
+      });
     }
-  }
+    }
 
-  // Function to request storage permission and pick images
   Future<void> _requestPermissionAndPickImages() async {
     final hasPermission = await _mediaPermission.checkStoragePermission();
     if (hasPermission) {
@@ -53,7 +47,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     }
   }
 
-  // Function to submit feedback using the FeedbackService
   void _submitFeedback() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -63,21 +56,18 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final imagePaths = _imageFiles?.map((file) => file.path).toList();
 
     // Call the FeedbackService to submit the feedback
-    final isSuccess = await _feedbackService.submitFeedback(feedbackText, imagePaths);
+    final isSuccess =
+        await _feedbackService.submitFeedback(feedbackText, imagePaths);
 
     if (isSuccess) {
       // Show success snackbar
-      SnackbarUtil.showSuccess(
-          "Feedback Submitted",
-          "Your feedback has been successfully submitted."
-      );
+      SnackbarUtil.showSuccess("Feedback Submitted",
+          "Your feedback has been successfully submitted.");
       Navigator.pop(context);
     } else {
       // Show error snackbar
-      SnackbarUtil.showError(
-          "Submission Failed",
-          "There was an issue submitting your feedback. Please try again."
-      );
+      SnackbarUtil.showError("Submission Failed",
+          "There was an issue submitting your feedback. Please try again.");
     }
 
     setState(() => _isLoading = false);
@@ -91,12 +81,24 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Feedback'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Feedback',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: () {
+                Get.to(FeedBackHelpScreen());
+              },
+            ),
+          ],
         ),
       ),
       body: SafeArea(
@@ -110,7 +112,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 children: [
                   const Text(
                     'We value your feedback. Please let us know what you think about our service.',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -118,6 +122,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     maxLines: 8,
                     decoration: const InputDecoration(
                       hintText: 'Please write your feedback here...',
+                      hintStyle: TextStyle(color: Colors.grey),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
@@ -129,12 +134,14 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
-                    onTap: _requestPermissionAndPickImages,  // Using the permission and pick images method
+                    onTap: _requestPermissionAndPickImages,
                     child: Container(
                       height: 150,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: DarkInputFieldFillColor,
+                        color: theme.brightness == Brightness.dark
+                            ? DarkInputFieldFillColor
+                            : LightInputFieldFillColor,
                         border: Border.all(color: Colors.grey),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -144,7 +151,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.image, size: 30, color: Colors.grey),
+                              const Icon(Icons.image,
+                                  size: 30, color: Colors.grey),
                               const SizedBox(width: 8),
                               const Text(
                                 'Optional: Upload up to 4 images.',
@@ -153,16 +161,17 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          if (_imageFiles != null && _imageFiles!.isNotEmpty) ...[
+                          if (_imageFiles != null &&
+                              _imageFiles!.isNotEmpty) ...[
                             Wrap(
                               spacing: 8.0,
                               children: _imageFiles!
                                   .map((file) => Image.file(
-                                File(file.path),
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              ))
+                                        File(file.path),
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      ))
                                   .toList(),
                             ),
                           ],

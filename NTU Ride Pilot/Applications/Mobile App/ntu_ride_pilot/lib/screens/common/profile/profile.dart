@@ -18,8 +18,8 @@ class ProfileScreen extends StatelessWidget {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     // Retrieve the existing instance of the controller.
-    final DriverProfileController controller =
-        Get.find<DriverProfileController>();
+    final ProfileController controller =
+        Get.find<ProfileController>();
 
     // Create instances of MediaService and MediaPermission
     final MediaService mediaService = MediaService();

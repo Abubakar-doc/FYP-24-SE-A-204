@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:intl/intl.dart';
-import 'package:hive/hive.dart';
 import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/themes/app_colors.dart';
@@ -14,10 +13,10 @@ class RideDetailsModal extends StatelessWidget {
   final Box<BusCardModel> busCardBox;
 
   const RideDetailsModal({
-    Key? key,
+    super.key,
     required this.rideBox,
     required this.busCardBox,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

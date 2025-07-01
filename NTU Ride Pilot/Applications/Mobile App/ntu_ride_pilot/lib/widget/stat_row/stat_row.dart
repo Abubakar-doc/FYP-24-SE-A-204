@@ -7,12 +7,12 @@ class StatRow extends StatelessWidget {
   final bool isBold;
 
   const StatRow({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.isDarkMode,
     this.isBold = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

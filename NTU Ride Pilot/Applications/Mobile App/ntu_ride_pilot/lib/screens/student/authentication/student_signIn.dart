@@ -13,7 +13,8 @@ class StudentSignInScreen extends StatefulWidget {
 
 class _StudentSignInScreenState extends State<StudentSignInScreen> {
   bool _passwordVisible = false;
-  bool _isLoading = false;
+  bool _isEmailLoading = false; // For email/password sign-in
+  bool _isGoogleLoading = false; // For Google sign-in
   final _formKey = GlobalKey<FormState>();
 
   TextEditingController emailController = TextEditingController();
@@ -28,10 +29,11 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
     super.dispose();
   }
 
+  // Email/Password Sign-In
   void _signIn() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
-        _isLoading = true;
+        _isEmailLoading = true; // Set email loading indicator true
       });
 
       await _studentAuthService.signIn(
@@ -40,17 +42,27 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
       );
 
       setState(() {
-        _isLoading = false;
+        _isEmailLoading = false; // Hide email loading indicator after sign-in
       });
     }
+  }
+
+  // Google Sign-In
+  void _signInWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true; // Set Google loading indicator true
+    });
+    await Get.find<StudentAuthService>().signInWithGoogle(context);
+    setState(() {
+      _isGoogleLoading = false; // Hide Google loading indicator after sign-in
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-        Row(
+        title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
@@ -72,7 +84,7 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Enter your credentials to sign in',
+              const Text("Welcome back you've been missed!",
                   style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
 
@@ -131,20 +143,71 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
 
               const Spacer(),
 
-              // Sign-In Button
+              // Sign-In Buttons
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Google Sign-In Button
+                  ElevatedButton.icon(
+                    onPressed: _isGoogleLoading ? null : _signInWithGoogle,
+                    icon: Image.asset(
+                      'assets/pictures/google_logo.png',
+                      width: 20.0,
+                    ),
+                    label: _isGoogleLoading
+                        ? const Text('Signing in with Google...')
+                        : const Text('Sign in with Google'),
+                    style: ElevatedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade500, // Divider color
+                          thickness: 1, // Divider thickness
+                          endIndent:
+                              10, // Space between divider and text on the right
+                        ),
+                      ),
+                      Center(
+                        child: Text(
+                          'or',
+                          style: TextStyle(color: Colors.grey, fontSize: 18),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade500, // Divider color
+                          thickness: 1, // Divider thickness
+                          indent:
+                              10, // Space between divider and text on the left
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Email/Password Sign-In Button
                   TextButton(
-                    onPressed: _isLoading ? null : _signIn,
+                    onPressed: _isEmailLoading ? null : _signIn,
                     style: ElevatedButton.styleFrom(
                       disabledBackgroundColor: Colors.grey,
                     ),
-                    child: _isLoading
+                    child: _isEmailLoading
                         ? const Text('Signing In...')
                         : const Text('Sign In'),
                   ),
                   const SizedBox(height: 16),
+
+                  // Forgot Password Link
                   Center(
                     child: GestureDetector(
                       onTap: () {
@@ -155,7 +218,7 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-              ),
+              )
             ],
           ),
         ),

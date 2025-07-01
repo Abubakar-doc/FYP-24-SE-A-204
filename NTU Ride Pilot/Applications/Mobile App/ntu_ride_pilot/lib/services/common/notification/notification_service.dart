@@ -38,7 +38,7 @@ class NotificationService {
 
     return snapshot.docs
         .map((doc) => NotificationModel.fromMap(
-            doc.data() as Map<String, dynamic>, doc.id))
+            doc.data(), doc.id))
         .toList();
   }
 
@@ -60,7 +60,7 @@ class NotificationService {
 
     return snapshot.docs
         .map((doc) => NotificationModel.fromMap(
-            doc.data() as Map<String, dynamic>, doc.id))
+            doc.data(), doc.id))
         .toList();
   }
 
@@ -73,7 +73,7 @@ class NotificationService {
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => NotificationModel.fromMap(
-              doc.data() as Map<String, dynamic>, doc.id))
+              doc.data(), doc.id))
           .toList();
     });
   }

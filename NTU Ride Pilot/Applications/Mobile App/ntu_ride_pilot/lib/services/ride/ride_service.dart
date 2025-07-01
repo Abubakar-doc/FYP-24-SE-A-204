@@ -400,7 +400,7 @@ class RideService {
     try {
       // Fetch the current driver.
       DriverService driverService = DriverService();
-      DriverModel? currentDriver = driverService.getCurrentDriver();
+      DriverModel? currentDriver = await driverService.getCurrentDriver();
 
       if (currentDriver == null) {
         return null;

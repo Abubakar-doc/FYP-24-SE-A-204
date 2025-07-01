@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class NotificationListLoadingPlaceholder extends StatelessWidget {

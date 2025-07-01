@@ -66,10 +66,10 @@ class NotificationItem extends StatelessWidget {
 
               // PDF links
               ...mediaLinks
-                  .where((link) => (link as String).endsWith('.pdf'))
+                  .where((link) => (link).endsWith('.pdf'))
                   .map(
                     (pdfLink) {
-                  final url = pdfLink as String;
+                  final url = pdfLink;
                   final fileName = Uri.parse(url).pathSegments.last; // Get file name from URL
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -104,7 +104,7 @@ class NotificationItem extends StatelessWidget {
                   );
                 },
               )
-                  .toList(),
+                  ,
             ],
             const SizedBox(height: 8),
             Align(
@@ -173,7 +173,7 @@ class NotificationItem extends StatelessWidget {
     final images = mediaLinks
         .where((link) =>
             (link as String).endsWith('.jpg') ||
-            (link as String).endsWith('.png'))
+            (link).endsWith('.png'))
         .toList();
 
     if (images.isEmpty) return [];

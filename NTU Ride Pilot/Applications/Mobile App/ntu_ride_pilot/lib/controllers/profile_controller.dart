@@ -1,9 +1,8 @@
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/services/driver/profile_stats.dart';
 import 'package:ntu_ride_pilot/services/profile/user_profile_service.dart';
-import 'package:ntu_ride_pilot/services/driver/driver_service.dart';
 
-class DriverProfileController extends GetxController {
+class ProfileController extends GetxController {
   final UserProfileService _userProfileService = UserProfileService();
   final ProfileStatsService _profileStatsService = ProfileStatsService();
 

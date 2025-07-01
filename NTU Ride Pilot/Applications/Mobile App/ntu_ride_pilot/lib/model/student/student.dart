@@ -17,7 +17,10 @@ class StudentModel {
   final bool feePaid;
 
   @HiveField(4)
-  final String busCardId;
+  final String? busCardId;
+
+  @HiveField(5)
+  final String? profilePicLink;
 
   @HiveField(6)
   late final String role;
@@ -27,7 +30,8 @@ class StudentModel {
     required this.name,
     required this.rollNo,
     required this.feePaid,
-    required this.busCardId,
+    this.busCardId,
+    this.profilePicLink,
     this.role = 'student',
   });
 
@@ -38,6 +42,7 @@ class StudentModel {
       'roll_no': rollNo,
       'fee_paid': feePaid,
       'bus_card_id': busCardId,
+      'profile_pic_link': profilePicLink,
     };
   }
 
@@ -47,7 +52,8 @@ class StudentModel {
       name: map['name'] ?? '',
       rollNo: map['roll_no'] ?? '',
       feePaid: map['fee_paid'] ?? false,
-      busCardId: map['bus_card_id'] ?? '',
+      busCardId: map['bus_card_id'],
+      profilePicLink: map['profile_pic_link'],
     )..role = 'student';
   }
 }

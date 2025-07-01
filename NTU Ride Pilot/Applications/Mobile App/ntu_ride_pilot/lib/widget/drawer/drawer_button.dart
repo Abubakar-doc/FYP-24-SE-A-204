@@ -6,7 +6,7 @@ import 'package:ntu_ride_pilot/themes/app_colors.dart';
 class CustomDrawerButton extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
 
-  const CustomDrawerButton({Key? key, required this.scaffoldKey}) : super(key: key);
+  const CustomDrawerButton({super.key, required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {

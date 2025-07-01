@@ -41,14 +41,6 @@ class FCMService {
     FirebaseMessaging.onMessage.listen(_onMessageHandler);
     FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
-    _messaging.onTokenRefresh.listen((token) {
-      print('Refreshed FCM token: $token');
-      // TODO: send token to your server
-    });
-
-    final token = await _messaging.getToken();
-    print('Initial FCM token: $token');
-
     await _messaging.subscribeToTopic('announcements');
     print('Subscribed to announcements topic');
   }

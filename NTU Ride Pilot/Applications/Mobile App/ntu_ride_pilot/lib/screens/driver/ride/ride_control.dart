@@ -7,7 +7,7 @@ import 'package:ntu_ride_pilot/model/bus_card/bus_card.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/model/route/route.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_control.dart';
-import 'package:ntu_ride_pilot/screens/driver/home/driver_home_screen.dart';
+import 'package:ntu_ride_pilot/screens/driver/driver_home/driver_home_screen.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/start_ride.dart';
 import 'package:ntu_ride_pilot/screens/driver/ride/widget/ride_details_modal.dart';
 import 'package:ntu_ride_pilot/services/ride/live_location.dart';
