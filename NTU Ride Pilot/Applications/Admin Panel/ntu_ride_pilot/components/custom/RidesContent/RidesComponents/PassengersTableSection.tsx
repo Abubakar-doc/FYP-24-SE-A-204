@@ -21,7 +21,6 @@ const PassengersTableSection: React.FC<PassengersTableSectionProps> = ({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
 
-  // Map incoming passengers to expected shape with id as index for key prop
   const mappedPassengers: Passenger[] = useMemo(
     () =>
       passengers.map((p, index) => ({

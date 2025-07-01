@@ -2,74 +2,68 @@
 import { useEffect, useState } from 'react';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
 import RidesHeaderRow from './RidesHeaderRow';
-import LoadingIndicator from '../LoadingIndicator/LoadingIndicator'; // Import loading component
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import LoadingIndicator from '../LoadingIndicator/LoadingIndicator';
+import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 interface RideData {
   ride_id: string;
   route_id: string;
-  name: string;
+  name: string; // route name
+  busName: string; // bus_id from ride doc
 }
 
 const RidesHeader: React.FC = () => {
-  const [routeOptions, setRouteOptions] = useState<RideData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Loading state
+  const [rideOptions, setRideOptions] = useState<RideData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchRoutes = async () => {
-      setIsLoading(true);
-      try {
-        const ridesRef = collection(firestore, "rides");
-        const ridesQuery = query(
-          ridesRef,
-          where("ride_status", "in", ["idle", "inProgress"])
-        );
-        const ridesSnapshot = await getDocs(ridesQuery);
+    const ridesRef = collection(firestore, "rides");
+    // Query rides with ride_status either "idle" or "inProgress"
+    const ridesQuery = query(
+      ridesRef,
+      where("ride_status", "in", ["idle", "inProgress"])
+    );
 
-        const routeIdSet = new Set<string>();
-        const rideDataMap = new Map<string, string>();
+    // Real-time listener for rides with status idle or inProgress
+    const unsubscribe = onSnapshot(ridesQuery, async (snapshot) => {
+      const rideOptionsArr: RideData[] = [];
 
-        // First pass to collect route IDs and ride IDs
-        ridesSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.route_id) {
-            routeIdSet.add(data.route_id);
-            rideDataMap.set(data.route_id, doc.id);
-          }
-        });
+      // For each ride document, get route name and prepare options
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        if (!data.route_id) continue;
 
-        const routeIds = Array.from(routeIdSet);
-        const routeOptionsArr: RideData[] = [];
-
-        // Second pass to get route names
-        for (const route_id of routeIds) {
+        try {
           const routeDocRef = collection(firestore, "routes");
-          const routeQuery = query(routeDocRef, where("__name__", "==", route_id));
+          const routeQuery = query(routeDocRef, where("__name__", "==", data.route_id));
           const routeSnapshot = await getDocs(routeQuery);
 
           routeSnapshot.forEach(routeDoc => {
             const routeData = routeDoc.data();
             if (routeData.name) {
-              routeOptionsArr.push({
-                ride_id: rideDataMap.get(route_id) || '',
-                route_id,
-                name: routeData.name
+              rideOptionsArr.push({
+                ride_id: docSnap.id,
+                route_id: data.route_id,
+                name: routeData.name,
+                busName: data.bus_id || "", // bus_id used as bus name
               });
             }
           });
+        } catch (error) {
+          console.error(`Error fetching route ${data.route_id}:`, error);
         }
-        setRouteOptions(routeOptionsArr);
-      } catch (error) {
-        console.error("Error fetching routes:", error);
-        setRouteOptions([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    fetchRoutes();
-  }, []);
+      setRideOptions(rideOptionsArr);
+      if (isLoading) setIsLoading(false);
+    }, (error) => {
+      console.error("Error listening to rides:", error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [isLoading]);
 
   if (isLoading) {
     return (
@@ -84,7 +78,7 @@ const RidesHeader: React.FC = () => {
       <div className="flex justify-end mb-4 mr-4">
         <HeaderIcons />
       </div>
-      <RidesHeaderRow routeOptions={routeOptions} />
+      <RidesHeaderRow routeOptions={rideOptions} />
     </div>
   );
 };

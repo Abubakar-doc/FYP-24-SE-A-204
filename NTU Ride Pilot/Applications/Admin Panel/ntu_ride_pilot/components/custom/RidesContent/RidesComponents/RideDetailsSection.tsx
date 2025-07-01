@@ -20,7 +20,6 @@ const inputClass =
   "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3";
 
 const RideDetailsSection: React.FC<RideDetailsSectionProps> = ({ rideDetails }) => {
-  console.log("STARTED AT:",rideDetails.startedAt);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div>

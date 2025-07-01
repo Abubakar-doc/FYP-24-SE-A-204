@@ -6,6 +6,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import RideMapSection from "./RidesComponents/RideMapSection";
@@ -98,39 +99,33 @@ const RidesContent: React.FC = () => {
     if (rideIdFromQuery && rideIdFromQuery !== rideId) {
       setRideId(rideIdFromQuery);
     } else if (!rideIdFromQuery) {
+      clearAllRideData();
       setRideId(null);
-      setBusId("");
-      setCreatedAt(null);
-      setStartedAtFormatted("N/A");
-      setCurrentLocation(NTU_DEFAULT_LOCATION);
-      setDriverId("");
-      setEndedAt(null);
-      setEtaNextStop(null);
-      setNextStopName("");
-      setNextStopETAFormatted("N/A");
-      setOfflineOnBoard([]);
-      setOnlineOnBoard([]);
-      setRideStatus("");
-      setRouteId("");
-      setDriver(null);
-      setBus(null);
-      setStudents([]);
-      setPassengersOnBoard([]);
     }
   }, [rideIdFromQuery, rideId]);
 
-  // Fetch ride document whenever rideId changes from null to a valid id
+  // Real-time listener for the selected ride document
   useEffect(() => {
-    if (!rideId) return;
+    if (!rideId) {
+      clearAllRideData();
+      return;
+    }
 
-    const fetchRideDocument = async () => {
-      setIsLoading(true);
-      try {
-        const rideDocRef = doc(firestore, "rides", rideId);
-        const rideDocSnap = await getDoc(rideDocRef);
+    setIsLoading(true);
 
-        if (rideDocSnap.exists()) {
-          const data = rideDocSnap.data();
+    const rideDocRef = doc(firestore, "rides", rideId);
+    const unsubscribe = onSnapshot(
+      rideDocRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+
+          // If ride ended, clear all data
+          if (data.ride_status === "completed") {
+            clearAllRideData();
+            setIsLoading(false);
+            return;
+          }
 
           setBusId(data.bus_id || "");
           if (data.created_at) {
@@ -165,50 +160,41 @@ const RidesContent: React.FC = () => {
           );
           setRideStatus(data.ride_status || "");
           setRouteId(data.route_id || "");
+          setIsLoading(false);
         } else {
-          setBusId("");
-          setCreatedAt(null);
-          setStartedAtFormatted("N/A");
-          setCurrentLocation(NTU_DEFAULT_LOCATION);
-          setDriverId("");
-          setEndedAt(null);
-          setEtaNextStop(null);
-          setNextStopName("");
-          setNextStopETAFormatted("N/A");
-          setOfflineOnBoard([]);
-          setOnlineOnBoard([]);
-          setRideStatus("");
-          setRouteId("");
-          setDriver(null);
-          setBus(null);
-          setStudents([]);
-          setPassengersOnBoard([]);
+          clearAllRideData();
+          setIsLoading(false);
         }
-      } catch (error) {
-        setBusId("");
-        setCreatedAt(null);
-        setStartedAtFormatted("N/A");
-        setCurrentLocation(NTU_DEFAULT_LOCATION);
-        setDriverId("");
-        setEndedAt(null);
-        setEtaNextStop(null);
-        setNextStopName("");
-        setNextStopETAFormatted("N/A");
-        setOfflineOnBoard([]);
-        setOnlineOnBoard([]);
-        setRideStatus("");
-        setRouteId("");
-        setDriver(null);
-        setBus(null);
-        setStudents([]);
-        setPassengersOnBoard([]);
-      } finally {
+      },
+      (error) => {
+        console.error("Error listening to ride document:", error);
+        clearAllRideData();
         setIsLoading(false);
       }
-    };
-
-    fetchRideDocument();
+    );
+    return () => unsubscribe();
   }, [rideId]);
+
+  // Clear all ride-related data and reset to defaults
+  const clearAllRideData = () => {
+    setBusId("");
+    setCreatedAt(null);
+    setStartedAtFormatted("N/A");
+    setCurrentLocation(NTU_DEFAULT_LOCATION);
+    setDriverId("");
+    setEndedAt(null);
+    setEtaNextStop(null);
+    setNextStopName("");
+    setNextStopETAFormatted("N/A");
+    setOfflineOnBoard([]);
+    setOnlineOnBoard([]);
+    setRideStatus("");
+    setRouteId("");
+    setDriver(null);
+    setBus(null);
+    setStudents([]);
+    setPassengersOnBoard([]);
+  };
 
   // Update formatted Next Stop ETA whenever etaNextStop changes
   useEffect(() => {
@@ -323,22 +309,14 @@ const RidesContent: React.FC = () => {
   }
 
   return (
-    // OUTER FLEX CONTAINER for sidebar + main content (if you have sidebar)
     <div className="flex h-screen bg-white w-full">
-      {/* ---- SIDEBAR (if you have one, place here) ---- */}
-      {/* <Sidebar /> */}
-      {/* End Sidebar */}
-
-      {/* MAIN CONTENT COLUMN */}
       <div className="flex flex-col flex-1 h-screen">
-        {/* HEADER: sticky at top, does not scroll */}
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
             <RidesHeader />
           </div>
         </div>
 
-        {/* BODY: fills remaining height, scrollable */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="bg-white rounded-lg p-4">
             <div className="mb-4">
@@ -348,9 +326,7 @@ const RidesContent: React.FC = () => {
             <PassengersTableSection passengers={passengersOnBoard} />
           </div>
         </div>
-        {/* END BODY */}
       </div>
-      {/* END MAIN CONTENT */}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import mapboxgl from "mapbox-gl"; 
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -22,7 +22,7 @@ const RideMapSection: React.FC<RideMapSectionProps> = ({ currentLocation }) => {
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v11",
       center: [-74.006, 40.7128], // Default center (New York)
-      zoom: 11,
+      zoom: 14, // Increased zoom level from 11 to 14
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
@@ -55,8 +55,8 @@ const RideMapSection: React.FC<RideMapSectionProps> = ({ currentLocation }) => {
       marker.current.setLngLat(newLngLat);
     }
 
-    // Optionally, recenter the map to the new location smoothly
-    map.current.easeTo({ center: newLngLat });
+    // Recenter the map to the new location smoothly with increased zoom
+    map.current.easeTo({ center: newLngLat, zoom: 14 });
   }, [currentLocation]);
 
   return (
