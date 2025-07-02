@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import { firestore } from "@/lib/firebase";
+import React, { useEffect, useState } from "react";
+import ReportsHeader from "./ReportsHeader";
 import {
   collection,
   query,
@@ -8,98 +8,59 @@ import {
   getDocs,
   Timestamp,
   addDoc,
-  serverTimestamp,
 } from "firebase/firestore";
-import ReportsHeader from "./ReportsHeader";
+import { firestore } from "@/lib/firebase";
 
 interface Ride {
   id: string;
-  start_time: Timestamp;
-  end_time: Timestamp;
-  ride_status: string;
-  offlineOnBoard: string[]; // array of student rollNos
-  onlineOnBoard: string[];  // array of student rollNos
-  bus_name: string;
+  ride_name: string;
   route_name: string;
+  created_at: Timestamp;
+  ended_at: Timestamp;
+  ride_status: string;
+  offlineOnBoard: string[];
+  onlineOnBoard: string[];
+  bus_id: string;
+  route_id: string;
 }
 
-interface ReportProps {}
-
-interface DummyReport {
-  id: number;
-  name: string;
-  rollNo: string;
-  remarks: string;
+interface FraudReportEntry {
+  student_rollNo: string;
+  bus_id: string;
 }
 
-// Dummy data for the table (you can replace with actual data or reports if needed)
-const dummyReports: DummyReport[] = [
-  { id: 1, name: "Ali Ahmed", rollNo: "2021-CS-001", remarks: "Excellent" },
-  { id: 2, name: "Sara Khan", rollNo: "2021-CS-002", remarks: "Good" },
-  { id: 3, name: "Bilal Saeed", rollNo: "2021-CS-003", remarks: "Average" },
-  { id: 4, name: "Hina Tariq", rollNo: "2021-CS-004", remarks: "Needs Improvement" },
-  { id: 5, name: "Usman Riaz", rollNo: "2021-CS-005", remarks: "Excellent" },
-];
+const ReportsContent: React.FC = () => {
+  const [fraudReports, setFraudReports] = useState<FraudReportEntry[]>([]);
 
-const ReportsContent: React.FC<ReportProps> = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [reportGenerated, setReportGenerated] = useState(false);
-  const [period, setPeriod] = useState<"one_day" | "one_week" | "one_month">("one_day");
+  function ridesOverlapOrClose(
+    rideA: Ride,
+    rideB: Ride,
+    thresholdMinutes = 30
+  ): boolean {
+    const startA = rideA.created_at.toDate().getTime();
+    const endA = rideA.ended_at.toDate().getTime();
+    const startB = rideB.created_at.toDate().getTime();
+    const endB = rideB.ended_at.toDate().getTime();
 
-  // Utility: Convert period to date range
-  const getDateRange = () => {
-    const now = new Date();
-    let startDate: Date;
-    switch (period) {
-      case "one_day":
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        break;
-      case "one_week":
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case "one_month":
-        startDate = new Date(now);
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    }
-    return { startDate, endDate: now };
-  };
+    if (startA <= endB && startB <= endA) return true;
 
-  // Group rides by overlapping start/end times
-  const groupRides = (rides: Ride[]): Ride[][] => {
+    const thresholdMs = thresholdMinutes * 60 * 1000;
+    if (
+      Math.abs(startA - startB) <= thresholdMs ||
+      Math.abs(endA - endB) <= thresholdMs
+    )
+      return true;
+
+    return false;
+  }
+
+  function groupRides(rides: Ride[]): Ride[][] {
     const groups: Ride[][] = [];
 
-    // Sort rides safely, check start_time exists
-    const sortedRides = rides
-      .filter(ride => ride.start_time && typeof ride.start_time.toMillis === "function")
-      .sort(
-        (a, b) => a.start_time.toMillis() - b.start_time.toMillis()
-      );
-
-    sortedRides.forEach((ride) => {
+    rides.forEach((ride) => {
       let addedToGroup = false;
       for (const group of groups) {
-        const overlaps = group.some((r) => {
-          if (
-            !r.start_time || !r.end_time || !ride.start_time || !ride.end_time ||
-            typeof r.start_time.toMillis !== "function" ||
-            typeof r.end_time.toMillis !== "function" ||
-            typeof ride.start_time.toMillis !== "function" ||
-            typeof ride.end_time.toMillis !== "function"
-          ) {
-            return false;
-          }
-          const startA = r.start_time.toMillis();
-          const endA = r.end_time.toMillis();
-          const startB = ride.start_time.toMillis();
-          const endB = ride.end_time.toMillis();
-          return startA <= endB && startB <= endA;
-        });
-        if (overlaps) {
+        if (group.some((r) => ridesOverlapOrClose(r, ride))) {
           group.push(ride);
           addedToGroup = true;
           break;
@@ -111,177 +72,181 @@ const ReportsContent: React.FC<ReportProps> = () => {
     });
 
     return groups;
-  };
+  }
 
-  // Fetch student names by roll numbers
-  const fetchStudentNames = async (rollNos: string[]): Promise<Record<string, string>> => {
-    const studentsCollection = collection(
-      firestore,
-      "users",
-      "user_roles",
-      "students"
-    );
-    const namesMap: Record<string, string> = {};
-
-    if (rollNos.length === 0) return namesMap;
-
-    const batchSize = 10;
-    for (let i = 0; i < rollNos.length; i += batchSize) {
-      const batchRollNos = rollNos.slice(i, i + batchSize);
-      const q = query(studentsCollection, where("rollNo", "in", batchRollNos));
-      const snapshot = await getDocs(q);
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.rollNo && data.name) {
-          namesMap[data.rollNo] = data.name;
-        }
-      });
-    }
-    return namesMap;
-  };
-
-  // Main fraud detection & report generation function
-  const generateFraudReport = async () => {
-    setLoading(true);
-    setError(null);
-    setReportGenerated(false);
-
+  const generateFraudReport = async (filter: string) => {
     try {
-      const { startDate, endDate } = getDateRange();
+      const now = new Date();
+      let startDate: Date;
+
+      switch (filter) {
+        case "active":
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case "all":
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case "suspended":
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      }
+
+      console.log(`Generating fraud report for filter: ${filter}, startDate: ${startDate}`);
 
       const ridesCollection = collection(firestore, "rides");
-      // Simplified query to avoid composite index requirement
       const q = query(
         ridesCollection,
-        where("ride_status", "==", "completed")
+        where("ride_status", "==", "completed"),
+        where("created_at", ">=", Timestamp.fromDate(startDate))
       );
+
       const ridesSnapshot = await getDocs(q);
+      const rides: Ride[] = [];
 
-      if (ridesSnapshot.empty) {
-        setError("No completed rides found in the selected period.");
-        setLoading(false);
-        return;
-      }
-
-      // Map all rides, filter out rides with invalid timestamps
-      const allRides: Ride[] = ridesSnapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            start_time: data.start_time,
-            end_time: data.end_time,
-            ride_status: data.ride_status,
-            offlineOnBoard: data.offlineOnBoard || [],
-            onlineOnBoard: data.onlineOnBoard || [],
-            bus_name: data.bus_name || "Unknown Bus",
-            route_name: data.route_name || "Unknown Route",
-          };
-        })
-        .filter(
-          (ride) =>
-            ride.start_time &&
-            ride.end_time &&
-            typeof ride.start_time.toMillis === "function" &&
-            typeof ride.end_time.toMillis === "function"
-        );
-
-      // Filter rides by start_time range in app code
-      const rides = allRides.filter((ride) => {
-        const startMillis = ride.start_time.toMillis();
-        return startMillis >= startDate.getTime() && startMillis <= endDate.getTime();
+      ridesSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!(data.created_at instanceof Timestamp) || !(data.ended_at instanceof Timestamp)) {
+          console.warn(`Ride document ${doc.id} has invalid created_at or ended_at`);
+          return;
+        }
+        rides.push({
+          id: doc.id,
+          ride_name: data.ride_name,
+          route_name: data.route_name,
+          created_at: data.created_at,
+          ended_at: data.ended_at,
+          ride_status: data.ride_status,
+          offlineOnBoard: Array.isArray(data.offlineOnBoard) ? data.offlineOnBoard : [],
+          onlineOnBoard: Array.isArray(data.onlineOnBoard) ? data.onlineOnBoard : [],
+          bus_id: data.bus_id,
+          route_id: data.route_id,
+        });
       });
+
+      console.log(`Fetched ${rides.length} rides from Firestore.`);
 
       if (rides.length === 0) {
-        setError("No completed rides found in the selected period.");
-        setLoading(false);
+        console.log("No rides found for the selected filter.");
+        setFraudReports([]);
         return;
       }
 
-      const groupedRides = groupRides(rides);
+      const rideGroups = groupRides(rides);
+      console.log(`Grouped rides into ${rideGroups.length} groups.`);
 
-      const fraudRollNosSet = new Set<string>();
-      const fraudRemarksMap: Record<string, Set<string>> = {};
+      const fraudReports: FraudReportEntry[] = [];
 
-      for (const group of groupedRides) {
-        if (group.length < 2) continue;
+      for (const group of rideGroups) {
+        group.sort(
+          (a, b) =>
+            a.created_at.toDate().getTime() - b.created_at.toDate().getTime()
+        );
 
-        // Sort group safely
-        const sortedGroup = group
-          .filter(
-            (ride) =>
-              ride.start_time &&
-              typeof ride.start_time.toMillis === "function"
-          )
-          .sort(
-            (a, b) => a.start_time.toMillis() - b.start_time.toMillis()
-          );
+        const baseRide = group[0];
+        const baseOfflineSet = new Set(baseRide.offlineOnBoard);
 
-        if (sortedGroup.length === 0) continue;
+        for (let i = 1; i < group.length; i++) {
+          const otherRide = group[i];
+          const otherOfflineSet = new Set(otherRide.offlineOnBoard);
 
-        const baseRide = sortedGroup[0];
-
-        baseRide.offlineOnBoard.forEach((rollNo) => {
-          let count = 0;
-          const ridesWithRollNo: string[] = [];
-          for (const ride of sortedGroup) {
-            if (ride.offlineOnBoard.includes(rollNo)) {
-              count++;
-              ridesWithRollNo.push(`${ride.bus_name} - ${ride.route_name}`);
+          baseOfflineSet.forEach((rollNo) => {
+            if (otherOfflineSet.has(rollNo)) {
+              fraudReports.push({
+                student_rollNo: rollNo,
+                bus_id: baseRide.bus_id,
+              });
+              fraudReports.push({
+                student_rollNo: rollNo,
+                bus_id: otherRide.bus_id,
+              });
             }
-          }
-          if (count > 1) {
-            fraudRollNosSet.add(rollNo);
-            if (!fraudRemarksMap[rollNo]) fraudRemarksMap[rollNo] = new Set();
-            ridesWithRollNo.forEach((remark) => fraudRemarksMap[rollNo].add(remark));
-          }
-        });
+          });
+        }
 
-        baseRide.onlineOnBoard.forEach((rollNo) => {
-          for (let i = 1; i < sortedGroup.length; i++) {
-            const otherRide = sortedGroup[i];
-            if (otherRide.offlineOnBoard.includes(rollNo)) {
-              fraudRollNosSet.add(rollNo);
-              if (!fraudRemarksMap[rollNo]) fraudRemarksMap[rollNo] = new Set();
-              fraudRemarksMap[rollNo].add(`${baseRide.bus_name} - ${baseRide.route_name}`);
-              fraudRemarksMap[rollNo].add(`${otherRide.bus_name} - ${otherRide.route_name}`);
-            }
+        for (let i = 0; i < group.length; i++) {
+          const rideI = group[i];
+          const onlineSet = new Set(rideI.onlineOnBoard);
+
+          for (let j = 0; j < group.length; j++) {
+            if (i === j) continue;
+            const rideJ = group[j];
+            const offlineSet = new Set(rideJ.offlineOnBoard);
+
+            onlineSet.forEach((rollNo) => {
+              if (offlineSet.has(rollNo)) {
+                fraudReports.push({
+                  student_rollNo: rollNo,
+                  bus_id: rideI.bus_id,
+                });
+                fraudReports.push({
+                  student_rollNo: rollNo,
+                  bus_id: rideJ.bus_id,
+                });
+              }
+            });
           }
-        });
+        }
       }
 
-      if (fraudRollNosSet.size === 0) {
-        setError("No fraudulent activity detected for the selected period.");
-        setLoading(false);
+      if (fraudReports.length === 0) {
+        console.log("No fraud students detected.");
+        setFraudReports([]);
         return;
       }
 
-      const fraudRollNos = Array.from(fraudRollNosSet);
-      const namesMap = await fetchStudentNames(fraudRollNos);
-
-      const students_name = fraudRollNos.map((rollNo) => namesMap[rollNo] || "Unknown");
-      const students_rollNo = fraudRollNos;
-      const remarks = fraudRollNos.map((rollNo) =>
-        Array.from(fraudRemarksMap[rollNo]).join(", ")
+      // Remove duplicates by student_rollNo and bus_id
+      const uniqueFraudReports = Array.from(
+        new Map(
+          fraudReports.map((item) => [`${item.student_rollNo}_${item.bus_id}`, item])
+        ).values()
       );
 
+      console.log("Fraud Reports array to save:", uniqueFraudReports);
+
+      // Save to Firestore
       const reportsCollection = collection(firestore, "reports");
+
       await addDoc(reportsCollection, {
-        generated_at: serverTimestamp(),
-        period,
-        students_name,
-        students_rollNo,
-        remarks,
+        generated_at: Timestamp.now(),
+        filter,
+        fraud_reports: uniqueFraudReports,
       });
 
-      setReportGenerated(true);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to generate report. Please try again.");
-    } finally {
-      setLoading(false);
+      // Update state to show in UI
+      setFraudReports(uniqueFraudReports);
+
+      console.log("Fraud report generated and saved to Firestore.");
+    } catch (error) {
+      console.error("Error generating fraud report:", error);
+      setFraudReports([]);
+      throw error;
     }
   };
+
+  const handleGenerateReport = async (filter: string) => {
+    try {
+      await generateFraudReport(filter);
+      alert("Fraud report generated successfully.");
+    } catch (error) {
+      alert("Failed to generate fraud report. Check console for details.");
+    }
+  };
+
+  // Prepare remarks by grouping bus_ids for each student_rollNo
+  const remarksMap: Record<string, Set<string>> = {};
+  fraudReports.forEach(({ student_rollNo, bus_id }) => {
+    if (!remarksMap[student_rollNo]) {
+      remarksMap[student_rollNo] = new Set();
+    }
+    remarksMap[student_rollNo].add(bus_id);
+  });
+
+  // Unique rollNos for rendering
+  const uniqueRollNos = Array.from(new Set(fraudReports.map((r) => r.student_rollNo)));
 
   return (
     <div className="flex h-screen bg-white w-full">
@@ -291,72 +256,47 @@ const ReportsContent: React.FC<ReportProps> = () => {
       <div className="flex flex-col flex-1 h-screen relative">
         <div className="flex-shrink-0 sticky top-0 z-20 bg-white">
           <div className="rounded-lg mb-2">
-            <ReportsHeader
-              onGenerateReport={generateFraudReport}
-              loading={loading}
-              period={period}
-              onPeriodChange={setPeriod}
-            />
+            <ReportsHeader onGenerateReport={handleGenerateReport} />
           </div>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="bg-white rounded-lg p-4">
-            {loading && (
-              <div className="text-center font-semibold text-blue-600">
-                Generating report, please wait...
-              </div>
-            )}
-            {error && (
-              <div className="text-center font-semibold text-red-600">{error}</div>
-            )}
-            {reportGenerated && (
-              <div className="text-center font-semibold text-green-600">
-                Fraudulent report generated successfully!
-              </div>
-            )}
-            {/* Table UI */}
-            <div className="rounded-lg border border-gray-300 overflow-hidden mt-4">
+            <div className="rounded-lg border border-gray-300 overflow-hidden">
               <table className="w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-300">
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[5%]">
-                      Sr#
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[20%]">
-                      Name
-                    </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%]">
                       Roll No
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[50%]">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[75%]">
                       Remarks
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {dummyReports.map((report, index) => (
+                  {uniqueRollNos.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="text-center py-4 text-gray-500">
+                        No fraud reports found.
+                      </td>
+                    </tr>
+                  )}
+                  {uniqueRollNos.map((rollNo, index) => (
                     <tr
-                      key={report.id}
+                      key={rollNo}
                       className="hover:bg-gray-50 border-b border-gray-300 text-center"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap w-[5%]">
-                        {index + 1}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap w-[20%] overflow-hidden text-ellipsis">
-                        {report.name}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap w-[25%]">
-                        {report.rollNo}
+                        {rollNo}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap w-[50%]">
-                        {report.remarks}
+                      <td className="px-6 py-4 whitespace-nowrap w-[75%]">
+                        {Array.from(remarksMap[rollNo]).join(", ")}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {/* End Table UI */}
           </div>
         </div>
       </div>

@@ -1,21 +1,16 @@
 "use client";
-import React from "react";
-import HeaderIcons from "../HeaderIcons/HeaderIcons";
-import ReportFilterDropdown from "./ReportFilterDropdown";
+import Link from 'next/link';
+import HeaderIcons from '../HeaderIcons/HeaderIcons';
+import ReportFilterDropdown from './ReportFilterDropdown';
+import { useState } from 'react';
 
 interface ReportsHeaderProps {
-  onGenerateReport: () => void;
-  loading: boolean;
-  period: "one_day" | "one_week" | "one_month";
-  onPeriodChange: (period: "one_day" | "one_week" | "one_month") => void;
+  onGenerateReport: (filter: string) => void;
 }
 
-const ReportsHeader: React.FC<ReportsHeaderProps> = ({
-  onGenerateReport,
-  loading,
-  period,
-  onPeriodChange,
-}) => {
+const ReportsHeader: React.FC<ReportsHeaderProps> = ({ onGenerateReport }) => {
+  const [filter, setFilter] = useState("active"); // default One Day
+
   return (
     <div className="w-full h-32 bg-[#F5F5F5] p-4 rounded-md">
       {/* Header Icons Row */}
@@ -31,8 +26,7 @@ const ReportsHeader: React.FC<ReportsHeaderProps> = ({
             <input
               type="text"
               placeholder="Search"
-              className="w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-              disabled={loading}
+              className='w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
             />
             <button className="absolute right-2 top-1/2 transform -translate-y-1/2">
               {/* Search Icon */}
@@ -40,15 +34,15 @@ const ReportsHeader: React.FC<ReportsHeaderProps> = ({
             </button>
           </div>
 
-          <ReportFilterDropdown period={period} onChange={onPeriodChange} />
+          <ReportFilterDropdown value={filter} onChange={setFilter} />
 
           <button
+            onClick={() => onGenerateReport(filter)}
             className="w-40 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
-            onClick={onGenerateReport}
-            disabled={loading}
           >
-            {loading ? "Generating..." : "Generate Report"}
+            Generate Report
           </button>
+
         </div>
       </div>
     </div>
