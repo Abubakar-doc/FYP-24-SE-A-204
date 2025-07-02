@@ -147,23 +147,25 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Google Sign-In Button
-                  ElevatedButton.icon(
-                    onPressed: _isGoogleLoading ? null : _signInWithGoogle,
-                    icon: Image.asset(
-                      'assets/pictures/google_logo.png',
-                      width: 20.0,
+                  // Forgot Password Link
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Get.to(() => ForgotPasswordScreen());
+                      },
+                      child: const Text('Forgot Password?'),
                     ),
-                    label: _isGoogleLoading
-                        ? const Text('Signing in with Google...')
-                        : const Text('Sign in with Google'),
+                  ),
+                  const SizedBox(height: 16),
+                  // Email/Password Sign-In Button
+                  TextButton(
+                    onPressed: _isEmailLoading ? null : _signIn,
                     style: ElevatedButton.styleFrom(
-                      side: BorderSide(color: Colors.grey.shade300),
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      disabledBackgroundColor: Colors.grey,
                     ),
+                    child: _isEmailLoading
+                        ? const Text('Signing In...')
+                        : const Text('Sign In'),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -194,26 +196,22 @@ class _StudentSignInScreenState extends State<StudentSignInScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Email/Password Sign-In Button
-                  TextButton(
-                    onPressed: _isEmailLoading ? null : _signIn,
-                    style: ElevatedButton.styleFrom(
-                      disabledBackgroundColor: Colors.grey,
+                  // Google Sign-In Button
+                  ElevatedButton.icon(
+                    onPressed: _isGoogleLoading ? null : _signInWithGoogle,
+                    icon: Image.asset(
+                      'assets/pictures/google_logo.png',
+                      width: 20.0,
                     ),
-                    child: _isEmailLoading
-                        ? const Text('Signing In...')
-                        : const Text('Sign In'),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Forgot Password Link
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        Get.to(() => ForgotPasswordScreen());
-                      },
-                      child: const Text('Forgot Password?'),
+                    label: _isGoogleLoading
+                        ? const Text('Signing in with Google...')
+                        : const Text('Sign in with Google'),
+                    style: ElevatedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

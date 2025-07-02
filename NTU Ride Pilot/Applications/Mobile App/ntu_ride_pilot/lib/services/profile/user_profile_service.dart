@@ -13,7 +13,7 @@ class UserProfileService {
     // Get the current authenticated user.
     User? user = _auth.currentUser;
     if (user == null || user.email == null) {
-      print("ERROR: No authenticated user found.");
+      // print("ERROR: No authenticated user found.");
       return {
         'name': 'Name',
         'role': 'Role',
@@ -29,7 +29,9 @@ class UserProfileService {
     DriverModel? currentDriver = await _driverService.getCurrentDriver();
     if (currentDriver != null) {
       return {
-        'name': currentDriver.name.isNotEmpty ? currentDriver.name : 'Unknown Driver',
+        'name': currentDriver.name.isNotEmpty
+            ? currentDriver.name
+            : 'Unknown Driver',
         'role': currentDriver.role,
         'email': currentDriver.email,
         'profilePic': currentDriver.profilePicLink,
@@ -40,10 +42,14 @@ class UserProfileService {
     StudentModel? currentStudent = await _studentService.getCurrentStudent();
     if (currentStudent != null) {
       return {
-        'name': currentStudent.name.isNotEmpty ? currentStudent.name : 'Unknown Student',
+        'name': currentStudent.name.isNotEmpty
+            ? currentStudent.name
+            : 'Unknown Student',
         'role': currentStudent.role,
         'email': currentStudent.email,
-        'profilePic': googleProfilePic ?? currentStudent.profilePicLink,  // Use Google profile pic if available
+        'profilePic': googleProfilePic ??
+            currentStudent
+                .profilePicLink, // Use Google profile pic if available
       };
     }
 
@@ -52,7 +58,7 @@ class UserProfileService {
       'name': 'Guest',
       'role': '',
       'email': user.email!,
-      'profilePic': googleProfilePic ?? null, // Use Google profile pic if available
+      'profilePic': googleProfilePic, // Use Google profile pic if available
     };
   }
 
@@ -62,7 +68,7 @@ class UserProfileService {
     for (var info in user.providerData) {
       if (info.providerId == 'google.com') {
         // Return the Google profile picture URL
-        print(info.photoURL);
+        // print(info.photoURL);
         return info.photoURL;
       }
     }

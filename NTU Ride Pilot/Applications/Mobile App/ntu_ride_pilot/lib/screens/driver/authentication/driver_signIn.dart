@@ -147,6 +147,56 @@ class _DriverSignInScreenState extends State<DriverSignInScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Forgot Password Link
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Get.to(() => ForgotPasswordScreen(),
+                            transition: Transition.rightToLeft);
+                      },
+                      child: const Text('Forgot Password?'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Email/Password Sign-In Button
+                  TextButton(
+                    onPressed: _isEmailLoading ? null : _signIn,
+                    style: ElevatedButton.styleFrom(
+                      disabledBackgroundColor: Colors.grey,
+                    ),
+                    child: _isEmailLoading
+                        ? const Text('Signing In...')
+                        : const Text('Sign In'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade500, // Divider color
+                          thickness: 1, // Divider thickness
+                          endIndent:
+                              10, // Space between divider and text on the right
+                        ),
+                      ),
+                      Center(
+                        child: Text(
+                          'or',
+                          style: TextStyle(color: Colors.grey, fontSize: 18),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade500, // Divider color
+                          thickness: 1, // Divider thickness
+                          indent:
+                              10, // Space between divider and text on the left
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   // Google Sign-In Button
                   ElevatedButton.icon(
                     onPressed: _isGoogleLoading ? null : _signInWithGoogle,
@@ -163,58 +213,6 @@ class _DriverSignInScreenState extends State<DriverSignInScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: Colors.grey.shade500, // Divider color
-                          thickness: 1, // Divider thickness
-                          endIndent:
-                          10, // Space between divider and text on the right
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          'or',
-                          style: TextStyle(color: Colors.grey, fontSize: 18),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: Colors.grey.shade500, // Divider color
-                          thickness: 1, // Divider thickness
-                          indent:
-                          10, // Space between divider and text on the left
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Email/Password Sign-In Button
-                  TextButton(
-                    onPressed: _isEmailLoading ? null : _signIn,
-                    style: ElevatedButton.styleFrom(
-                      disabledBackgroundColor: Colors.grey,
-                    ),
-                    child: _isEmailLoading
-                        ? const Text('Signing In...')
-                        : const Text('Sign In'),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Forgot Password Link
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        Get.to(() => ForgotPasswordScreen(),
-                            transition: Transition.rightToLeft);
-                      },
-                      child: const Text('Forgot Password?'),
                     ),
                   ),
                   const SizedBox(height: 16),

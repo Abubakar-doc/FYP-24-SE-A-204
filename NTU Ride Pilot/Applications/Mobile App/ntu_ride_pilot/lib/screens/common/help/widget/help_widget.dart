@@ -93,7 +93,8 @@ class _HelpScreenState extends State<HelpScreen> {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w500,
-                      color: isOpen ? Colors.blue : colorScheme.onSurfaceVariant,
+                      color:
+                          isOpen ? Colors.blue : colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 24),

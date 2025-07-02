@@ -38,7 +38,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 2, // Adjusted to match the number of pages
-                    (index) => GestureDetector(
+                (index) => GestureDetector(
                   onTap: () {
                     _pageController.animateToPage(
                       index,
@@ -82,7 +82,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                   ),
                   child: Text(
-                    _currentPage == 0 ? "Continue as Student" : "Continue as Driver",
+                    _currentPage == 0
+                        ? "Continue as Student"
+                        : "Continue as Driver",
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
@@ -104,7 +106,7 @@ class StudentPage extends StatelessWidget {
     return WelcomePage(
       title: "Your safety is our priority",
       description:
-      "Track your university buses in real-time, receive important transport announcements, and ensure hassle-free commuting.",
+          "Track your university buses in real-time, receive important transport announcements, and ensure hassle-free commuting.",
       imagePath: "assets/pictures/student.png",
       roleLabel: "Student",
     );
@@ -120,7 +122,7 @@ class DriverPage extends StatelessWidget {
     return WelcomePage(
       title: "Smoothly verify and operate",
       description:
-      "Share live bus location, verify student cards, and keep students informed with updates for a smooth transportation experience.",
+          "Share live bus location, verify student cards, and keep students informed with updates for a smooth transportation experience.",
       imagePath: "assets/pictures/driver.png",
       roleLabel: "Driver",
     );

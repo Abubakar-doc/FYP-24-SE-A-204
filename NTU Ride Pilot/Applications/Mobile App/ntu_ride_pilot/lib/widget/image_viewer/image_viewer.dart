@@ -49,7 +49,8 @@ class _ImageViewerState extends State<ImageViewer> {
 
   Future<void> _handleDownload() async {
     try {
-      await widget.mediaService.downloadImage(widget.images[_currentPage], context);
+      await widget.mediaService
+          .downloadImage(widget.images[_currentPage], context);
       if (mounted) {
         SnackbarUtil.showSuccess('Downloaded', 'Image saved to gallery');
       }
@@ -113,7 +114,7 @@ class _ImageViewerState extends State<ImageViewer> {
               minScale: PhotoViewComputedScale.contained,
               maxScale: PhotoViewComputedScale.covered,
               heroAttributes:
-              PhotoViewHeroAttributes(tag: widget.images[index]),
+                  PhotoViewHeroAttributes(tag: widget.images[index]),
             );
           },
           scrollPhysics: const BouncingScrollPhysics(),

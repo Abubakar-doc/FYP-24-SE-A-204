@@ -96,49 +96,6 @@ class AuthService extends GetxController {
     }
   }
 
-  // Future<void> logout(BuildContext context) async {
-  //   try {
-  //     // Unsubscribe from topic
-  //     await FirebaseMessaging.instance.unsubscribeFromTopic('announcements');
-  //
-  //     // Sign out from Firebase Authentication
-  //     await FirebaseAuth.instance.signOut();
-  //
-  //     // Check if the user is signed in with Google
-  //     final GoogleSignIn googleSignIn = GoogleSignIn();
-  //     if (await googleSignIn.isSignedIn()) {
-  //       // Sign out from Google
-  //       await googleSignIn.signOut();
-  //     }
-  //
-  //     // Clear and delete Hive boxes if they exist
-  //     if (Hive.isBoxOpen('rides')) {
-  //       final rideBox = Hive.box<RideModel>('rides');
-  //       await rideBox.clear();
-  //       await Hive.deleteBoxFromDisk('rides');
-  //     } else if (await Hive.boxExists('rides')) {
-  //       final rideBox = await Hive.openBox<RideModel>('rides');
-  //       await rideBox.clear();
-  //       await Hive.deleteBoxFromDisk('rides');
-  //     }
-  //
-  //     if (Hive.isBoxOpen('bus_cards')) {
-  //       final busCardBox = Hive.box<BusCardModel>('bus_cards');
-  //       await busCardBox.clear();
-  //       await Hive.deleteBoxFromDisk('bus_cards');
-  //     } else if (await Hive.boxExists('bus_cards')) {
-  //       final busCardBox = await Hive.openBox<BusCardModel>('bus_cards');
-  //       await busCardBox.clear();
-  //       await Hive.deleteBoxFromDisk('bus_cards');
-  //     }
-  //
-  //     // Navigate to Welcome screen
-  //     Get.offAll(() => WelcomeScreen());
-  //   } catch (e) {
-  //     SnackbarUtil.showError(
-  //         "Logout Error", "Unexpected error: ${e.toString()}");
-  //   }
-  // }
   Future<void> logout(BuildContext context) async {
     try {
       // Unsubscribe from topic

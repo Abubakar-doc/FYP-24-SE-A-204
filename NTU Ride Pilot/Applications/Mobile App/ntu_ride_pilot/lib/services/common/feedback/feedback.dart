@@ -64,11 +64,11 @@ class FeedbackService {
           await _firestore.collection('feedback').add(feedbackData);
 
       // Log feedback to console (can be replaced with actual backend call)
-      print('Feedback submitted with ID: ${docRef.id}');
+      // print('Feedback submitted with ID: ${docRef.id}');
 
       return true;
     } catch (e) {
-      print('Error submitting feedback: $e');
+      // print('Error submitting feedback: $e');
       return false;
     }
   }

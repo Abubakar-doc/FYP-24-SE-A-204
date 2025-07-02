@@ -35,14 +35,14 @@ class FCMService {
       badge: true,
       sound: true,
     );
-    print('FCM permission: ${settings.authorizationStatus}');
+    // print('FCM permission: ${settings.authorizationStatus}');
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FirebaseMessaging.onMessage.listen(_onMessageHandler);
     FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
     await _messaging.subscribeToTopic('announcements');
-    print('Subscribed to announcements topic');
+    // print('Subscribed to announcements topic');
   }
 
   Future<void> _initLocalNotifications() async {
@@ -70,20 +70,19 @@ class FCMService {
   }
 
   void _onMessageHandler(RemoteMessage message) {
-    print('Foreground message: ${message.messageId}');
+    // print('Foreground message: ${message.messageId}');
     _showNotification(message);
   }
 
   void _onMessageOpenedApp(RemoteMessage message) {
-    print('Notification tapped (app open): ${message.messageId}');
+    // print('Notification tapped (app open): ${message.messageId}');
     Get.to(() => NotificationScreen());
   }
 
   void _handleNotificationResponse(NotificationResponse response) {
-    print('Notification tapped with payload: ${response.payload}');
+    // print('Notification tapped with payload: ${response.payload}');
     Get.to(() => NotificationScreen());
   }
-
 
   Future<void> _showNotification(RemoteMessage message) async {
     final notification = message.notification;

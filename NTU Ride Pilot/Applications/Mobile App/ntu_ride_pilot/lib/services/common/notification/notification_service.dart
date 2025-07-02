@@ -9,7 +9,8 @@ class NotificationService {
   DocumentSnapshot? _lastDocument;
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   NotificationService._internal();
 
   Future<void> init() async {
@@ -22,7 +23,6 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
   }
 
   Future<List<NotificationModel>> fetchInitialNotifications() async {
@@ -37,8 +37,7 @@ class NotificationService {
     }
 
     return snapshot.docs
-        .map((doc) => NotificationModel.fromMap(
-            doc.data(), doc.id))
+        .map((doc) => NotificationModel.fromMap(doc.data(), doc.id))
         .toList();
   }
 
@@ -59,8 +58,7 @@ class NotificationService {
     }
 
     return snapshot.docs
-        .map((doc) => NotificationModel.fromMap(
-            doc.data(), doc.id))
+        .map((doc) => NotificationModel.fromMap(doc.data(), doc.id))
         .toList();
   }
 
@@ -72,8 +70,7 @@ class NotificationService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) => NotificationModel.fromMap(
-              doc.data(), doc.id))
+          .map((doc) => NotificationModel.fromMap(doc.data(), doc.id))
           .toList();
     });
   }
@@ -133,6 +130,4 @@ class NotificationService {
   }
 }
 
-Future<void> handleNotification(RemoteMessage msg) async{
-
-}
+Future<void> handleNotification(RemoteMessage msg) async {}

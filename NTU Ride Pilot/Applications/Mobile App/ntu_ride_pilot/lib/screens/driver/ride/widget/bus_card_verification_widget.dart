@@ -43,7 +43,7 @@ class _BusCardVerificationWidgetState extends State<BusCardVerificationWidget> {
     try {
       await _audioPlayer.play(AssetSource('sounds/$soundFile'));
     } catch (e) {
-      print("Error playing sound: $e");
+      // print("Error playing sound: $e");
     }
   }
 
@@ -71,35 +71,39 @@ class _BusCardVerificationWidgetState extends State<BusCardVerificationWidget> {
 
     switch (response.statusCode) {
       case RideService.CARD_VERIFIED:
-        message = "Verified: ${response.rollNo}\n${response.studentName} can board.";
+        message =
+            "Verified: ${response.rollNo}\n${response.studentName} can board.";
         soundFile = 'accept.mp3';
         backgroundColor = Colors.green;
         isSuccess = true; // ✅ Success flag
         break;
 
       case RideService.CARD_INACTIVE:
-        message = "Not Verified: ${response.rollNo}\n${response.studentName} can not board.";
+        message =
+            "Not Verified: ${response.rollNo}\n${response.studentName} can not board.";
         soundFile = 'reject.mp3';
         backgroundColor = Colors.red;
         isSuccess = false; // ❌ Rejection flag
         break;
 
       case RideService.CARD_NOT_FOUND:
-        message = "Not Verified: ${response.rollNo}\n${response.studentName} can not board.";
+        message =
+            "Not Verified: ${response.rollNo}\n${response.studentName} can not board.";
         soundFile = 'reject.mp3';
         backgroundColor = Colors.red;
         isSuccess = false; // ❌ Rejection flag
         break;
 
       case RideService.STUDENT_ALREADY_ONBOARD:
-        message = "Not Verified: ${response.rollNo}\n${response.studentName} is already onboard ${response.busNumber}.";
+        message =
+            "Not Verified: ${response.rollNo}\n${response.studentName} is already onboard ${response.busNumber}.";
         soundFile = 'reject.mp3';
         backgroundColor = Colors.red;
         isSuccess = false; // ❌ Rejection flag
         break;
 
       default:
-        message = "Unverified: An unknown error occurred.";
+        message = "Not Verified: Cannot board.";
         soundFile = 'reject.mp3';
         backgroundColor = Colors.red;
         isSuccess = false;
@@ -156,8 +160,8 @@ class _BusCardVerificationWidgetState extends State<BusCardVerificationWidget> {
         decoration: BoxDecoration(
           color: (_isLoading || _containerColor == Colors.transparent)
               ? (theme.brightness == Brightness.dark
-              ? DarkInputFieldFillColor
-              : LightInputFieldFillColor)
+                  ? DarkInputFieldFillColor
+                  : LightInputFieldFillColor)
               : _containerColor, // Change color dynamically
           borderRadius: BorderRadius.circular(12),
         ),
@@ -171,8 +175,13 @@ class _BusCardVerificationWidgetState extends State<BusCardVerificationWidget> {
             )
                 .animate(target: _animate ? 1 : 0)
                 .then(delay: 100.ms)
-                .scaleXY(begin: 1, end: _isSuccess ? 1.2 : 1, duration: 300.ms) // ✅ Pop for success
-                .shake(duration: _isSuccess ? 0.ms : 600.ms, hz: 4), // ❌ Wobble for rejection
+                .scaleXY(
+                    begin: 1,
+                    end: _isSuccess ? 1.2 : 1,
+                    duration: 300.ms) // ✅ Pop for success
+                .shake(
+                    duration: _isSuccess ? 0.ms : 600.ms,
+                    hz: 4), // ❌ Wobble for rejection
 
             const SizedBox(height: 16),
 
@@ -182,21 +191,32 @@ class _BusCardVerificationWidgetState extends State<BusCardVerificationWidget> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: (_containerColor == Colors.green || _containerColor == Colors.red)
+                color: (_containerColor == Colors.green ||
+                        _containerColor == Colors.red)
                     ? Colors.white // ✅ White text for red/green backgrounds
-                    : Theme.of(context).textTheme.bodyLarge!.color, // ✅ Default theme color otherwise
+                    : Theme.of(context)
+                        .textTheme
+                        .bodyLarge!
+                        .color, // ✅ Default theme color otherwise
               ),
               textAlign: TextAlign.center,
             )
                 .animate(target: _animate ? 1 : 0)
-                .moveY(begin: 0, end: _isSuccess ? -10 : 0, duration: 300.ms) // ✅ Bounce for success
+                .moveY(
+                    begin: 0,
+                    end: _isSuccess ? -10 : 0,
+                    duration: 300.ms) // ✅ Bounce for success
                 .then(delay: 200.ms)
-                .moveY(begin: -10, end: 0, duration: 300.ms) // ✅ Return for success
-                .shake(duration: _isSuccess ? 0.ms : 600.ms, hz: 4), // ❌ Wobble for rejection
+                .moveY(
+                    begin: -10,
+                    end: 0,
+                    duration: 300.ms) // ✅ Return for success
+                .shake(
+                    duration: _isSuccess ? 0.ms : 600.ms,
+                    hz: 4), // ❌ Wobble for rejection
           ],
         ),
       ),
-
     );
   }
 }

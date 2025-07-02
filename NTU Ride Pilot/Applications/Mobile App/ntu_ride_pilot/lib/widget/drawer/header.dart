@@ -17,7 +17,8 @@ class CustomDrawerHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/pictures/National_Textile_University_Logo.png',
+          Image.asset(
+            'assets/pictures/National_Textile_University_Logo.png',
             height: 50,
           ),
           if (isColapsed) const SizedBox(width: 10),

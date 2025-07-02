@@ -4,7 +4,7 @@ import 'package:ntu_ride_pilot/services/common/notification/notification_service
 
 class NotificationRepository {
   static final NotificationRepository _instance =
-  NotificationRepository._internal();
+      NotificationRepository._internal();
   factory NotificationRepository() => _instance;
   NotificationRepository._internal();
   final NotificationService _notificationService = NotificationService();
@@ -33,7 +33,7 @@ class NotificationRepository {
 
     final existingIds = notifications.map((e) => e.notificationId).toSet();
     final newUnique =
-    fresh.where((n) => !existingIds.contains(n.notificationId)).toList();
+        fresh.where((n) => !existingIds.contains(n.notificationId)).toList();
 
     if (newUnique.isNotEmpty) {
       notifications.addAll(newUnique);
@@ -48,7 +48,7 @@ class NotificationRepository {
     if (!hasMore) return [];
 
     final newNotifications =
-    await _notificationService.fetchNextNotifications();
+        await _notificationService.fetchNextNotifications();
     if (newNotifications.isNotEmpty) {
       notifications.addAll(newNotifications);
       hasMore = newNotifications.length >= 10;
@@ -61,7 +61,7 @@ class NotificationRepository {
 
   Future<void> deleteNotificationFromBox(String notificationId) async {
     final keyToDelete = _notificationBox.keys.firstWhere(
-          (key) {
+      (key) {
         final notification = _notificationBox.get(key);
         return notification?.notificationId == notificationId;
       },
@@ -69,10 +69,10 @@ class NotificationRepository {
     );
 
     if (keyToDelete != null) {
-      print("Deleting notification with ID $notificationId from Hive");
+      // print("Deleting notification with ID $notificationId from Hive");
       await _notificationBox.delete(keyToDelete);
     } else {
-      print("Notification with ID $notificationId not found in Hive");
+      // print("Notification with ID $notificationId not found in Hive");
     }
   }
 }

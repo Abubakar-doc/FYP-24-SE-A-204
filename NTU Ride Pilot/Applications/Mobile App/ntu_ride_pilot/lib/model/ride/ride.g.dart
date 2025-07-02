@@ -28,7 +28,7 @@ class RideModelAdapter extends TypeAdapter<RideModel> {
       currentLocation: (fields[10] as Map?)?.cast<String, String>(),
       nextStopName: fields[11] as String?,
       seatCapacity: fields[12] as int?,
-      createdAt: fields[8] as DateTime?,
+      createdAt: fields[8] as DateTime,
       endedAt: fields[9] as DateTime?,
     );
   }

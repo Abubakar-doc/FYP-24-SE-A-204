@@ -9,16 +9,9 @@ class StudentSignInHelpScreen extends StatelessWidget {
     return HelpScreen(
       appBarTitle: 'Need Help?',
       faqs: [
-        {
-          "title": "How to sign in as a student?",
-          "text": "If you have clear transport dues, you will receive your account credentials for the NTU Ride Pilot app via email from National Textile University. Be sure to check your inbox or spam folder and use the provided credentials to access your account. In case of any issues with signing in, please contact the transport department for assistance."
-        },
-        {
-          "title": "I am not affiliated with NTU, how can I sign in?",
-          "text": "The NTU Ride Pilot app is exclusively for NTU students and bus staff. If you are not affiliated with NTU, you will not be able to access the app under any circumstances."
-        }
+        {"title": "Question no 1", "text": "Ans no 1"},
+        {"title": "Question no 2", "text": "Ans no 2"},
       ],
     );
   }
 }
-

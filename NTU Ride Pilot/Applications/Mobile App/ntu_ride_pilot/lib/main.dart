@@ -32,6 +32,7 @@ class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final ThemeController themeController = Get.put(ThemeController());
+  // final NotificationController notificationController = Get.put(NotificationController());
   final MediaService mediaService = MediaService();
 
   @override

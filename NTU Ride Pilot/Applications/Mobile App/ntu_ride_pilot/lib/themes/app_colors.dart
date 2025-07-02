@@ -24,4 +24,3 @@ const Color inputFieldBorderColor = Colors.transparent;
 // Card color
 const Color LightCardFillColor = Color(0xFFF5F5F5);
 const Color DarkCardFillColor = Color(0xFF3F4042);
-

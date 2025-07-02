@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
 
 part 'ride.g.dart';
@@ -31,7 +32,7 @@ class RideModel {
   DateTime? etaNextStop; // Make nullable
 
   @HiveField(8)
-  final DateTime createdAt;
+  final DateTime createdAt; // This is a DateTime
 
   @HiveField(9)
   final DateTime? endedAt;
@@ -59,9 +60,9 @@ class RideModel {
     this.currentLocation, // Make it nullable
     this.nextStopName,
     this.seatCapacity, // Allow nullable seating capacity
-    DateTime? createdAt,
+    required this.createdAt, // Ensure this is required
     this.endedAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  });
 
   // Convert RideModel to a Map for saving in Firestore
   Map<String, dynamic> toMap() {
@@ -84,6 +85,28 @@ class RideModel {
 
   // Factory constructor for creating RideModel from a Map
   factory RideModel.fromMap(Map<String, dynamic> map) {
+    // Handle created_at as Timestamp from Firestore
+    DateTime createdAt;
+    if (map['created_at'] is Timestamp) {
+      createdAt = (map['created_at'] as Timestamp)
+          .toDate(); // Convert Timestamp to DateTime
+    } else {
+      createdAt = DateTime
+          .now(); // Default to now if for some reason it's not a Timestamp
+    }
+
+    // Handle etaNextStop as time in minutes
+    DateTime? etaNextStop;
+    if (map['eta'] != null) {
+      final etaMinutes = map['eta'] as double;
+      etaNextStop = DateTime.now().add(
+        Duration(
+          minutes: etaMinutes.toInt(),
+          seconds: ((etaMinutes % 1) * 60).toInt(),
+        ),
+      );
+    }
+
     return RideModel(
       rideId: map['auto_id'],
       routeId: map['route_id'] ?? '',
@@ -92,12 +115,16 @@ class RideModel {
       driverId: map['driver_id'] ?? '',
       onlineOnBoard: List<String>.from(map['onlineOnBoard'] ?? []),
       offlineOnBoard: List<String>.from(map['offlineOnBoard'] ?? []),
-      etaNextStop: map['eta'] != null ? DateTime.parse(map['eta']) : null,
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      etaNextStop: etaNextStop,
+      createdAt: createdAt, // Correctly parsed DateTime from Timestamp
       endedAt: map['ended_at'] != null ? DateTime.parse(map['ended_at']) : null,
-      currentLocation: map['currentLocation'] != null ? Map<String, String>.from(map['currentLocation']) : null,
+      currentLocation: map['currentLocation'] != null
+          ? Map<String, String>.from(map['currentLocation'])
+          : null,
       nextStopName: map['nextStopName'],
-      seatCapacity: map['seatCapacity'] != null ? map['seatCapacity'] as int? : null, // Handle nullable int
+      seatCapacity: map['seatCapacity'] != null
+          ? map['seatCapacity'] as int?
+          : null, // Handle nullable int
     );
   }
 }

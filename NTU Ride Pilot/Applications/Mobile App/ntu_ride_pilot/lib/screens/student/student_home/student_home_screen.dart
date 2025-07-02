@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/controllers/notification_controller.dart';
 import 'package:ntu_ride_pilot/controllers/profile_controller.dart';
-import 'package:ntu_ride_pilot/screens/student/ride/view_ride.dart';
+import 'package:ntu_ride_pilot/screens/student/view_ride/view_ride.dart';
 import 'package:ntu_ride_pilot/services/common/fcmService/fcm_service.dart';
 
 class StudentHomeScreen extends StatefulWidget {
@@ -13,7 +13,6 @@ class StudentHomeScreen extends StatefulWidget {
 }
 
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
-
   @override
   void initState() {
     super.initState();

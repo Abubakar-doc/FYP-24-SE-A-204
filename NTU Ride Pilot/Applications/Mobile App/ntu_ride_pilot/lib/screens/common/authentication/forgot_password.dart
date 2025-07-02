@@ -24,7 +24,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       await _authService.resetPassword(emailController.text.trim());
-      SnackbarUtil.showSuccess("Email Sent", "Check your inbox for password reset instructions.");
+      SnackbarUtil.showSuccess(
+          "Email Sent", "Check your inbox for password reset instructions.");
       Navigator.of(context).pop();
     } finally {
       setState(() => _isLoading = false);

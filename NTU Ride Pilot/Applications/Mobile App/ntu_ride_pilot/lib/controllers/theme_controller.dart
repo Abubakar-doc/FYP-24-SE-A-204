@@ -28,5 +28,4 @@ class ThemeController extends GetxController {
     await _box.write('themeMode', mode.toString().split('.').last);
     Get.changeThemeMode(mode);
   }
-
 }

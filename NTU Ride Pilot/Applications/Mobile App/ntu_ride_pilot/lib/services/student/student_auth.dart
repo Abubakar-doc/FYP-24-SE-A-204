@@ -46,12 +46,13 @@ class StudentAuthService extends GetxController {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
       if (googleUser == null) {
-        SnackbarUtil.showInfo("Error", "Google sign-in was cancelled.");
+        // SnackbarUtil.showInfo("Error", "Google sign-in was cancelled.");
         return;
       }
 
       // Obtain the authentication details from Google
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create an AuthCredential from the Google credentials
       final AuthCredential credential = GoogleAuthProvider.credential(
@@ -60,7 +61,8 @@ class StudentAuthService extends GetxController {
       );
 
       // Once signed in, sign in with the credential
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
 
       final email = userCredential.user?.email;
       if (email != null) {
@@ -75,7 +77,8 @@ class StudentAuthService extends GetxController {
         }
       }
     } on FirebaseAuthException catch (e) {
-      SnackbarUtil.showError("Authentication Error", e.message ?? "Unknown error");
+      SnackbarUtil.showError(
+          "Authentication Error", e.message ?? "Unknown error");
     }
   }
 }

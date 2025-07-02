@@ -42,7 +42,6 @@ class DriverModel {
     };
   }
 
-
   factory DriverModel.fromMap(Map<String, dynamic> map) {
     return DriverModel(
       driverId: map['driverId'] ?? '',

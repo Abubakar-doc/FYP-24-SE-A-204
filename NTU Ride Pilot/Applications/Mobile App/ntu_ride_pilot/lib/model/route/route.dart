@@ -41,20 +41,24 @@ class RouteModel {
 
     List<Map<String, dynamic>> busStops = [];
     if (busStopsList != null) {
-      busStops = busStopsList.map((busStop) => Map<String, dynamic>.from(busStop)).toList();
+      busStops = busStopsList
+          .map((busStop) => Map<String, dynamic>.from(busStop))
+          .toList();
     }
 
     // Handle createdAt field: Check if it's a Timestamp and convert it to DateTime
     DateTime createdAt;
     if (map['createdAt'] is Timestamp) {
-      createdAt = (map['createdAt'] as Timestamp).toDate(); // Convert Timestamp to DateTime
+      createdAt = (map['createdAt'] as Timestamp)
+          .toDate(); // Convert Timestamp to DateTime
     } else {
       // If it's not a Timestamp, fallback to parsing as a string or use current time
-      createdAt = DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String());
+      createdAt =
+          DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String());
     }
 
     return RouteModel(
-      routeId: docId,  // Using the Firestore document ID
+      routeId: docId, // Using the Firestore document ID
       name: map['name'] ?? 'Unnamed Route',
       busStops: busStops,
       createdAt: createdAt, // Correctly parsed createdAt

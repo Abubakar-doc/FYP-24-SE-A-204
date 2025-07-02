@@ -85,12 +85,12 @@ class NotificationModel {
   @override
   int get hashCode {
     return notificationId.hashCode ^
-    title.hashCode ^
-    message.hashCode ^
-    read.hashCode ^
-    isDeleted.hashCode ^
-    createdAt.hashCode ^
-    mediaLinks.hashCode;
+        title.hashCode ^
+        message.hashCode ^
+        read.hashCode ^
+        isDeleted.hashCode ^
+        createdAt.hashCode ^
+        mediaLinks.hashCode;
   }
 
   bool _listEquals(List<String> a, List<String> b) {

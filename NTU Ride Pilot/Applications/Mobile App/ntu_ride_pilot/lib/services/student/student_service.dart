@@ -11,7 +11,7 @@ class StudentService {
       var studentDoc = await getStudentByEmail(email);
       return studentDoc != null; // Return true if student exists, else false
     } catch (e) {
-      print("Error checking student existence in Firestore: $e");
+      // print("Error checking student existence in Firestore: $e");
       return false;
     }
   }
@@ -39,10 +39,10 @@ class StudentService {
           busCardId: data['bus_card_id'],
         );
       } else {
-        print("No student found with email: $email");
+        // print("No student found with email: $email");
       }
     } catch (e) {
-      print("Error fetching student: $e");
+      // print("Error fetching student: $e");
     }
     return null;
   }
@@ -63,11 +63,11 @@ class StudentService {
         box.put('current_student', studentDoc);
         return true; // Indicate success
       } else {
-        print("Student not found");
+        // print("Student not found");
         return false; // Indicate failure (student not found)
       }
     } catch (e) {
-      print("Error saving student to Hive: $e");
+      // print("Error saving student to Hive: $e");
       return false; // Return false if any error occurs
     }
   }
@@ -87,7 +87,7 @@ class StudentService {
       final box = await _getStudentBox();
       return box.get('current_student');
     } catch (e) {
-      print("Error fetching student from Hive: $e");
+      // print("Error fetching student from Hive: $e");
       return null;
     }
   }

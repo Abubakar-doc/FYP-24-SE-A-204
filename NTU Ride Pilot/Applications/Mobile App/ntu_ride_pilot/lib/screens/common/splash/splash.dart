@@ -14,8 +14,7 @@ class SplashScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor:
-      Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -28,12 +27,12 @@ class SplashScreen extends StatelessWidget {
                 child: Center(
                   child: theme.brightness == Brightness.dark
                       ? Image.asset(
-                    'assets/pictures/logoDark.jpg',
-                  )
+                          'assets/pictures/logoDark.jpg',
+                        )
                       : Image.asset(
-                    'assets/pictures/logoLight.jpg',
-                    width: 250,
-                  ),
+                          'assets/pictures/logoLight.jpg',
+                          width: 250,
+                        ),
                 ),
               ),
 
@@ -45,8 +44,7 @@ class SplashScreen extends StatelessWidget {
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontFamily: 'OpenSans',
-                      fontSize: 22
-                  ),
+                      fontSize: 22),
                 ),
               ),
             ],

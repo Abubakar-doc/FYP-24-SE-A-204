@@ -9,16 +9,9 @@ class DriverSignInHelpScreen extends StatelessWidget {
     return HelpScreen(
       appBarTitle: 'Need Help?',
       faqs: [
-        {
-          "title": "How do I sign in as a driver?",
-          "text": "Driver will need to visit the transport office to collect their account credentials for the NTU Ride Pilot app. Ensure you obtain them in person to access your account. For further assistance, please communicate directly with the transport department."
-        },
-        {
-          "title": "I am not affiliated with NTU, how can I sign in?",
-          "text": "The NTU Ride Pilot app is exclusively for NTU students and bus staff. If you are not affiliated with NTU, you will not be able to access the app under any circumstances."
-        }
+        {"title": "Question no 1", "text": "Ans no 1"},
+        {"title": "Question no 2", "text": "Ans no 2"},
       ],
     );
   }
 }
-

@@ -9,14 +9,8 @@ class FeedBackHelpScreen extends StatelessWidget {
     return HelpScreen(
       appBarTitle: 'Need Help?',
       faqs: [
-        {
-          "title": "Question no 1",
-          "text": "Ans no 1"
-        },
-        {
-          "title": "Question no 2",
-          "text": "Ans no 2"
-        },
+        {"title": "Question no 1", "text": "Ans no 1"},
+        {"title": "Question no 2", "text": "Ans no 2"},
       ],
     );
   }

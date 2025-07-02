@@ -13,8 +13,8 @@ class RideControlController extends GetxController {
     return _currentCardImage.isNotEmpty
         ? _currentCardImage
         : brightness == Brightness.dark
-        ? darkThemeCard
-        : lightThemeCard;
+            ? darkThemeCard
+            : lightThemeCard;
   }
 
   void setCardImage(String imagePath) {
@@ -23,7 +23,8 @@ class RideControlController extends GetxController {
   }
 
   void resetCardImage(Brightness brightness) {
-    _currentCardImage = brightness == Brightness.dark ? darkThemeCard : lightThemeCard;
+    _currentCardImage =
+        brightness == Brightness.dark ? darkThemeCard : lightThemeCard;
     update();
   }
 }

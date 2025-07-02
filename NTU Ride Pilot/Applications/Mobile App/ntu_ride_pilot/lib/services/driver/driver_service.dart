@@ -28,7 +28,7 @@ class DriverService {
         );
       }
     } catch (e) {
-      print("Error fetching driver: $e");
+      // print("Error fetching driver: $e");
     }
     return null;
   }
@@ -43,7 +43,7 @@ class DriverService {
         return true;
       } else {
         // No such driver in Firestore
-        SnackbarUtil.showError("Sign-in Failed", "No record found.");
+        // SnackbarUtil.showError("Sign-in Failed", "No record found.");
         return false;
       }
     } catch (e) {

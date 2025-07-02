@@ -16,7 +16,8 @@ class DetailRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     // Truncate the value text if it's longer than 25 characters
-    String displayValue = value.length > 25 ? '${value.substring(0, 25)}...' : value;
+    String displayValue =
+        value.length > 25 ? '${value.substring(0, 25)}...' : value;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),

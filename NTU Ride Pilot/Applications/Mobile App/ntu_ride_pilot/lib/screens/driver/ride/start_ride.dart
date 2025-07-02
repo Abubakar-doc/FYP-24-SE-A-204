@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-import 'package:ntu_ride_pilot/controllers/profile_controller.dart';
 import 'package:ntu_ride_pilot/model/ride/ride.dart';
 import 'package:ntu_ride_pilot/screens/common/help/driver/driver_help_ride_start.dart';
-import 'package:ntu_ride_pilot/screens/driver/ride/widget/live_location.dart';
+import 'package:ntu_ride_pilot/screens/driver/ride/widget/user_location_and_bus_stop_map.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
 import 'package:ntu_ride_pilot/widget/drawer/drawer_button.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -55,7 +54,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
       lastMarkerBytes =
           await rootBundle.load('assets/pictures/last_marker.png');
     } catch (e) {
-      debugPrint('Error loading marker images: $e');
+      // debugPrint('Error loading marker images: $e');
     }
   }
 
@@ -151,37 +150,39 @@ class _StartRideScreenState extends State<StartRideScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       key: _scaffoldKey,
-      drawer: const CustomDrawer(),
+      drawer: const CustomDrawer(
+        showRoutes: false,
+        showLiveLocation: false,
+      ),
       body: SafeArea(
         child: Stack(
           children: [
             // Map placeholder divided into 60% and 40% of the screen.
             Positioned.fill(
-              child: Container(
-                child: Column(
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: LiveLocation(
-                        busStops: busStops,
-                        defaultMarkerBytes: defaultMarkerBytes,
-                        firstMarkerBytes: firstMarkerBytes,
-                        lastMarkerBytes: lastMarkerBytes,
-                        onMapReady: (cameraFunction) {
-                          setState(() {
-                            _centerCamera = cameraFunction;
-                          });
-                        },
-                      ),
+              child: Column(
+                children: [
+                  Expanded(
+                    flex: 6,
+                    child: UserLocationAndBusStopMap(
+                      busStops: busStops,
+                      defaultMarkerBytes: defaultMarkerBytes,
+                      firstMarkerBytes: firstMarkerBytes,
+                      lastMarkerBytes: lastMarkerBytes,
+                      onMapReady: (cameraFunction) {
+                        setState(() {
+                          _centerCamera = cameraFunction;
+                        });
+                      },
                     ),
-                    Expanded(
-                      flex: 3,
-                      child: Container(),
-                    ),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Container(),
+                  ),
+                ],
               ),
             ),
             // Drawer open button.
@@ -236,7 +237,19 @@ class _StartRideScreenState extends State<StartRideScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Header with title and help button.
+                        Center(
+                          child: Container(
+                            margin: EdgeInsets.only(bottom: 12),
+                            height: 4,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.grey.shade700
+                                  : Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Row(
@@ -291,7 +304,7 @@ class _StartRideScreenState extends State<StartRideScreen> {
                             selectedValue: selectedRoute,
                             items: routes,
                             displayItem: (route) => route.name,
-                            onChanged: (value) async{
+                            onChanged: (value) async {
                               await Future.delayed(Duration(milliseconds: 100));
                               setState(() {
                                 selectedRoute = value;

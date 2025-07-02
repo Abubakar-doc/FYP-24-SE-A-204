@@ -23,7 +23,7 @@ class NotificationController extends GetxController {
 
   Future<void> initialize() async {
     if (!isInitialized) {
-      print("Initializing repository...");
+      // print("Initializing repository...");
       await repository.init();
       print("Repository initialized: ${repository.isInitialized}");
       notifications.assignAll(repository.notifications);
@@ -63,8 +63,7 @@ class NotificationController extends GetxController {
 
     // 5) reset your backend unread‐count
     unreadCount.value = 0;
-    print("Total number of notifications: ${notifications.length}");
-
+    // print("Total number of notifications: ${notifications.length}");
   }
 
   Future<void> onNotificationScreenClosed() async {
@@ -92,7 +91,7 @@ class NotificationController extends GetxController {
 
     // Refresh notifications to ensure no stale states
     // notifications.refresh();
-    print("Total number of notifications: ${notifications.length}");
+    // print("Total number of notifications: ${notifications.length}");
   }
 
   void _calculateUnreadCount() {
@@ -171,28 +170,32 @@ class NotificationController extends GetxController {
   //   // Recalculate unread count
   //   _calculateUnreadCount();
   // }
-  void _handleDeletedNotifications(List<NotificationModel> latestNotifications) {
-    final currentNotificationIds =
-    notifications.map((n) => n.notificationId).toSet(); // Cached notifications
-    final latestNotificationIds =
-    latestNotifications.map((n) => n.notificationId).toSet(); // Latest fetched notifications
+  void _handleDeletedNotifications(
+      List<NotificationModel> latestNotifications) {
+    final currentNotificationIds = notifications
+        .map((n) => n.notificationId)
+        .toSet(); // Cached notifications
+    final latestNotificationIds = latestNotifications
+        .map((n) => n.notificationId)
+        .toSet(); // Latest fetched notifications
 
     // Identify deleted notifications - notifications that are in the cache but not in the latest batch
     final deletedNotificationIds =
-    currentNotificationIds.difference(latestNotificationIds);
+        currentNotificationIds.difference(latestNotificationIds);
 
     // Loop through all cached notifications to ensure we remove deleted ones, even if they're not in the latest 10
-    notifications.removeWhere((notif) => deletedNotificationIds.contains(notif.notificationId));
+    notifications.removeWhere(
+        (notif) => deletedNotificationIds.contains(notif.notificationId));
 
     // Delete from Firestore (and Hive if applicable)
     for (var id in deletedNotificationIds) {
-      repository.deleteNotificationFromBox(id); // Ensure this deletes from Hive as well
+      repository.deleteNotificationFromBox(
+          id); // Ensure this deletes from Hive as well
     }
 
     // Recalculate unread count after deleting the old notifications
     _calculateUnreadCount();
   }
-
 
   Future<void> _markNotificationsRead(List<NotificationModel> notifs) async {
     for (var notif in notifs) {

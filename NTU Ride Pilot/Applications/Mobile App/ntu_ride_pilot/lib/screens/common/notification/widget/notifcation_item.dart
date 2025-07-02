@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/model/notification/notification.dart';
@@ -58,19 +59,20 @@ class NotificationItem extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(notification.message),
+            // Text(notification.message),
+            _buildMessageWithLinks(notification.message, context),
             const SizedBox(height: 8),
             if (mediaLinks.isNotEmpty) ...[
               // Get all images first
               ..._buildImageGrid(context, mediaLinks),
 
               // PDF links
-              ...mediaLinks
-                  .where((link) => (link).endsWith('.pdf'))
-                  .map(
-                    (pdfLink) {
+              ...mediaLinks.where((link) => (link).endsWith('.pdf')).map(
+                (pdfLink) {
                   final url = pdfLink;
-                  final fileName = Uri.parse(url).pathSegments.last; // Get file name from URL
+                  final fileName = Uri.parse(url)
+                      .pathSegments
+                      .last; // Get file name from URL
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: GestureDetector(
@@ -89,13 +91,14 @@ class NotificationItem extends StatelessWidget {
                           // Use Text widget with overflow handling
                           Expanded(
                             child: Text(
-                              fileName,  // Display the PDF file name
+                              fileName, // Display the PDF file name
                               style: TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.bold,
                               ),
-                              overflow: TextOverflow.ellipsis,  // Handle long text
-                              maxLines: 1,  // Ensure it stays on one line
+                              overflow:
+                                  TextOverflow.ellipsis, // Handle long text
+                              maxLines: 1, // Ensure it stays on one line
                             ),
                           ),
                         ],
@@ -103,8 +106,7 @@ class NotificationItem extends StatelessWidget {
                     ),
                   );
                 },
-              )
-                  ,
+              ),
             ],
             const SizedBox(height: 8),
             Align(
@@ -172,8 +174,7 @@ class NotificationItem extends StatelessWidget {
   List<Widget> _buildImageGrid(BuildContext context, List<dynamic> mediaLinks) {
     final images = mediaLinks
         .where((link) =>
-            (link as String).endsWith('.jpg') ||
-            (link).endsWith('.png'))
+            (link as String).endsWith('.jpg') || (link).endsWith('.png'))
         .toList();
 
     if (images.isEmpty) return [];
@@ -324,5 +325,69 @@ class NotificationItem extends StatelessWidget {
         const SizedBox(height: 8),
       ];
     }
+  }
+
+  Text _buildMessageWithLinks(String message, BuildContext context) {
+    final textSpans = <TextSpan>[];
+    int currentIndex = 0;
+
+    final urlRegExp = RegExp(r'(https?://[^\s]+)');
+
+    final matches = urlRegExp.allMatches(message);
+
+    if (matches.isEmpty) {
+      return Text(message);
+    }
+
+    for (final match in matches) {
+      // Add any text before the match
+      if (match.start > currentIndex) {
+        textSpans.add(TextSpan(
+          text: message.substring(currentIndex, match.start),
+        ));
+      }
+
+      // Extract the URL from the match
+      String url = match.group(1)!;
+      // Make sure the URL has a valid scheme
+      if (!url.startsWith(RegExp(r'https?://'))) {
+        url = 'https://$url';
+      }
+
+      // Add the clickable URL text
+      textSpans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(
+            color: Colors.blue,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () async {
+              try {
+                final uri = Uri.parse(url);
+                await launchUrl(uri);
+              } catch (e) {
+                SnackbarUtil.showError('Error', 'Error opening link!');
+              }
+            },
+        ),
+      );
+
+      // Update the current index to continue after the link
+      currentIndex = match.end;
+    }
+
+    // Add any remaining text after the last match
+    if (currentIndex < message.length) {
+      textSpans.add(
+        TextSpan(
+          text: message.substring(currentIndex),
+        ),
+      );
+    }
+
+    return Text.rich(
+      TextSpan(children: textSpans),
+    );
   }
 }

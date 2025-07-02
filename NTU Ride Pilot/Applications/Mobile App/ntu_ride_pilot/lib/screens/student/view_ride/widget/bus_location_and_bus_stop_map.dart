@@ -1,52 +1,68 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ntu_ride_pilot/controllers/theme_controller.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:ntu_ride_pilot/services/ride/live_location.dart';
 import 'package:ntu_ride_pilot/utils/utils.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-class LiveLocation extends StatefulWidget {
+class BusLocationAndBusStopMap extends StatefulWidget {
   final void Function(Future<void> Function() cameraFunction)? onMapReady;
   final List<Map<String, dynamic>>? busStops;
   final ByteData? defaultMarkerBytes;
   final ByteData? firstMarkerBytes;
   final ByteData? lastMarkerBytes;
+  final ByteData? busMarkerBytes;
+  final bool showCountOnly;
+  final double? latitude;
+  final double? longitude;
+  final String? busId;
 
-  const LiveLocation({
+  const BusLocationAndBusStopMap({
     super.key,
     this.onMapReady,
     this.busStops,
     this.defaultMarkerBytes,
     this.firstMarkerBytes,
     this.lastMarkerBytes,
+    this.busMarkerBytes,
+    this.showCountOnly = false, // Default value is false
+    this.latitude, // Passing latitude
+    this.longitude,
+    this.busId,
   });
 
   @override
-  State<LiveLocation> createState() => _LiveLocationState();
+  State<BusLocationAndBusStopMap> createState() =>
+      _BusLocationAndBusStopMapState();
 }
 
-class _LiveLocationState extends State<LiveLocation> {
+class _BusLocationAndBusStopMapState extends State<BusLocationAndBusStopMap> {
   MapboxMap? mapboxMapController;
-  bool _isLocationPermissionGranted = false;
   PointAnnotationManager? _pointAnnotationManager;
-  late LocationService _liveLocationService;
   PolylineAnnotationManager? _polylineAnnotationManager;
   final ThemeController _themeController = Get.find<ThemeController>();
+  late LocationService _liveLocationService;
+  bool _isLocationPermissionGranted = false;
 
   @override
   void initState() {
-    super.initState();
     _liveLocationService = LocationService(context);
+    super.initState();
   }
 
   @override
-  void didUpdateWidget(LiveLocation oldWidget) {
+  void didUpdateWidget(BusLocationAndBusStopMap oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.busStops != oldWidget.busStops) {
       _updateBusStopMarkers();
       _setCameraToFitAllMarkers();
+    }
+
+    // Check if latitude and longitude have changed
+    if (widget.latitude != oldWidget.latitude ||
+        widget.longitude != oldWidget.longitude) {
+      _setCameraToFitAllMarkers(); // Recalculate camera position
     }
   }
 
@@ -96,6 +112,7 @@ class _LiveLocationState extends State<LiveLocation> {
 
   void _onMapCreated(MapboxMap controller) async {
     mapboxMapController = controller;
+    // print("Mapbox Map Controller initialized: $mapboxMapController");
     final theme = Theme.of(context);
     bool isDarkMode = theme.brightness == Brightness.dark;
     String mapStyle = isDarkMode
@@ -116,8 +133,9 @@ class _LiveLocationState extends State<LiveLocation> {
       widget.onMapReady!(_setCameraToFitAllMarkers);
     }
 
-    // Check location permission and enable location settings
+    // Directly call camera function without checking location
     _checkLocationPermissionAndEnableLocation();
+    _setCameraToFitAllMarkers();
   }
 
   Future<void> _checkLocationPermissionAndEnableLocation() async {
@@ -134,52 +152,19 @@ class _LiveLocationState extends State<LiveLocation> {
     } else {
       SnackbarUtil.showError('GPS Error!', 'GPS access is required!');
       // Don't exit the app, just show the error
-      // SystemNavigator.pop();
     }
   }
 
-  void _updateBusStopMarkers() async {
-    if (mapboxMapController == null || widget.busStops == null) return;
-
-    final theme = Theme.of(context);
-    bool isDarkMode = theme.brightness == Brightness.dark;
-
-    _pointAnnotationManager ??=
-        await mapboxMapController!.annotations.createPointAnnotationManager();
-
-    await _pointAnnotationManager!.deleteAll();
-
-    final annotations = widget.busStops!.asMap().entries.map((entry) {
-      int index = entry.key;
-      var busStop = entry.value;
-      bool isFirst = index == 0;
-      bool isLast = index == widget.busStops!.length - 1;
-
-      return PointAnnotationOptions(
-        geometry: Point(
-            coordinates: Position(busStop['longitude'], busStop['latitude'])),
-        textField: '${index + 1}. ${busStop['busStopName']}',
-        textColor: isDarkMode ? Colors.white.value : Colors.black.value,
-        image: isFirst
-            ? widget.firstMarkerBytes?.buffer.asUint8List()
-            : (isLast
-                ? widget.lastMarkerBytes?.buffer.asUint8List()
-                : widget.defaultMarkerBytes?.buffer.asUint8List()),
-        iconSize: 0.15,
-      );
-    }).toList();
-
-    _pointAnnotationManager!.createMulti(annotations);
-
-    // Add lines between bus stops
-    await _addBusStopLines();
-  }
-
   void _addBusStopMarkers() async {
+    if (mapboxMapController == null) {
+      // print("Mapbox Map Controller is not initialized.");
+      return;
+    }
     final theme = Theme.of(context);
     bool isDarkMode = theme.brightness == Brightness.dark;
     final pointAnnotationManager =
         await mapboxMapController!.annotations.createPointAnnotationManager();
+    // print("_pointAnnotationManager initialized: $_pointAnnotationManager");
 
     // Load all marker images
     final ByteData defaultMarkerBytes =
@@ -205,7 +190,9 @@ class _LiveLocationState extends State<LiveLocation> {
 
       final annotationOptions = PointAnnotationOptions(
         geometry: point,
-        textField: '${i + 1}. ${busStop['busStopName']}',
+        textField: widget.showCountOnly
+            ? '${i + 1}' // Only show the count
+            : '${i + 1}. ${busStop['busStopName']}', // Show count + name
         textColor: isDarkMode ? Colors.white.value : Colors.black.value,
         image: isFirst
             ? firstMarkerImage
@@ -215,117 +202,46 @@ class _LiveLocationState extends State<LiveLocation> {
 
       pointAnnotationManager.create(annotationOptions);
     }
-    _updateBusStopMarkers;
+    _updateBusStopMarkers();
   }
 
-  Future<void> _setCameraToFitAllMarkers() async {
-    var userLocation = await _liveLocationService.getCurrentLocation();
+  void _updateBusStopMarkers() async {
+    if (mapboxMapController == null || widget.busStops == null) return;
 
-    if ((widget.busStops ?? []).isEmpty) {
-      if (userLocation != null) {
-        double latitude = userLocation.latitude;
-        double longitude = userLocation.longitude;
+    final theme = Theme.of(context);
+    bool isDarkMode = theme.brightness == Brightness.dark;
 
-        CameraOptions cameraOptions = CameraOptions(
-          center: Point(coordinates: Position(longitude, latitude)),
-          zoom: 14.5,
-          bearing: 0.0,
-        );
+    // print("Bus Stops: ${widget.busStops}");
+    _pointAnnotationManager ??=
+        await mapboxMapController!.annotations.createPointAnnotationManager();
 
-        // Add animation
-        mapboxMapController?.flyTo(
-          cameraOptions,
-          MapAnimationOptions(
-            duration: 1000,
-            startDelay: 0,
-          ),
-        );
-      }
-      return;
-    }
+    await _pointAnnotationManager!.deleteAll();
 
-    // Calculate bounds with padding
-    double padding = 0.01; // degrees
-    double minLat = widget.busStops![0]['latitude'] - padding;
-    double maxLat = widget.busStops![0]['latitude'] + padding;
-    double minLon = widget.busStops![0]['longitude'] - padding;
-    double maxLon = widget.busStops![0]['longitude'] + padding;
+    final annotations = widget.busStops!.asMap().entries.map((entry) {
+      int index = entry.key;
+      var busStop = entry.value;
+      bool isFirst = index == 0;
+      bool isLast = index == widget.busStops!.length - 1;
 
-    for (var stop in widget.busStops ?? []) {
-      minLat = min(minLat, stop['latitude'] - padding);
-      maxLat = max(maxLat, stop['latitude'] + padding);
-      minLon = min(minLon, stop['longitude'] - padding);
-      maxLon = max(maxLon, stop['longitude'] + padding);
-    }
+      String markerText = widget.showCountOnly
+          ? '${index + 1}' // Only show the count
+          : '${index + 1}. ${busStop['busStopName']}'; // Show count + name
 
-    // Include user location if available
-    if (userLocation != null) {
-      minLat = min(minLat, userLocation.latitude - padding);
-      maxLat = max(maxLat, userLocation.latitude + padding);
-      minLon = min(minLon, userLocation.longitude - padding);
-      maxLon = max(maxLon, userLocation.longitude + padding);
-    }
+      return PointAnnotationOptions(
+        geometry: Point(
+            coordinates: Position(busStop['longitude'], busStop['latitude'])),
+        textField: markerText,
+        textColor: isDarkMode ? Colors.white.value : Colors.black.value,
+        image: isFirst
+            ? widget.firstMarkerBytes?.buffer.asUint8List()
+            : (isLast
+                ? widget.lastMarkerBytes?.buffer.asUint8List()
+                : widget.defaultMarkerBytes?.buffer.asUint8List()),
+        iconSize: 0.15,
+      );
+    }).toList();
 
-    // Calculate center and zoom
-    double centerLat = (minLat + maxLat) / 2;
-    double centerLon = (minLon + maxLon) / 2;
-    double zoom = _calculateZoomLevel(minLat, maxLat, minLon, maxLon);
-
-    CameraOptions cameraOptions = CameraOptions(
-      center: Point(coordinates: Position(centerLon, centerLat)),
-      zoom: zoom,
-      bearing: 0.0,
-    );
-
-    // Use flyTo for smooth animation
-    mapboxMapController?.flyTo(
-      cameraOptions,
-      MapAnimationOptions(
-        duration: 1000,
-        startDelay: 0,
-      ),
-    );
-  }
-
-  double _calculateZoomLevel(
-      double minLat, double maxLat, double minLon, double maxLon) {
-    // Earth's circumference in meters at the equator
-    const double earthCircumference = 40075000.0;
-
-    // Calculate the latitudinal and longitudinal spans
-    double latDiff = maxLat - minLat;
-    double lonDiff = maxLon - minLon;
-
-    // Add some padding around the markers (20% of the span)
-    double paddingFactor = 1.5;
-    latDiff *= paddingFactor;
-    lonDiff *= paddingFactor;
-
-    // Convert latitudinal span to meters (approximate)
-    double latSpan = latDiff * earthCircumference / 360;
-
-    // Convert longitudinal span to meters (adjusted for latitude)
-    double lonSpan =
-        lonDiff * earthCircumference / 360 * cos((minLat + maxLat) * pi / 360);
-
-    // Determine the maximum span (we want to fit both dimensions)
-    double maxSpan = max(latSpan, lonSpan);
-
-    // Get screen dimensions
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    double minScreenDimension = min(screenWidth, screenHeight);
-
-    // Calculate zoom level based on how many meters should fit in one pixel
-    // 256 is the tile size in pixels
-    double zoom =
-        log(earthCircumference / (maxSpan / minScreenDimension * 256)) / log(2);
-
-    // Further adjust zoom level to be less zoomed-in
-    zoom -= 1.0; // Reduce zoom level by 1 to show more area
-
-    // Clamp the zoom level to reasonable bounds
-    return zoom.clamp(10.0, 18.0);
+    _pointAnnotationManager!.createMulti(annotations);
   }
 
   Future<void> _addBusStopLines() async {
@@ -346,16 +262,74 @@ class _LiveLocationState extends State<LiveLocation> {
       lineCoordinates.add(Position(busStop['longitude'], busStop['latitude']));
     }
 
+    _polylineAnnotationManager!.create(
+      PolylineAnnotationOptions(
+        geometry: LineString(coordinates: lineCoordinates),
+        lineColor: Colors.blue.value,
+        lineWidth: 2.0,
+      ),
+    );
+  }
+
+  Future<void> _setCameraToFitAllMarkers() async {
+    // Use the provided latitude and longitude or fallback to default values
+    double latitude =
+        widget.latitude ?? 31.460903342753127; // Default to Singapore if null
+    double longitude =
+        widget.longitude ?? 73.14770214770297; // Default to Singapore if null
+
+    // Use flyTo to animate to the new camera position
+    CameraOptions cameraOptions = CameraOptions(
+      center: Point(coordinates: Position(longitude, latitude)),
+      zoom: 14.5,
+      bearing: 0.0,
+    );
+
     // Add the polyline annotation
     final theme = Theme.of(context);
     bool isDarkMode = theme.brightness == Brightness.dark;
 
-    _polylineAnnotationManager!.create(
-      PolylineAnnotationOptions(
-        geometry: LineString(coordinates: lineCoordinates),
-        lineColor: isDarkMode ? Colors.lightBlue.value : Colors.blue.value,
-        lineWidth: 4.0,
+    // Add animation
+    await mapboxMapController?.flyTo(
+      cameraOptions,
+      MapAnimationOptions(
+        duration: 1000,
+        startDelay: 0,
       ),
     );
+    final ByteData defaultMarkerBytes =
+        await rootBundle.load('assets/pictures/marker.png');
+    // print("Default marker image loaded successfully.");
+
+    // Add the marker and text at the given coordinates
+    if (widget.defaultMarkerBytes != null || widget.busMarkerBytes != null) {
+      // Determine if we're using custom coordinates or default coordinates
+      bool isCustomCoordinates =
+          widget.latitude != null && widget.longitude != null;
+
+      final markerOptions = PointAnnotationOptions(
+        geometry: Point(coordinates: Position(longitude, latitude)),
+        image: isCustomCoordinates
+            ? widget.busMarkerBytes?.buffer.asUint8List()
+            : widget.defaultMarkerBytes?.buffer.asUint8List(),
+        iconSize: 0.15,
+        textField: isCustomCoordinates
+            ? widget.busId ??
+                'busid' // Use busId if provided, otherwise 'busid'
+            : 'NTU', // Default text for default coordinates
+        textColor: isDarkMode ? Colors.white.value : Colors.black.value,
+        textSize: 16, // Size of the text
+      );
+
+      // Ensure the point annotation manager is initialized
+      _pointAnnotationManager ??=
+          await mapboxMapController!.annotations.createPointAnnotationManager();
+
+      // Clear any existing markers first
+      await _pointAnnotationManager?.deleteAll();
+
+      // Create the marker with the text
+      await _pointAnnotationManager?.create(markerOptions);
+    }
   }
 }

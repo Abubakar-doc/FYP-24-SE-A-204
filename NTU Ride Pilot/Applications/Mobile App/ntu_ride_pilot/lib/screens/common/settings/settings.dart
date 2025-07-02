@@ -70,16 +70,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 10),
               Obx(() => CustomDropdown<ThemeMode>(
-                title: "Select Theme",
-                selectedValue: themeController.themeMode.value,
-                items: themeOptions,
-                displayItem: (mode) => displayThemeMode(mode),
-                onChanged: (ThemeMode? mode) {
-                  if (mode != null) {
-                    themeController.setTheme(mode);
-                  }
-                },
-              )),
+                    title: "Select Theme",
+                    selectedValue: themeController.themeMode.value,
+                    items: themeOptions,
+                    displayItem: (mode) => displayThemeMode(mode),
+                    onChanged: (ThemeMode? mode) {
+                      if (mode != null) {
+                        themeController.setTheme(mode);
+                      }
+                    },
+                  )),
               const SizedBox(height: 20),
               const Text(
                 "Connected Email",
@@ -104,31 +104,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onPressed: _isLoggingOut
                     ? null
                     : () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return CustomAlertDialog(
-                        onCancel: () {
-                          Navigator.of(context).pop();
-                        },
-                        onConfirm: () async {
-                          Navigator.of(context).pop();
-                          setState(() {
-                            _isLoggingOut = true;
-                          });
-                          await authService.logout(context);
-                          // Optionally, if logout fails and the user remains on this screen,
-                          // you can reset _isLoggingOut to false.
-                          setState(() {
-                            _isLoggingOut = false;
-                          });
-                        },
-                        title: 'Logout?',
-                        message: 'Are you sure you want to Logout?',
-                      );
-                    },
-                  );
-                },
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return CustomAlertDialog(
+                              onCancel: () {
+                                Navigator.of(context).pop();
+                              },
+                              onConfirm: () async {
+                                Navigator.of(context).pop();
+                                setState(() {
+                                  _isLoggingOut = true;
+                                });
+                                await authService.logout(context);
+                                // Optionally, if logout fails and the user remains on this screen,
+                                // you can reset _isLoggingOut to false.
+                                setState(() {
+                                  _isLoggingOut = false;
+                                });
+                              },
+                              title: 'Logout?',
+                              message: 'Are you sure you want to Logout?',
+                            );
+                          },
+                        );
+                      },
                 child: Text(
                   _isLoggingOut ? 'Logging Out...' : 'Log out',
                   style: const TextStyle(fontWeight: FontWeight.bold),

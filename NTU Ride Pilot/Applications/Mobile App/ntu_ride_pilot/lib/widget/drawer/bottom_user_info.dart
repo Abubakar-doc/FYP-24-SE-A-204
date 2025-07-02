@@ -12,8 +12,7 @@ class BottomUserInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ProfileController controller =
-        Get.put(ProfileController());
+    final ProfileController controller = Get.put(ProfileController());
 
     bool isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
@@ -32,87 +31,84 @@ class BottomUserInfo extends StatelessWidget {
         ),
         child: Skeletonizer(
           enabled: controller.isLoading.value,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Obx(() {
-                    final url = controller.profilePic.value;
-                    final isValidUrl = url != null &&
-                        url.isNotEmpty &&
-                        (url.startsWith('http://') || url.startsWith('https://'));
+          child: Row(
+            children: [
+              Expanded(
+                child: Obx(() {
+                  final url = controller.profilePic.value;
+                  final isValidUrl = url != null &&
+                      url.isNotEmpty &&
+                      (url.startsWith('http://') || url.startsWith('https://'));
 
-                    // Pre-cache the image when it's available
-                    if (isValidUrl) {
-                      precacheImage(CachedNetworkImageProvider(url), context);
-                    }
+                  // Pre-cache the image when it's available
+                  if (isValidUrl) {
+                    precacheImage(CachedNetworkImageProvider(url), context);
+                  }
 
-                    return Row(
-                      children: [
-                        if (controller.role.value == 'driver' && isValidUrl)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: CircleAvatar(
-                              radius: 25,
-                              backgroundColor: isValidUrl ? Colors.transparent : Colors.blue,
-                              child: isValidUrl
-                                  ? ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: url,
-                                  fit: BoxFit.cover,
-                                  width: 160,
-                                  height: 160,
-                                  errorWidget: (context, url, error) => const Icon(
-                                      Icons.person,
-                                      size: 100,
-                                      color: Colors.white),
-                                ),
-                              )
-                                  : const Icon(Icons.person,
-                                  size: 100, color: Colors.white),
-                            ),
+                  return Row(
+                    children: [
+                      if (isValidUrl)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: CircleAvatar(
+                            radius: 25,
+                            backgroundColor:
+                                isValidUrl ? Colors.transparent : Colors.blue,
+                            child: isValidUrl
+                                ? ClipOval(
+                                    child: CachedNetworkImage(
+                                      imageUrl: url,
+                                      fit: BoxFit.cover,
+                                      width: 160,
+                                      height: 160,
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.person,
+                                              size: 100, color: Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.person,
+                                    size: 100, color: Colors.white),
                           ),
-                        Expanded(
-                          flex: 5,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Skeletonizer(
-                                enabled: controller.isLoading.value,
-                                child: Text(
-                                  controller.name.value,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold, fontSize: 18),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Text(
-                                controller.role.value.isNotEmpty
-                                    ? controller.role.value.capitalizeFirst!
-                                    : "Unknown Role",
-                                style: TextStyle(
-                                    color: isDarkTheme
-                                        ? Colors.grey
-                                        : Colors.grey.shade600),
+                        ),
+                      Expanded(
+                        flex: 5,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Skeletonizer(
+                              enabled: controller.isLoading.value,
+                              child: Text(
+                                controller.name.value,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 18),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
+                            ),
+                            Text(
+                              controller.role.value.isNotEmpty
+                                  ? controller.role.value.capitalizeFirst!
+                                  : "Unknown Role",
+                              style: TextStyle(
+                                  color: isDarkTheme
+                                      ? Colors.grey
+                                      : Colors.grey.shade600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  }),
-                ),
-                IconButton(
-                  onPressed: () => Get.to(ProfileScreen()),
-                  icon: const Icon(Icons.keyboard_arrow_right),
-                ),
-              ],
-            ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+              IconButton(
+                onPressed: () => Get.to(ProfileScreen()),
+                icon: const Icon(Icons.keyboard_arrow_right),
+              ),
+            ],
           ),
         ),
       ),

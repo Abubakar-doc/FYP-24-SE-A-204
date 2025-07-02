@@ -45,7 +45,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   void _scrollListener() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         controller.hasMore) {
       _loadMoreNotifications();
@@ -65,7 +65,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         // Grouping and UI update will happen automatically because `notifications` is reactive
       }
     } catch (e) {
-      debugPrint('Error loading more notifications: $e');
+      // debugPrint('Error loading more notifications: $e');
       controller.hasMore = false;
     } finally {
       if (mounted) {
@@ -122,22 +122,8 @@ class _NotificationScreenState extends State<NotificationScreen>
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Notifications',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              IconButton(
-                onPressed: null,
-                icon: Icon(
-                  Icons.more_vert,
-                  color: theme.brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
-                ),
-              ),
-            ],
-          ),
+          title: const Text('Notifications',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ),
         body: Obx(() {
           final notifications = controller.notifications;

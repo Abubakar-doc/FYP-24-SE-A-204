@@ -68,7 +68,7 @@ class RideService {
           .update({'ride_status': 'inProgress'});
 
       // Log to check if the periodic updates are being triggered
-      print("Starting periodic location updates for ride: ${ride.rideId}");
+      // print("Starting periodic location updates for ride: ${ride.rideId}");
 
       // Start periodic location updates and ETA calculations for the ride
       LocationService liveLocationService = LocationService(context);
@@ -83,7 +83,7 @@ class RideService {
         context: context,
       );
     } catch (e) {
-      print("Error in startRide: $e"); // Log error in starting ride
+      // print("Error in startRide: $e"); // Log error in starting ride
       rethrow; // Let the caller handle errors/logging.
     }
   }
@@ -243,7 +243,7 @@ class RideService {
         rollNo: matchingCard.rollNo,
       );
     } catch (e) {
-      print("Error handling card input: $e");
+      // print("Error handling card input: $e");
       return RideServiceResponse(statusCode: UNKNOWN_ERROR);
     }
   }
@@ -265,8 +265,8 @@ class RideService {
           ride: currentRide,
         );
       } catch (e) {
-        print(
-            "Error processing upload queue task for rollNo ${task['rollNo']}: $e");
+        // print(
+        //     "Error processing upload queue task for rollNo ${task['rollNo']}: $e");
         _uploadQueue.add(task);
         break;
       }
@@ -347,7 +347,7 @@ class RideService {
         });
       }).toList();
     } catch (e) {
-      print("Error fetching buses: $e");
+      // print("Error fetching buses: $e");
       return [];
     }
   }
@@ -387,7 +387,7 @@ class RideService {
         );
       }).toList();
     } catch (e) {
-      print("Error fetching routes: $e");
+      // print("Error fetching routes: $e");
       return [];
     }
   }
@@ -503,6 +503,64 @@ class RideService {
       }
       return null;
     }
+  }
+
+  Stream<List<Map<String, dynamic>>> fetchRidesStreamForBus(String busId) {
+    return _firestore
+        .collection('rides')
+        .where('ride_status', whereIn: ['inProgress'])
+        .where('bus_id', isEqualTo: busId)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            Map<String, dynamic> data = doc.data();
+
+            // Manually extract and calculate necessary fields
+            DateTime createdAt = (data['created_at'] is Timestamp)
+                ? (data['created_at'] as Timestamp).toDate()
+                : DateTime.now();
+
+            DateTime? etaNextStop;
+            if (data['eta_next_stop'] != null) {
+              // Convert eta (in minutes) to DateTime by adding it to the current time
+              final etaMinutes = data['eta_next_stop'] as double;
+              etaNextStop = DateTime.now().add(
+                Duration(
+                  minutes: etaMinutes.toInt(),
+                ),
+              );
+            }
+
+            // Extract currentLocation (latitude, longitude)
+            double? latitude;
+            double? longitude;
+            if (data['currentLocation'] != null) {
+              // Extract latitude and longitude as strings from the currentLocation map
+              String? latitudeStr = data['currentLocation']['latitude'];
+              String? longitudeStr = data['currentLocation']['longitude'];
+
+              // Convert the string values to double
+              latitude =
+                  latitudeStr != null ? double.tryParse(latitudeStr) : null;
+              longitude =
+                  longitudeStr != null ? double.tryParse(longitudeStr) : null;
+            }
+
+            // Use the document's ID as the rideId
+            return {
+              'rideId': doc.id, // Use doc.id as the rideId
+              'routeId': data['route_id'],
+              'busId': data['bus_id'],
+              'createdAt': createdAt,
+              'eta_next_stop': etaNextStop,
+              'rideStatus': data['ride_status'] ?? 'Unknown',
+              'latitude': latitude,
+              'longitude': longitude,
+              'nextStopName':
+                  data['nextStopName'], // Add the nextStopName field here
+            };
+          }).toList();
+        });
   }
 }
 

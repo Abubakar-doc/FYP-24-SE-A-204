@@ -23,8 +23,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   final ImagePicker _picker = ImagePicker();
   final MediaPermission _mediaPermission = MediaPermission();
-  final FeedbackService _feedbackService =
-      FeedbackService();
+  final FeedbackService _feedbackService = FeedbackService();
   Future<void> _pickImages() async {
     final pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles.length > 4) {
@@ -36,7 +35,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         _imageFiles = pickedFiles; // Update image files
       });
     }
-    }
+  }
 
   Future<void> _requestPermissionAndPickImages() async {
     final hasPermission = await _mediaPermission.checkStoragePermission();
@@ -84,7 +83,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -112,9 +110,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 children: [
                   const Text(
                     'We value your feedback. Please let us know what you think about our service.',
-                    style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

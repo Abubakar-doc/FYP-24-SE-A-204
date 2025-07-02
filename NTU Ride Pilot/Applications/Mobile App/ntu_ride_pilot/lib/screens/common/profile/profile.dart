@@ -18,8 +18,7 @@ class ProfileScreen extends StatelessWidget {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     // Retrieve the existing instance of the controller.
-    final ProfileController controller =
-        Get.find<ProfileController>();
+    final ProfileController controller = Get.find<ProfileController>();
 
     // Create instances of MediaService and MediaPermission
     final MediaService mediaService = MediaService();
@@ -65,7 +64,8 @@ class ProfileScreen extends StatelessWidget {
                 tag: isValidUrl ? url : 'default-profile',
                 child: CircleAvatar(
                   radius: 80,
-                  backgroundColor: isValidUrl ? Colors.transparent : Colors.blue,
+                  backgroundColor:
+                      isValidUrl ? Colors.transparent : Colors.blue,
                   child: isValidUrl
                       ? ClipOval(
                           child: CachedNetworkImage(

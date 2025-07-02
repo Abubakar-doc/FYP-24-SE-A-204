@@ -40,7 +40,9 @@ class NotificationList extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: isLoadingMore ? CircularProgressIndicator(color: Colors.grey) : null,
+              child: isLoadingMore
+                  ? CircularProgressIndicator(color: Colors.grey)
+                  : null,
             ),
           );
         }
@@ -51,16 +53,12 @@ class NotificationList extends StatelessWidget {
         // Only for the first (newest) date group and if there are unread notifications
         final bool showUnreadCount = index == 0 && unreadCount > 0;
 
-
         int? firstUnreadIndex;
         if (showUnreadCount) {
-          firstUnreadIndex = notificationsForDate.indexWhere(
-                  (n) => initialUnreadIds.contains(n.notificationId)
-          );
+          firstUnreadIndex = notificationsForDate
+              .indexWhere((n) => initialUnreadIds.contains(n.notificationId));
           if (firstUnreadIndex == -1) firstUnreadIndex = 0;
         }
-
-
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +81,9 @@ class NotificationList extends StatelessWidget {
 
             // Now list notifications with unread count inserted before first unread notification
             ...List.generate(notificationsForDate.length, (notifIndex) {
-              if (showUnreadCount && firstUnreadIndex != null && notifIndex == firstUnreadIndex) {
+              if (showUnreadCount &&
+                  firstUnreadIndex != null &&
+                  notifIndex == firstUnreadIndex) {
                 // Insert unread count label widget before first unread notification
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,8 +107,7 @@ class NotificationList extends StatelessWidget {
                     ),
                   ],
                 );
-              }
-              else {
+              } else {
                 // Just a normal notification item
                 return NotificationItem(
                   notification: notificationsForDate[notifIndex],
@@ -122,7 +121,5 @@ class NotificationList extends StatelessWidget {
         );
       },
     );
-
   }
 }
-

@@ -20,7 +20,10 @@ class MediaService {
   void preCacheImages(BuildContext context) {
     precacheImage(const AssetImage('assets/pictures/logoDark.jpg'), context);
     precacheImage(const AssetImage('assets/pictures/logoLight.jpg'), context);
-    precacheImage(const AssetImage('assets/pictures/National_Textile_University_Logo.png'), context);
+    precacheImage(
+        const AssetImage(
+            'assets/pictures/National_Textile_University_Logo.png'),
+        context);
     precacheImage(const AssetImage('assets/pictures/google_logo.png'), context);
   }
 

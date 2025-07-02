@@ -36,7 +36,8 @@ ThemeData darkTheme = ThemeData(
         ),
       ),
       textStyle: WidgetStateProperty.all(
-        TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'OpenSans'),
+        TextStyle(
+            fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'OpenSans'),
       ),
     ),
   ),

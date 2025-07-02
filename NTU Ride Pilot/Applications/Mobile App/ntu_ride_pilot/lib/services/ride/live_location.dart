@@ -25,7 +25,8 @@ class LocationService {
     );
   }
 
-  LocationService(this.context) : _locationPermission = LocationPermission(context);
+  LocationService(this.context)
+      : _locationPermission = LocationPermission(context);
 
   Future<geo.Position?> getCurrentLocation() async {
     bool hasPermission = await _locationPermission.checkLocationPermission();
@@ -56,10 +57,10 @@ class LocationService {
   }
 
   Future<void> updateRideWithETA(
-      RideModel ride,
-      RouteModel route,
-      BuildContext context,
-      ) async {
+    RideModel ride,
+    RouteModel route,
+    BuildContext context,
+  ) async {
     // Get the bus's current location
     geo.Position? currentPosition = await getCurrentLocation();
 
@@ -76,7 +77,7 @@ class LocationService {
         nextBusStop['busStopName'] == 'Last Stop (Continued ETA)') {
       // Continue giving ETA updates at the last stop
       double etaMinutes =
-      await _calculateETAToNextStop(currentPosition, nextBusStop);
+          await _calculateETAToNextStop(currentPosition, nextBusStop);
 
       // Update ETA and next stop name in Firestore
       await _updateRideETAInFirestore(
@@ -93,12 +94,12 @@ class LocationService {
 
     // Ensure next bus stop has a valid busStopName
     String nextStopName = nextBusStop['busStopName'] ?? 'Unknown';
-    print("Next stop name: $nextStopName"); // Debugging log
+    // print("Next stop name: $nextStopName"); // Debugging log
 
     // Calculate the ETA to the next bus stop using Mapbox API
     double etaMinutes =
-    await _calculateETAToNextStop(currentPosition, nextBusStop);
-    print("Calculated ETA: $etaMinutes minutes"); // Debug log
+        await _calculateETAToNextStop(currentPosition, nextBusStop);
+    // print("Calculated ETA: $etaMinutes minutes"); // Debug log
 
     // Update ETA and nextStopName in Firestore
     await _updateRideETAInFirestore(ride.rideId!, etaMinutes, nextStopName);
@@ -134,7 +135,7 @@ class LocationService {
     if (distanceToLastStop <= 100.0) {
       // Calculate the ETA for the last bus stop
       double etaMinutes =
-      await _calculateETAToNextStop(currentPosition, lastBusStop);
+          await _calculateETAToNextStop(currentPosition, lastBusStop);
 
       // Update ETA and location in Firestore and Hive
       await _updateRideETAInFirestore(
@@ -165,9 +166,9 @@ class LocationService {
   }
 
   Map<String, dynamic>? _findNextBusStop(
-      List<Map<String, dynamic>> busStops,
-      geo.Position currentPosition,
-      ) {
+    List<Map<String, dynamic>> busStops,
+    geo.Position currentPosition,
+  ) {
     double closestDistance = double.infinity;
     Map<String, dynamic>? closestBusStop;
     int closestBusStopIndex = -1;
@@ -210,9 +211,9 @@ class LocationService {
   }
 
   Future<double> _calculateETAToNextStop(
-      geo.Position currentPosition,
-      Map<String, dynamic> nextBusStop,
-      ) async {
+    geo.Position currentPosition,
+    Map<String, dynamic> nextBusStop,
+  ) async {
     // Directly access latitude and longitude as numbers (no parsing)
     double nextStopLat = nextBusStop['latitude']; // Latitude as a number
     double nextStopLon = nextBusStop['longitude']; // Longitude as a number
@@ -249,11 +250,11 @@ class LocationService {
   }
 
   double _calculateDistance(
-      double lat1,
-      double lon1,
-      double lat2,
-      double lon2,
-      ) {
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double R = 6371000; // Radius of Earth in meters
     double phi1 = lat1 * (Math.pi / 180);
     double phi2 = lat2 * (Math.pi / 180);
@@ -270,35 +271,35 @@ class LocationService {
   }
 
   Future<void> _updateRideETAInFirestore(
-      String rideId,
-      double etaMinutes,
-      String nextStopName,
-      ) async {
+    String rideId,
+    double etaMinutes,
+    String nextStopName,
+  ) async {
     try {
       await FirebaseFirestore.instance.collection('rides').doc(rideId).update({
         'eta_next_stop': etaMinutes,
         'nextStopName': nextStopName, // Update next stop name in Firestore
       });
-      print("Updated ETA and next stop in Firestore for rideId: $rideId");
+      // print("Updated ETA and next stop in Firestore for rideId: $rideId");
     } catch (e) {
-      print("Error updating ETA in Firestore: $e");
+      // print("Error updating ETA in Firestore: $e");
     }
   }
 
   Future<void> _updateRideETAInHive(
-      RideModel ride,
-      double etaMinutes,
-      String nextStopName,
-      ) async {
+    RideModel ride,
+    double etaMinutes,
+    String nextStopName,
+  ) async {
     try {
       ride.etaNextStop =
           DateTime.now().add(Duration(minutes: etaMinutes.toInt()));
       ride.nextStopName = nextStopName; // Update next stop name in Hive
       var rideBox = await Hive.openBox<RideModel>('rides');
       await rideBox.put('currentRide', ride);
-      print("Updated ETA and next stop in Hive for ride: ${ride.rideId}");
+      // print("Updated ETA and next stop in Hive for ride: ${ride.rideId}");
     } catch (e) {
-      print("Error updating ETA in Hive: $e");
+      // print("Error updating ETA in Hive: $e");
     }
   }
 }

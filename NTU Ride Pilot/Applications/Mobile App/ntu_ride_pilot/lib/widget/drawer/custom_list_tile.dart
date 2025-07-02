@@ -111,13 +111,13 @@ class CustomListTile extends StatelessWidget {
                 flex: 1,
                 child: doHaveMoreOptions != null
                     ? IconButton(
-                  icon: Icon(
-                    doHaveMoreOptions,
-                    color: Colors.white,
-                    size: 12,
-                  ),
-                  onPressed: () {},
-                )
+                        icon: Icon(
+                          doHaveMoreOptions,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        onPressed: () {},
+                      )
                     : const Center(),
               ),
           ],

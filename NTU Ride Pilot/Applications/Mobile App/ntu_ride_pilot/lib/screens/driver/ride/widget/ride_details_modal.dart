@@ -26,6 +26,7 @@ class RideDetailsModal extends StatelessWidget {
       minChildSize: 0.3,
       maxChildSize: 0.95,
       expand: false,
+      snap: true,
       builder: (context, scrollController) {
         return ValueListenableBuilder<Box<RideModel>>(
           // Listen to changes on 'currentRide'
@@ -45,7 +46,8 @@ class RideDetailsModal extends StatelessWidget {
             // Build passenger list from roll numbers
             final rolls = [...ride.onlineOnBoard, ...ride.offlineOnBoard];
             final passengers = rolls.map((roll) {
-              final card = busCardBox.values.firstWhereOrNull((c) => c.rollNo == roll);
+              final card =
+                  busCardBox.values.firstWhereOrNull((c) => c.rollNo == roll);
               return {
                 'name': card?.name ?? 'Unknown',
                 'id': roll,
@@ -64,7 +66,9 @@ class RideDetailsModal extends StatelessWidget {
                       height: 4,
                       width: 80,
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                        color: isDark
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -93,13 +97,21 @@ class RideDetailsModal extends StatelessWidget {
                           value: startedAt,
                           isDarkMode: isDark,
                         ),
-                        Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400),
+                        Divider(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade400),
                         StatRow(
                           title: "Bus Capacity",
-                          value: ride.seatCapacity != null ? "${ride.seatCapacity} seats" : 'N/A',
+                          value: ride.seatCapacity != null
+                              ? "${ride.seatCapacity} seats"
+                              : 'N/A',
                           isDarkMode: isDark,
                         ),
-                        Divider(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400),
+                        Divider(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade400),
                         StatRow(
                           title: "Passengers Onboard",
                           value: '${rolls.length}',
@@ -119,14 +131,14 @@ class RideDetailsModal extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   ...passengers.map((p) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: PassengerCard(
-                      name: p['name']!,
-                      studentId: p['id']!,
-                      isDarkMode: isDark,
-                      isLoading: false,
-                    ),
-                  )),
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: PassengerCard(
+                          name: p['name']!,
+                          studentId: p['id']!,
+                          isDarkMode: isDark,
+                          isLoading: false,
+                        ),
+                      )),
                 ],
               ),
             );

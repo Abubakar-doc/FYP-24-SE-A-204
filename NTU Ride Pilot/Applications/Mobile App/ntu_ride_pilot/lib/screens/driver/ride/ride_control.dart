@@ -66,7 +66,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
           _nextStopName = stopName;
         });
       } else {
-        print('No ride data found in the box!');
+        // print('No ride data found in the box!');
       }
     });
   }
@@ -146,7 +146,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
         SnackbarUtil.showSuccess("Success", "Ride started successfully.");
       }
     } catch (e) {
-      print('Error toggling ride status: $e');
+      // print('Error toggling ride status: $e');
       SnackbarUtil.showError("Error", "Please try again.");
     } finally {
       setState(() {
@@ -178,7 +178,7 @@ class _RideControlScreenState extends State<RideControlScreen> {
         (Route<dynamic> route) => false, // This removes all previous routes
       );
     } catch (e) {
-      print('Error cancelling ride: $e');
+      // print('Error cancelling ride: $e');
       setState(() {
         _isProcessing = false;
       });

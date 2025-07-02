@@ -12,7 +12,7 @@ class BusModel {
 
   BusModel({
     required this.busId,
-    required this.seatCapacity,  // Ensure it's an int
+    required this.seatCapacity, // Ensure it's an int
   });
 
   Map<String, dynamic> toMap() {
@@ -26,7 +26,8 @@ class BusModel {
     return BusModel(
       busId: map['bus_id'] ?? '',
       seatCapacity: map['seatCapacity'] != null
-          ? int.tryParse(map['seatCapacity'].toString()) ?? 0  // Safely parse to int
+          ? int.tryParse(map['seatCapacity'].toString()) ??
+              0 // Safely parse to int
           : 0, // Default to 0 if seatCapacity is missing or invalid
     );
   }
