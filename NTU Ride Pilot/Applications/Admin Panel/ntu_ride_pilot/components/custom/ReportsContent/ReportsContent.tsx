@@ -8,6 +8,8 @@ import {
   getDocs,
   Timestamp,
   addDoc,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 
@@ -27,10 +29,68 @@ interface Ride {
 interface FraudReportEntry {
   student_rollNo: string;
   bus_id: string;
+  created_at?: Timestamp;
+}
+
+function isTimestamp(val: any): val is Timestamp {
+  return val && typeof val.toDate === "function" && typeof val.toMillis === "function";
 }
 
 const ReportsContent: React.FC = () => {
   const [fraudReports, setFraudReports] = useState<FraudReportEntry[]>([]);
+  const [groupedFraudReports, setGroupedFraudReports] = useState<
+    Record<string, { bus_id: string; created_at: Timestamp }[]>
+  >({});
+
+  // --- Fetch and group fraud reports by student_rollNo ---
+  const fetchAndGroupFraudReports = async () => {
+    try {
+      // Get the latest report document (by generated_at descending)
+      const reportsCollection = collection(firestore, "reports");
+      const q = query(reportsCollection, orderBy("generated_at", "desc"), limit(1));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        console.log("No report documents found.");
+        setGroupedFraudReports({});
+        return;
+      }
+
+      const reportDoc = snapshot.docs[0].data();
+      const fraudReportsRaw: FraudReportEntry[] = Array.isArray(reportDoc.fraud_reports)
+        ? reportDoc.fraud_reports
+        : [];
+
+      // Group by student_rollNo
+      const grouped: Record<string, { bus_id: string; created_at: Timestamp }[]> = {};
+
+      fraudReportsRaw.forEach((entry) => {
+        const { student_rollNo, bus_id, created_at } = entry;
+        if (!student_rollNo || !bus_id || !created_at) return;
+
+        if (!grouped[student_rollNo]) {
+          grouped[student_rollNo] = [];
+        }
+        grouped[student_rollNo].push({ bus_id, created_at });
+      });
+
+      setGroupedFraudReports(grouped);
+
+      // Also keep flat array if needed
+      setFraudReports(fraudReportsRaw);
+
+      console.log("Grouped Fraud Reports:", grouped);
+    } catch (error) {
+      console.error("Error fetching/grouping fraud reports:", error);
+      setGroupedFraudReports({});
+    }
+  };
+
+  useEffect(() => {
+    fetchAndGroupFraudReports();
+  }, []);
+
+  // --- Existing fraud report generation logic remains unchanged ---
 
   function ridesOverlapOrClose(
     rideA: Ride,
@@ -109,7 +169,7 @@ const ReportsContent: React.FC = () => {
 
       ridesSnapshot.forEach((doc) => {
         const data = doc.data();
-        if (!(data.created_at instanceof Timestamp) || !(data.ended_at instanceof Timestamp)) {
+        if (!isTimestamp(data.created_at) || !isTimestamp(data.ended_at)) {
           console.warn(`Ride document ${doc.id} has invalid created_at or ended_at`);
           return;
         }
@@ -134,7 +194,6 @@ const ReportsContent: React.FC = () => {
         setFraudReports([]);
         return;
       }
-
       const rideGroups = groupRides(rides);
       console.log(`Grouped rides into ${rideGroups.length} groups.`);
 
@@ -145,7 +204,6 @@ const ReportsContent: React.FC = () => {
           (a, b) =>
             a.created_at.toDate().getTime() - b.created_at.toDate().getTime()
         );
-
         const baseRide = group[0];
         const baseOfflineSet = new Set(baseRide.offlineOnBoard);
 
@@ -158,10 +216,12 @@ const ReportsContent: React.FC = () => {
               fraudReports.push({
                 student_rollNo: rollNo,
                 bus_id: baseRide.bus_id,
+                created_at: baseRide.created_at,
               });
               fraudReports.push({
                 student_rollNo: rollNo,
                 bus_id: otherRide.bus_id,
+                created_at: otherRide.created_at,
               });
             }
           });
@@ -181,10 +241,12 @@ const ReportsContent: React.FC = () => {
                 fraudReports.push({
                   student_rollNo: rollNo,
                   bus_id: rideI.bus_id,
+                  created_at: rideI.created_at,
                 });
                 fraudReports.push({
                   student_rollNo: rollNo,
                   bus_id: rideJ.bus_id,
+                  created_at: rideJ.created_at,
                 });
               }
             });
@@ -198,10 +260,15 @@ const ReportsContent: React.FC = () => {
         return;
       }
 
-      // Remove duplicates by student_rollNo and bus_id
+      // Remove duplicates by student_rollNo, bus_id, and created_at (timestamp value)
       const uniqueFraudReports = Array.from(
         new Map(
-          fraudReports.map((item) => [`${item.student_rollNo}_${item.bus_id}`, item])
+          fraudReports.map((item) => [
+            `${item.student_rollNo}_${item.bus_id}_${
+              isTimestamp(item.created_at) ? item.created_at.toMillis() : "0"
+            }`,
+            item,
+          ])
         ).values()
       );
 
@@ -236,17 +303,8 @@ const ReportsContent: React.FC = () => {
     }
   };
 
-  // Prepare remarks by grouping bus_ids for each student_rollNo
-  const remarksMap: Record<string, Set<string>> = {};
-  fraudReports.forEach(({ student_rollNo, bus_id }) => {
-    if (!remarksMap[student_rollNo]) {
-      remarksMap[student_rollNo] = new Set();
-    }
-    remarksMap[student_rollNo].add(bus_id);
-  });
-
-  // Unique rollNos for rendering
-  const uniqueRollNos = Array.from(new Set(fraudReports.map((r) => r.student_rollNo)));
+  // Prepare data for rendering the table from groupedFraudReports
+  const uniqueRollNos = Object.keys(groupedFraudReports);
 
   return (
     <div className="flex h-screen bg-white w-full">
@@ -265,10 +323,16 @@ const ReportsContent: React.FC = () => {
               <table className="w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-300">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[10%]">
+                      SR#
+                    </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%]">
                       Roll No
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[75%]">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[25%]">
+                      Created At
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-[40%]">
                       Remarks
                     </th>
                   </tr>
@@ -276,24 +340,44 @@ const ReportsContent: React.FC = () => {
                 <tbody>
                   {uniqueRollNos.length === 0 && (
                     <tr>
-                      <td colSpan={2} className="text-center py-4 text-gray-500">
+                      <td colSpan={4} className="text-center py-4 text-gray-500">
                         No fraud reports found.
                       </td>
                     </tr>
                   )}
-                  {uniqueRollNos.map((rollNo, index) => (
-                    <tr
-                      key={rollNo}
-                      className="hover:bg-gray-50 border-b border-gray-300 text-center"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap w-[25%]">
-                        {rollNo}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap w-[75%]">
-                        {Array.from(remarksMap[rollNo]).join(", ")}
-                      </td>
-                    </tr>
-                  ))}
+                  {uniqueRollNos.map((rollNo, index) => {
+                    const entries = groupedFraudReports[rollNo];
+                    // Sort entries by created_at ascending for consistent display
+                    const sortedEntries = entries.slice().sort((a, b) => {
+                      return a.created_at.toMillis() - b.created_at.toMillis();
+                    });
+
+                    return (
+                      <tr
+                        key={rollNo}
+                        className="hover:bg-gray-50 border-b border-gray-300 text-center"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap w-[10%]">
+                          {index + 1}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[25%]">
+                          {rollNo}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[25%]">
+                          {sortedEntries.map((entry, i) => (
+                            <div key={i}>
+                              {entry.created_at.toDate().toLocaleString()}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[40%]">
+                          {sortedEntries.map((entry, i) => (
+                            <div key={i}>{entry.bus_id}</div>
+                          ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
