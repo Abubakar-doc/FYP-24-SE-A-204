@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect } from "react";
 import mapboxgl from "mapbox-gl"; 
-import "mapbox-gl/dist/mapbox-gl.css";
+// import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
@@ -20,7 +20,7 @@ const RideMapSection: React.FC<RideMapSectionProps> = ({ currentLocation }) => {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v11",
+      // style: "mapbox://styles/mapbox/streets-v11",
       center: [-74.006, 40.7128], // Default center (New York)
       zoom: 14, // Increased zoom level from 11 to 14
     });
