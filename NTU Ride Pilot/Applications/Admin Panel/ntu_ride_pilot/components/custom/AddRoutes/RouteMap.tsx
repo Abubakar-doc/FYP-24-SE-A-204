@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+// import "mapbox-gl/dist/mapbox-gl.css";
 
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
@@ -57,6 +57,11 @@ const RouteMap: React.FC<RouteMapProps> = ({ busStops, addBusStop, mapCenter, is
 
   useEffect(() => {
     setIsMounted(true);
+    // Dynamically inject Mapbox CSS link
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css"; // Link to Mapbox CSS
+    document.head.appendChild(link);
     return () => {
       if (map.current) {
         map.current.remove();
