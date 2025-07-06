@@ -25,7 +25,7 @@ class NotificationController extends GetxController {
     if (!isInitialized) {
       // print("Initializing repository...");
       await repository.init();
-      print("Repository initialized: ${repository.isInitialized}");
+      // print("Repository initialized: ${repository.isInitialized}");
       notifications.assignAll(repository.notifications);
       _calculateUnreadCount();
       hasMore = repository.hasMore;

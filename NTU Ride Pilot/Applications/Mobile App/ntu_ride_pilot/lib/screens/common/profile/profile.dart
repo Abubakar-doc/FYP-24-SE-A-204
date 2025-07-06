@@ -99,7 +99,19 @@ class ProfileScreen extends StatelessWidget {
                 ),
               )),
           const SizedBox(height: 5),
-          // Role
+          Obx(() {
+            final isStudent = controller.role.value.toLowerCase() == 'student';
+            final roll = controller.rollNo.value;
+            if (!controller.isLoading.value && isStudent && roll.isNotEmpty) {
+              return Text(
+                roll,
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+          const SizedBox(height: 5),
           Obx(() => Skeletonizer(
                 enabled: controller.isLoading.value,
                 child: Text(
@@ -124,24 +136,53 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Obx(() {
+                final role = controller.role.value.toLowerCase();
                 return Skeletonizer(
                   enabled: controller.isLoading.value,
                   child: Column(
                     children: [
-                      StatRow(
-                        title: "Total Rides",
-                        value: controller.totalRides.value.toString(),
-                        isDarkMode: isDarkMode,
-                      ),
-                      Divider(
+                      if (role != 'student') ...[
+                        StatRow(
+                          title: "Total Rides",
+                          value: controller.totalRides.value.toString(),
+                          isDarkMode: isDarkMode,
+                        ),
+                        Divider(
+                            color: isDarkMode
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade400),
+                        StatRow(
+                          title: "Total Hours",
+                          value: controller.totalHours.value,
+                          isDarkMode: isDarkMode,
+                        ),
+                      ] else ...[
+                        StatRow(
+                          title: "Fee Status",
+                          value: controller.feeStatus.value, // "Paid" or "Due"
+                          isDarkMode: isDarkMode,
+                          valueColor:
+                              controller.feeStatus.value.toLowerCase() == 'paid'
+                                  ? Colors.green
+                                  : Colors.red,
+                        ),
+                        Divider(
                           color: isDarkMode
                               ? Colors.grey.shade700
-                              : Colors.grey.shade400),
-                      StatRow(
-                        title: "Total Hours",
-                        value: controller.totalHours.value,
-                        isDarkMode: isDarkMode,
-                      ),
+                              : Colors.grey.shade400,
+                        ),
+                        StatRow(
+                          title: "Bus Card Status",
+                          value: controller
+                              .busCardStatus.value, // "Active" or "Inactive"
+                          isDarkMode: isDarkMode,
+                          valueColor:
+                              controller.busCardStatus.value.toLowerCase() ==
+                                      'active'
+                                  ? Colors.green
+                                  : Colors.red,
+                        ),
+                      ],
                     ],
                   ),
                 );

@@ -13,19 +13,18 @@ class UserProfileService {
     // Get the current authenticated user.
     User? user = _auth.currentUser;
     if (user == null || user.email == null) {
-      // print("ERROR: No authenticated user found.");
       return {
-        'name': 'Name',
-        'role': 'Role',
+        'name': 'Guest',
+        'role': '',
         'email': '',
         'profilePic': null,
       };
     }
 
-    // Check if the user is authenticated via Google.
+    // Check for Google profile picture
     String? googleProfilePic = _getGoogleProfilePicture(user);
 
-    // Retrieve the driver data from Hive
+    // Try loading driver data first
     DriverModel? currentDriver = await _driverService.getCurrentDriver();
     if (currentDriver != null) {
       return {
@@ -34,44 +33,45 @@ class UserProfileService {
             : 'Unknown Driver',
         'role': currentDriver.role,
         'email': currentDriver.email,
-        'profilePic': currentDriver.profilePicLink,
+        'profilePic':
+        currentDriver.profilePicLink ?? googleProfilePic,
       };
     }
 
-    // Retrieve the student data from Hive if no driver is found
-    StudentModel? currentStudent = await _studentService.getCurrentStudent();
-    if (currentStudent != null) {
-      return {
-        'name': currentStudent.name.isNotEmpty
-            ? currentStudent.name
+    // If no driver, fetch student from Firestore by email
+    StudentModel? student =
+    await _studentService.getStudentByEmail(user.email!);
+    if (student != null) {
+      return <String, dynamic>{
+        'name': student.name.isNotEmpty
+            ? student.name
             : 'Unknown Student',
-        'role': currentStudent.role,
-        'email': currentStudent.email,
-        'profilePic': googleProfilePic ??
-            currentStudent
-                .profilePicLink, // Use Google profile pic if available
+        'rollNo': student.rollNo,
+        'role': student.role,
+        'email': student.email,
+        'profilePic':
+        googleProfilePic ?? student.profilePicLink,
+        'bus_card_status': student.busCardStatus,
+        'feeStatus': student.feePaid ? 'Paid' : 'Due',
       };
     }
 
-    // Fallback if no driver or student is found.
+    // Fallback user data
     return {
       'name': 'Guest',
       'role': '',
       'email': user.email!,
-      'profilePic': googleProfilePic, // Use Google profile pic if available
+      'profilePic': googleProfilePic,
     };
   }
 
-  // Helper method to fetch Google profile picture
+  // Helper to extract Google profile picture if available
   String? _getGoogleProfilePicture(User user) {
-    // Check if the user is authenticated via Google
     for (var info in user.providerData) {
       if (info.providerId == 'google.com') {
-        // Return the Google profile picture URL
-        // print(info.photoURL);
         return info.photoURL;
       }
     }
-    return null; // No Google profile picture available
+    return null;
   }
 }

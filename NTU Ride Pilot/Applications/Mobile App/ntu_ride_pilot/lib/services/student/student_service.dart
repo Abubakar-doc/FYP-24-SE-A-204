@@ -34,18 +34,19 @@ class StudentService {
         return StudentModel(
           email: email,
           name: data['name'] ?? '',
-          rollNo: data['roll_no'],
-          feePaid: data['fee_paid'] ?? false,
-          busCardId: data['bus_card_id'],
+          rollNo: data['roll_no'] ?? '',
+          feePaid: data['fee_paid'],
+          busCardId: data['bus_card_id'] as String?,
+          profilePicLink: data['profile_pic_link'] as String?,
+          busCardStatus: data['bus_card_status'],
         );
-      } else {
-        // print("No student found with email: $email");
       }
     } catch (e) {
-      // print("Error fetching student: $e");
+      // print('Error fetching student: $e');
     }
     return null;
   }
+
 
   Future<bool> saveStudentToHive(String email) async {
     try {

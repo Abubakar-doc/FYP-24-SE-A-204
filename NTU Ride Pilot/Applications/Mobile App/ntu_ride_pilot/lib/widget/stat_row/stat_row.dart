@@ -5,6 +5,8 @@ class StatRow extends StatelessWidget {
   final String value;
   final bool isDarkMode;
   final bool isBold;
+  /// Optional color for the value text (e.g. Colors.red or Colors.green)
+  final Color? valueColor;
 
   const StatRow({
     super.key,
@@ -12,10 +14,14 @@ class StatRow extends StatelessWidget {
     required this.value,
     required this.isDarkMode,
     this.isBold = false,
+    this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Fallback to default text color based on brightness
+    final defaultValueColor = isDarkMode ? Colors.white : Colors.black;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -33,6 +39,7 @@ class StatRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: valueColor ?? defaultValueColor,
             ),
           ),
         ],

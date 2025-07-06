@@ -25,6 +25,9 @@ class StudentModel {
   @HiveField(6)
   late final String role;
 
+  @HiveField(7)
+  final String? busCardStatus;
+
   StudentModel({
     required this.email,
     required this.name,
@@ -33,6 +36,7 @@ class StudentModel {
     this.busCardId,
     this.profilePicLink,
     this.role = 'student',
+    this.busCardStatus,
   });
 
   Map<String, dynamic> toMap() {
@@ -43,6 +47,7 @@ class StudentModel {
       'fee_paid': feePaid,
       'bus_card_id': busCardId,
       'profile_pic_link': profilePicLink,
+      'bus_card_status': busCardStatus,
     };
   }
 
@@ -54,6 +59,7 @@ class StudentModel {
       feePaid: map['fee_paid'] ?? false,
       busCardId: map['bus_card_id'],
       profilePicLink: map['profile_pic_link'],
+      busCardStatus: map['bus_card_status'],
     )..role = 'student';
   }
 }
