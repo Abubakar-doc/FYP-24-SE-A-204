@@ -37,13 +37,21 @@ function isTimestamp(val: any): val is Timestamp {
   return val && typeof val.toDate === "function" && typeof val.toMillis === "function";
 }
 
+// Helper to map filter value to human-readable key for Firestore
+const getFilterKey = (filter: string) => {
+  if (filter === "active") return "one_day";
+  if (filter === "all") return "one_week";
+  if (filter === "suspended") return "one_month";
+  return filter;
+};
+
 const ReportsContent: React.FC = () => {
   const [fraudReports, setFraudReports] = useState<FraudReportEntry[]>([]);
   const [groupedFraudReports, setGroupedFraudReports] = useState<
     Record<string, { bus_id: string; created_at: Timestamp }[]>
   >({});
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false); // NEW
+  const [loading, setLoading] = useState(false);
 
   // --- Fetch and group fraud reports by student_rollNo ---
   const fetchAndGroupFraudReports = async () => {
@@ -74,7 +82,7 @@ const ReportsContent: React.FC = () => {
       setGroupedFraudReports(grouped);
       setFraudReports(fraudReportsRaw);
 
-      if (fraudReportsRaw.length === 0 && reportDoc.filter === "active") {
+      if (fraudReportsRaw.length === 0 && reportDoc.filter === "one_day") {
         const today = new Date();
         const todayStr = today.toLocaleDateString();
         setWarningMessage(`No frauds data is available for ${todayStr}`);
@@ -160,9 +168,8 @@ const ReportsContent: React.FC = () => {
         route_id: data.route_id,
       });
     });
-
     if (rides.length === 0) {
-      return { date: startDate, ridesCount: 0, fraudsCount: 0 };
+      return { date: startDate, ridesCount: 0, fraudsCount: 0, frauds: [] };
     }
 
     const rideGroups = groupRides(rides);
@@ -235,23 +242,20 @@ const ReportsContent: React.FC = () => {
       ).values()
     );
 
-    // Save to Firestore
-    const reportsCollection = collection(firestore, "reports");
-    await addDoc(reportsCollection, {
-      generated_at: Timestamp.now(),
-      filter: "day",
-      filter_date: startDate.toISOString(),
-      fraud_reports: uniqueFraudReports,
-    });
-
-    return { date: startDate, ridesCount: rides.length, fraudsCount: uniqueFraudReports.length };
+    // For week/month, we return the frauds instead of storing
+    return {
+      date: startDate,
+      ridesCount: rides.length,
+      fraudsCount: uniqueFraudReports.length,
+      frauds: uniqueFraudReports,
+    };
   };
 
   // Main fraud report generator
   const generateFraudReport = async (filter: string) => {
     try {
       setWarningMessage(null);
-      setLoading(true); // NEW
+      setLoading(true);
       if (filter === "active") {
         // One Day: today only
         const now = new Date();
@@ -290,7 +294,7 @@ const ReportsContent: React.FC = () => {
           setWarningMessage(`No ride data is available for ${todayStr}`);
           setFraudReports([]);
           setGroupedFraudReports({});
-          setLoading(false); // NEW
+          setLoading(false);
           return;
         }
 
@@ -324,7 +328,6 @@ const ReportsContent: React.FC = () => {
               }
             });
           }
-
           for (let i = 0; i < group.length; i++) {
             const rideI = group[i];
             const onlineSet = new Set(rideI.onlineOnBoard);
@@ -366,7 +369,7 @@ const ReportsContent: React.FC = () => {
         const reportsCollection = collection(firestore, "reports");
         await addDoc(reportsCollection, {
           generated_at: Timestamp.now(),
-          filter: "active",
+          filter: getFilterKey(filter), // <-- Use mapped value
           fraud_reports: uniqueFraudReports,
         });
 
@@ -378,43 +381,86 @@ const ReportsContent: React.FC = () => {
         } else {
           setWarningMessage(null);
         }
-        setLoading(false); // NEW
-      } else if (filter === "all" || filter === "suspended") {
-        // One Week or One Month
-        const days = filter === "all" ? 7 : 30;
+        setLoading(false);
+      } else if (filter === "all") {
+        // One Week
+        const days = 7;
         let anyRides = false;
         let anyFrauds = false;
+        const weekFraudJson: Record<string, any[]> = {};
 
         for (let i = 0; i < days; i++) {
           const date = new Date();
           date.setDate(date.getDate() - i);
-          const { ridesCount, fraudsCount } = await generateFraudReportForDay(date);
+          const { ridesCount, fraudsCount, frauds } = await generateFraudReportForDay(date);
+
+          // Format date as YYYY-MM-DD for key
+          const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          weekFraudJson[dayKey] = frauds.map(f => ({
+            bus_id: f.bus_id,
+            created_at: f.created_at,
+            student_rollNo: f.student_rollNo,
+          }));
+
           if (ridesCount > 0) anyRides = true;
           if (fraudsCount > 0) anyFrauds = true;
         }
 
-        // Fetch and show the latest report for UI (the latest day)
-        await fetchAndGroupFraudReports();
+        // Log the week JSON for testing
+        console.log("One Week Fraud Report JSON:", weekFraudJson);
 
-        // Show warnings if needed
+        // Optionally, you can fetch and show the latest report for UI (unchanged)
+        await fetchAndGroupFraudReports();
         if (!anyRides) {
-          setWarningMessage(
-            `No ride data is available for the selected ${filter === "all" ? "week" : "month"}.`
-          );
+          setWarningMessage("No ride data is available for the selected week.");
         } else if (!anyFrauds) {
-          setWarningMessage(
-            `No frauds data is available for the selected ${filter === "all" ? "week" : "month"}.`
-          );
+          setWarningMessage("No frauds data is available for the selected week.");
         } else {
           setWarningMessage(null);
         }
-        setLoading(false); // NEW
+        setLoading(false);
+      } else if (filter === "suspended") {
+        // One Month
+        const days = 30;
+        let anyRides = false;
+        let anyFrauds = false;
+        const monthFraudJson: Record<string, any[]> = {};
+
+        for (let i = 0; i < days; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const { ridesCount, fraudsCount, frauds } = await generateFraudReportForDay(date);
+
+          // Format date as YYYY-MM-DD for key
+          const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          monthFraudJson[dayKey] = frauds.map(f => ({
+            bus_id: f.bus_id,
+            created_at: f.created_at,
+            student_rollNo: f.student_rollNo,
+          }));
+
+          if (ridesCount > 0) anyRides = true;
+          if (fraudsCount > 0) anyFrauds = true;
+        }
+
+        // Log the month JSON for testing
+        console.log("One Month Fraud Report JSON:", monthFraudJson);
+
+        await fetchAndGroupFraudReports();
+        if (!anyRides) {
+          setWarningMessage("No ride data is available for the selected month.");
+        } else if (!anyFrauds) {
+          setWarningMessage("No frauds data is available for the selected month.");
+        } else {
+          setWarningMessage(null);
+        }
+        setLoading(false);
       }
     } catch (error) {
       setFraudReports([]);
       setGroupedFraudReports({});
       setWarningMessage(null);
-      setLoading(false); // NEW
+      setLoading(false);
       throw error;
     }
   };
