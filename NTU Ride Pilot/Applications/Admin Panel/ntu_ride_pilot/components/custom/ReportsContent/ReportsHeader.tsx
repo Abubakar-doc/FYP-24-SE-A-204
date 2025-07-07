@@ -1,5 +1,4 @@
 "use client";
-import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
 import ReportFilterDropdown from './ReportFilterDropdown';
 import { useState } from 'react';
@@ -42,7 +41,6 @@ const ReportsHeader: React.FC<ReportsHeaderProps> = ({ onGenerateReport }) => {
           >
             Generate Report
           </button>
-
         </div>
       </div>
     </div>
