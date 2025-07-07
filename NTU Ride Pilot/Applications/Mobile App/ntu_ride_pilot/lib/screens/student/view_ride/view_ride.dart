@@ -39,6 +39,7 @@ class _ViewRideScreenState extends State<ViewRideScreen> {
   ByteData? firstMarkerBytes;
   ByteData? lastMarkerBytes;
   ByteData? busMarkerBytes;
+  ByteData? grayMarkerBytes;
   String? _currentRouteId;
   DateTime? _etaNextStop;
   String? _nextStopName;
@@ -67,6 +68,7 @@ class _ViewRideScreenState extends State<ViewRideScreen> {
       lastMarkerBytes =
           await rootBundle.load('assets/pictures/last_marker.png');
       busMarkerBytes = await rootBundle.load('assets/pictures/bus.png');
+      grayMarkerBytes = await rootBundle.load('assets/pictures/gray_marker.png');
     } catch (e) {
       // debugPrint('Error loading marker images: $e');
     }
@@ -76,6 +78,7 @@ class _ViewRideScreenState extends State<ViewRideScreen> {
   Uint8List? get firstMarkerImage => firstMarkerBytes?.buffer.asUint8List();
   Uint8List? get lastMarkerImage => lastMarkerBytes?.buffer.asUint8List();
   Uint8List? get busMarkerImage => busMarkerBytes?.buffer.asUint8List();
+  Uint8List? get grayMarkerImage => grayMarkerBytes?.buffer.asUint8List();
 
   void setLoading(bool value) {
     setState(() => _isLoading = value);
@@ -109,7 +112,7 @@ class _ViewRideScreenState extends State<ViewRideScreen> {
       _nextStopName = rideData['nextStopName'];
     });
 
-    print(_etaNextStop);
+    // print(_etaNextStop);
     // print('Next Stop Name: $_nextStopName');
 
     // Update bus stops based on the routeId
@@ -195,6 +198,7 @@ class _ViewRideScreenState extends State<ViewRideScreen> {
                       firstMarkerBytes: firstMarkerBytes,
                       lastMarkerBytes: lastMarkerBytes,
                       busMarkerBytes: busMarkerBytes,
+                      grayMarkerBytes: grayMarkerBytes,
                       onMapReady: (cameraFunction) {
                         setState(() {
                           _centerCamera = cameraFunction;
@@ -203,6 +207,7 @@ class _ViewRideScreenState extends State<ViewRideScreen> {
                       latitude: _liveLatitude,
                       longitude: _liveLongitude,
                       busId: selectedBus?.busId,
+                      nextStopName: _nextStopName,
                     ),
                   ),
                   Expanded(
