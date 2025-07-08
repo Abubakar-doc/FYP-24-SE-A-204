@@ -1,0 +1,85 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+  <diagram name="Deployment Diagram" id="s6RWw9VzUeTAuBBGe7B_">
+    <mxGraphModel dx="1090" dy="653" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-1" value="User Device&#xa;(Mobile App)" style="swimlane;childLayout=stackLayout;" vertex="1" parent="1">
+          <mxGeometry x="120" y="110" width="180" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-2" value="Flutter App&#xa;(Students &amp; Drivers)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="_kGAUKtj7ko2YuZfmeZ8-1">
+          <mxGeometry y="23" width="180" height="71" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-3" value="Admin System&#xa;(Web Browser)" style="swimlane;childLayout=stackLayout;" vertex="1" parent="1">
+          <mxGeometry x="501" y="90" width="180" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-4" value="Next.js Admin Panel" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="_kGAUKtj7ko2YuZfmeZ8-3">
+          <mxGeometry y="23" width="180" height="97" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-5" value="Firebase Cloud" style="cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="308" width="460" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-6" value="Authentication Service" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="100" y="413" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-7" value="Firestore Database" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="270" y="413" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-8" value="Cloud Storage" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="410" y="413" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-9" value="Cloud Messaging (FCM)" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="91" y="495" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-10" value="Firebase Hosting" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="325" y="495" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-11" value="Mapbox API Server" style="swimlane;" vertex="1" parent="1">
+          <mxGeometry x="580" y="258" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-12" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;Mapbox API Server&lt;/font&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="_kGAUKtj7ko2YuZfmeZ8-11">
+          <mxGeometry width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-25" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="_kGAUKtj7ko2YuZfmeZ8-11">
+          <mxGeometry x="50" y="52" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-26" value="Live Tracking API" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="_kGAUKtj7ko2YuZfmeZ8-11">
+          <mxGeometry x="50" y="57" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-13" style="endArrow=block;" edge="1" parent="1" source="_kGAUKtj7ko2YuZfmeZ8-1" target="_kGAUKtj7ko2YuZfmeZ8-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-14" style="endArrow=block;" edge="1" parent="1" source="_kGAUKtj7ko2YuZfmeZ8-1" target="_kGAUKtj7ko2YuZfmeZ8-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-15" style="endArrow=block;" edge="1" parent="1" source="_kGAUKtj7ko2YuZfmeZ8-3" target="_kGAUKtj7ko2YuZfmeZ8-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-16" style="endArrow=block;" edge="1" parent="1" source="_kGAUKtj7ko2YuZfmeZ8-11" target="_kGAUKtj7ko2YuZfmeZ8-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-18" value="&lt;b&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;Firebase Cloud&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="262" y="318" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-19" value="&lt;b&gt;HTTPS&lt;br&gt;Auth,DB, Storage,FCM&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="246" y="246" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="_kGAUKtj7ko2YuZfmeZ8-20" target="_kGAUKtj7ko2YuZfmeZ8-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-20" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="465" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-21" value="HTTPS&lt;br&gt;Firestore,Auth,Hosting" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="650" y="480" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-23" value="&lt;b&gt;GPS APIs&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="572" y="431" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="_kGAUKtj7ko2YuZfmeZ8-24" value="&lt;b&gt;GPS APIs&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="223" width="60" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
