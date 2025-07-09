@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import ReportsHeader from "./ReportsHeader";
 import LoadingIndicator from "../LoadingIndicator/LoadingIndicator";
-import Pagination from "./Pagination"; // Import Pagination component
+import Pagination from "./Pagination";
 import {
   collection,
   query,
@@ -122,10 +122,14 @@ const ReportsContent: React.FC = () => {
       setGroupedFraudReports(grouped);
       setFraudReports(fraudReportsRaw);
 
+      // Remove warning message display from table and use notification instead
       if (fraudReportsRaw.length === 0 && filter === "one_day") {
         const today = new Date();
         const todayStr = today.toLocaleDateString();
-        setWarningMessage(`No frauds data is available for ${todayStr}`);
+        setWarningMessage(null);
+        setNotificationMessage(`No frauds data is available for ${todayStr}`);
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 3000);
       } else {
         setWarningMessage(null);
       }
@@ -328,10 +332,13 @@ const ReportsContent: React.FC = () => {
 
         if (rides.length === 0) {
           const todayStr = startDate.toLocaleDateString();
-          setWarningMessage(`No ride data is available for ${todayStr}`);
+          setWarningMessage(null);
           setFraudReports([]);
           setGroupedFraudReports({});
           setLoading(false);
+          setNotificationMessage(`No ride data is available for ${todayStr}`);
+          setShowNotification(true);
+          setTimeout(() => setShowNotification(false), 3000);
           return;
         }
         const rideGroups = groupRides(rides);
@@ -365,7 +372,6 @@ const ReportsContent: React.FC = () => {
               }
             });
           }
-
           // Iteration 2: Check onlineOnBoard rollNos of baseRide against offlineOnBoard of other rides
           const baseOnlineSet = new Set(baseRide.onlineOnBoard);
           for (let i = 1; i < group.length; i++) {
@@ -418,7 +424,7 @@ const ReportsContent: React.FC = () => {
 
         if (uniqueFraudReports.length === 0) {
           const todayStr = startDate.toLocaleDateString();
-          setWarningMessage(`No frauds data is available for ${todayStr}`);
+          setWarningMessage(null);
           setNotificationMessage(`No frauds data is available for ${todayStr}`);
           setShowNotification(true);
           setTimeout(() => setShowNotification(false), 3000);
@@ -472,7 +478,7 @@ const ReportsContent: React.FC = () => {
           const msg = filter === "all"
             ? "No ride data is available for the selected week."
             : "No ride data is available for the selected month.";
-          setWarningMessage(msg);
+          setWarningMessage(null);
           setNotificationMessage(msg);
           setShowNotification(true);
           setTimeout(() => setShowNotification(false), 3000);
@@ -480,7 +486,7 @@ const ReportsContent: React.FC = () => {
           const msg = filter === "all"
             ? "No frauds data is available for the selected week."
             : "No frauds data is available for the selected month.";
-          setWarningMessage(msg);
+          setWarningMessage(null);
           setNotificationMessage(msg);
           setShowNotification(true);
           setTimeout(() => setShowNotification(false), 3000);
@@ -515,7 +521,6 @@ const ReportsContent: React.FC = () => {
   const filteredRollNos = uniqueRollNos.filter((rollNo) => {
     const entries = groupedFraudReports[rollNo];
     if (!entries || entries.length === 0) return false;
-
     const search = searchTerm.trim().toLowerCase();
     if (!search) return true; // no search term, show all
 
@@ -599,11 +604,7 @@ const ReportsContent: React.FC = () => {
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="bg-white rounded-lg p-4">
-            {warningMessage && (
-              <div className="mb-4 text-center text-red-600 font-semibold">
-                {warningMessage}
-              </div>
-            )}
+            {/* Remove warningMessage display from table */}
             <div className="rounded-lg border border-gray-300 overflow-hidden">
               <table className="w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
@@ -623,46 +624,45 @@ const ReportsContent: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {!warningMessage && paginatedRollNos.length === 0 && (
+                  {paginatedRollNos.length === 0 && (
                     <tr>
                       <td colSpan={4} className="text-center py-4 text-gray-500">
                         No fraud reports found.
                       </td>
                     </tr>
                   )}
-                  {!warningMessage &&
-                    paginatedRollNos.map((rollNo, index) => {
-                      const entries = groupedFraudReports[rollNo];
-                      const sortedEntries = entries.slice().sort((a, b) => {
-                        return a.created_at.toMillis() - b.created_at.toMillis();
-                      });
+                  {paginatedRollNos.map((rollNo, index) => {
+                    const entries = groupedFraudReports[rollNo];
+                    const sortedEntries = entries.slice().sort((a, b) => {
+                      return a.created_at.toMillis() - b.created_at.toMillis();
+                    });
 
-                      return (
-                        <tr
-                          key={rollNo}
-                          className="hover:bg-gray-50 border-b border-gray-300 text-center"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap w-[10%]">
-                            {startIndex + index + 1}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap w-[25%]">
-                            {rollNo}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap w-[25%]">
-                            {sortedEntries.map((entry, i) => (
-                              <div key={i}>
-                                {entry.created_at.toDate().toLocaleString()}
-                              </div>
-                            ))}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap w-[40%]">
-                            {sortedEntries.map((entry, i) => (
-                              <div key={i}>{entry.bus_id}</div>
-                            ))}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    return (
+                      <tr
+                        key={rollNo}
+                        className="hover:bg-gray-50 border-b border-gray-300 text-center"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap w-[10%]">
+                          {startIndex + index + 1}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[25%]">
+                          {rollNo}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[25%]">
+                          {sortedEntries.map((entry, i) => (
+                            <div key={i}>
+                              {entry.created_at.toDate().toLocaleString()}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap w-[40%]">
+                          {sortedEntries.map((entry, i) => (
+                            <div key={i}>{entry.bus_id}</div>
+                          ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 

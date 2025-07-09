@@ -1,19 +1,21 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
+type ComplaintsFilterDropdownProps = {
+  filter: "all" | "active" | "suspended";
+  setFilter: (value: "all" | "active" | "suspended") => void;
+};
 
-
-const ComplaintsFilterDropdown: React.FC = () => {
-  
-
-  
+const ComplaintsFilterDropdown: React.FC<ComplaintsFilterDropdownProps> = ({ filter, setFilter }) => {
   return (
     <div className="relative w-auto">
       <select
         className='w-full bg-blue-500 text-white px-6 py-2 rounded-md focus:outline-none focus:ring focus:border-blue-300 appearance-none'
+        value={filter}
+        onChange={e => setFilter(e.target.value as "all" | "active" | "suspended")}
       >
         <option value="all">All</option>
-        <option value="active">Resolved</option>       
+        <option value="active">Resolved</option>
         <option value="suspended">UnResolved</option>
       </select>
 

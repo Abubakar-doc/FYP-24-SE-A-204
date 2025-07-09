@@ -2,12 +2,20 @@
 import Link from 'next/link';
 import HeaderIcons from '../HeaderIcons/HeaderIcons';
 import ComplaintsFilterDropdown from './ComplaintsFilterDropdown';
-import { useState } from 'react';
 
+type ComplaintsHeaderProps = {
+  filter: "all" | "active" | "suspended";
+  setFilter: (value: "all" | "active" | "suspended") => void;
+  search: string;
+  setSearch: (value: string) => void;
+};
 
-
-const ComplaintsHeader: React.FC = () => {
-  
+const ComplaintsHeader: React.FC<ComplaintsHeaderProps> = ({
+  filter,
+  setFilter,
+  search,
+  setSearch,
+}) => {
   return (
     <div className="w-full h-32 bg-[#F5F5F5] p-4 rounded-md">
       {/* Header Icons Row */}
@@ -23,6 +31,8 @@ const ComplaintsHeader: React.FC = () => {
             <input
               type="text"
               placeholder="Search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
               className='w-80 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300'
             />
             <button className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -31,9 +41,7 @@ const ComplaintsHeader: React.FC = () => {
             </button>
           </div>
 
-          <ComplaintsFilterDropdown    />
-
-          
+          <ComplaintsFilterDropdown filter={filter} setFilter={setFilter} />
         </div>
       </div>
     </div>
