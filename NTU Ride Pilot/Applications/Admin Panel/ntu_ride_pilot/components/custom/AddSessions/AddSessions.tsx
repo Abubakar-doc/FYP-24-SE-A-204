@@ -188,7 +188,7 @@ const AddSessionForm: React.FC<AddSessionFormProps> = ({ onBack }) => {
   return (
     <div className="bg-white w-full min-h-screen relative">
       <div className="rounded-lg mb-2">
-        <AddSessionHeader onBackToSessions={onBack} />
+        <AddSessionHeader onBackToSessions={onBack} isEdit={isEdit} />
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 p-4 mx-6">
         <div>

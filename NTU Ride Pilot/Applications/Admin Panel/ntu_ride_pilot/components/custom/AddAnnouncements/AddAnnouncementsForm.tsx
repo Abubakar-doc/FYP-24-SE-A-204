@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useRef, useEffect } from 'react';
 import AddAnnouncementsHeader from './AddAnnouncementsHeader';
 import { firestore } from '@/lib/firebase';
@@ -24,11 +25,9 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf',
 ];
 
-// ===== UPDATED LIMITS =====
-const MAX_FILES_COUNT = 5; // was 3
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB, was 2MB
-const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;   // 10MB, was 5MB
-// ==========================
+const MAX_FILES_COUNT = 5;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;  // 10MB
 
 const getFileIcon = (file: File) => {
   if (file.type === 'application/pdf') return <FaFilePdf className="text-red-600 w-5 h-5" />;
@@ -36,47 +35,20 @@ const getFileIcon = (file: File) => {
   return <FaFileAlt className="text-gray-600 w-5 h-5" />;
 };
 
-// Upload file returns { url, publicId }
-// const uploadFileToCloudinary = async (file: File): Promise<{ url: string; publicId: string }> => {
-//   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-//   if (!cloudName) {
-//     throw new Error('Cloudinary cloud name not set in environment variables');
-//   }
-//   const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-//   const formData = new FormData();
-//   formData.append('file', file);
-//   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-//   const response = await fetch(url, {
-//     method: 'POST',
-//     body: formData,
-//   });
-
-//   if (!response.ok) {
-//     throw new Error('Failed to upload file to Cloudinary');
-//   }
-
-//   const data = await response.json();
-//   return { url: data.secure_url, publicId: data.public_id };
-// };
-
 const uploadFileToCloudinary = async (file: File): Promise<{ url: string; publicId: string }> => {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     throw new Error('Cloudinary cloud name not set in environment variables');
   }
 
-  const fileName = file.name.split('.').slice(0, -1).join('.'); // Get the original file name without extension
-  const fileExtension = file.name.split('.').pop(); // Get the file extension
-
-  // Set the public ID to the original file name (without the extension)
-  const publicId = fileName; // You can customize this if needed (e.g., add a timestamp or other unique identifiers)
+  const fileName = file.name.split('.').slice(0, -1).join('.');
+  const publicId = fileName;
 
   const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  formData.append('public_id', publicId);  // Set the custom public ID
+  formData.append('public_id', publicId);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -90,7 +62,6 @@ const uploadFileToCloudinary = async (file: File): Promise<{ url: string; public
   const data = await response.json();
   return { url: data.secure_url, publicId: data.public_id };
 };
-
 
 const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) => {
   const titleRef = useRef<HTMLInputElement>(null);
@@ -119,7 +90,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
     if (viewId) {
       setIsViewMode(true);
       setLoading(true);
-      // Fetch announcement document
       const fetchAnnouncement = async () => {
         try {
           const docRef = doc(firestore, 'announcements', viewId);
@@ -128,7 +98,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
             const data = docSnap.data();
             setViewAnnouncement(data);
             setMediaLinks(data.mediaLinks || []);
-            // Populate refs
             if (titleRef.current) titleRef.current.value = data.title || '';
             if (messageRef.current) messageRef.current.value = data.message || '';
           }
@@ -140,7 +109,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
       };
       fetchAnnouncement();
     }
-   
   }, [searchParams]);
 
   const showNotificationMessage = (
@@ -299,12 +267,13 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
         mediaPublicIds: mediaPublicIds.length > 0 ? mediaPublicIds : [],
         created_at: serverTimestamp(),
       });
-      await fetch('/api/sendNotification', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ title, message }),
-})
 
+      // Your notification API call (if needed)
+      await fetch('/api/sendNotification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, message }),
+      });
 
       showNotificationMessage('Announcement Added Successfully!', 'success');
       handleReset();
@@ -354,7 +323,7 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
 
   return (
     <div className="bg-white w-full min-h-screen relative">
-      <AddAnnouncementsHeader onBackToBus={onBack} />
+      <AddAnnouncementsHeader onBackToBus={onBack} isViewMode={isViewMode} />
 
       <form onSubmit={handleSubmit} className="space-y-4 p-4 mx-6" noValidate>
         <div className="mb-4">
@@ -390,7 +359,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
           />
         </div>
 
-        {/* Only show media upload in add mode */}
         {!isViewMode && (
           <div className="mb-6">
             <label className="block text-sm font-semibold text-[#202020] mb-1">
@@ -429,47 +397,77 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
                   {files.length > 0 ? `${files.length} file${files.length > 1 ? 's' : ''} selected` : 'No files chosen'}
                 </span>
               </div>
-            </div>
-       {files.length > 0 && (
-              <div className="mt-3 border border-gray-300 rounded-md bg-[#F9FAFB] max-h-48 overflow-auto">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between px-4 py-2 border-b border-gray-200 last:border-b-0"
-                  >
-                    <div className="flex items-center space-x-2 truncate">
-                      {getFileIcon(file)}
-                      <span className="text-gray-700 text-sm truncate max-w-xs">{file.name}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile(index)}
-                      disabled={loading}
-                      aria-label={`Remove file ${file.name}`}
-                      className="text-red-600 hover:text-red-800 focus:outline-none"
+              {files.length > 0 && (
+                <div className="mt-3 border border-gray-300 rounded-md bg-[#F9FAFB] max-h-48 overflow-auto">
+                  {files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between px-4 py-2 border-b border-gray-200 last:border-b-0"
                     >
-                      &times;
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <div className="flex items-center space-x-2 truncate">
+                        {getFileIcon(file)}
+                        <span className="text-gray-700 text-sm truncate max-w-xs">{file.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(index)}
+                        disabled={loading}
+                        aria-label={`Remove file ${file.name}`}
+                        className="text-red-600 hover:text-red-800 focus:outline-none"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Media preview for view mode */}
         {isViewMode && mediaLinks.length > 0 && (
           <div className="mb-6">
             <label className="block text-sm font-semibold text-[#202020] mb-1">
               Attached Media Files
             </label>
             <div className="flex flex-wrap">
-              {mediaLinks.map((url, idx) => renderMediaPreview(url, idx))}
+              {mediaLinks.map((url, idx) => {
+                const isImage = url.match(/\.(jpeg|jpg|png)$/i);
+                const isPdf = url.match(/\.pdf$/i);
+                const filename = url.split('/').pop()?.split('?')[0] || `file-${idx + 1}`;
+                if (isImage) {
+                  return (
+                    <div key={url} className="w-40 m-2 rounded shadow border border-gray-200 overflow-hidden bg-white">
+                      <a href={url} download target="_blank" rel="noopener noreferrer" title="Download Image">
+                        <img src={url} alt="Media Preview" className="w-full h-32 object-cover" />
+                        <div className="text-xs text-center py-1 truncate">{filename}</div>
+                      </a>
+                    </div>
+                  );
+                }
+                if (isPdf) {
+                  return (
+                    <div key={url} className="w-40 m-2 rounded shadow border border-gray-200 overflow-hidden bg-white flex flex-col items-center justify-center">
+                      <a href={url} download target="_blank" rel="noopener noreferrer" title="Download PDF" className="flex flex-col items-center py-4">
+                        <FaFilePdf className="text-5xl text-red-600 mb-2" />
+                        <div className="text-xs text-center truncate">{filename}</div>
+                      </a>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={url} className="w-40 m-2 rounded shadow border border-gray-200 overflow-hidden bg-white flex flex-col items-center justify-center">
+                    <a href={url} download target="_blank" rel="noopener noreferrer" title="Download File" className="flex flex-col items-center py-4">
+                      <FaFileAlt className="text-5xl text-gray-600 mb-2" />
+                      <div className="text-xs text-center truncate">{filename}</div>
+                    </a>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Buttons */}
         <div className="flex justify-end space-x-4">
           {!isViewMode && (
             <>
@@ -497,7 +495,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
         </div>
       </form>
 
-      {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
@@ -518,7 +515,6 @@ const AddAnnouncementsForm: React.FC<AddAnnouncementsFormProps> = ({ onBack }) =
         </div>
       )}
 
-      {/* Floating Notification */}
       {showNotification && (
         <div
           className={`fixed bottom-4 right-4 z-50 p-6 rounded-lg shadow-lg max-w-xs w-full text-white font-semibold transition-opacity duration-500 ${

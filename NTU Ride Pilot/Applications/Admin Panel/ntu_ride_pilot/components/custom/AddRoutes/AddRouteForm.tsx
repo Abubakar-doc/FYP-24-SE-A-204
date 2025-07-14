@@ -176,7 +176,7 @@ const AddRouteForm: React.FC<AddRouteFormProps> = ({ onBack }) => {
       {/* HEADER: sticky at top, does not scroll */}
       <div className="flex-shrink-0 sticky top-0 z-20 bg-white shadow-sm">
         <div className="rounded-lg mb-2">
-          <AddRouteHeader onBackToRoutes={onBack} />
+          <AddRouteHeader onBackToRoutes={onBack} isViewMode={isViewMode} />
         </div>
       </div>
 

@@ -44,6 +44,12 @@ const AnnouncementsContent: React.FC = () => {
     return msg.slice(0, 50) + "...";
   };
 
+  // NEW: Truncate Title to 50 chars with "..."
+  const truncateTitle = (title: string): string => {
+    if (title.length <= 40) return title;
+    return title.slice(0, 40) + "...";
+  };
+
   const formatTimestamp = (timestamp: any): string => {
     if (!timestamp) return "";
     const date = timestamp.toDate();
@@ -290,7 +296,9 @@ const AnnouncementsContent: React.FC = () => {
                     paginatedAnnouncements.map((announcement, index) => (
                       <tr key={announcement.id} className="hover:bg-gray-50 border-b border-gray-300">
                         <td className="px-4 py-4 whitespace-nowrap w-[5%]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
-                        <td className="px-4 py-4 whitespace-nowrap w-[25%] overflow-hidden text-ellipsis">{announcement.title}</td>
+                        <td className="px-4 py-4 whitespace-nowrap w-[25%] overflow-hidden text-ellipsis">
+                          {truncateTitle(announcement.title)}
+                        </td>
                         <td className="px-4 py-4 whitespace-nowrap w-[40%] overflow-hidden text-ellipsis">{truncateMessage(announcement.message)}</td>
                         <td className="px-4 py-4 whitespace-nowrap w-[20%] overflow-hidden text-ellipsis">
                           {formatTimestamp(announcement.created_at)}

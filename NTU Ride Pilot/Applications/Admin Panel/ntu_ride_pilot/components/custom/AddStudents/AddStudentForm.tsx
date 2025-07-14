@@ -67,6 +67,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [existingRollNumbers, setExistingRollNumbers] = useState<string[]>([]);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -114,7 +115,10 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             setOriginalEmail(data.email);
             setName(data.name);
             setBusCard(data.bus_card_id || '');
-            setBusCardStatus(data.bus_card_status || 'Inactive');
+            // Only set the status from database if it exists, otherwise keep the current state
+            if (data.bus_card_status) {
+              setBusCardStatus(data.bus_card_status);
+            }
           } else {
             setErrorMessage('Student not found.');
             setShowNotification(true);
@@ -124,17 +128,22 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           setErrorMessage('Failed to fetch student data.');
           setShowNotification(true);
           setTimeout(() => setShowNotification(false), 3000);
+        } finally {
+          setInitialLoadComplete(true);
         }
+      } else {
+        setInitialLoadComplete(true);
       }
     };
     fetchStudent();
   }, [isEditMode, studentId]);
 
   useEffect(() => {
-    if (!busCard) {
+    // Only auto-set to Inactive when not in edit mode and busCard is empty
+    if (initialLoadComplete && !isEditMode && !busCard) {
       setBusCardStatus('Inactive');
     }
-  }, [busCard]);
+  }, [busCard, isEditMode, initialLoadComplete]);
 
   const generatePassword = () => {
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -236,15 +245,12 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     }
   };
 
-  // ----------- UPDATED LOGIC STARTS HERE -----------
-  // Helper: Check if a bus card document exists for a given roll number
   const checkBusCardExistsByRollNo = async (rollNo: string) => {
     try {
       const busCardsCollection = collection(firestore, 'bus_cards');
       const q = query(busCardsCollection, where('roll_no', '==', rollNo));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        // Return the bus card ID if found
         const docSnap = snapshot.docs[0];
         return docSnap.id;
       }
@@ -254,7 +260,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       return null;
     }
   };
-  // ----------- UPDATED LOGIC ENDS HERE -----------
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -277,7 +282,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
     const normalizedName = normalizeSpaces(name);
     const normalizedEmail = normalizeSpaces(email);
-
     if (!normalizedName || !normalizedEmail) {
       setErrorMessage('Name and Email cannot be empty or spaces only');
       setShowNotification(true);
@@ -292,7 +296,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     ) {
       if (!isEditMode && existingRollNumbers.includes(rollNumber)) {
-        // Student already exists in system, check session membership
         try {
           const sessionDocRef = doc(firestore, 'sessions', sessionId!);
           const sessionDocSnap = await getDoc(sessionDocRef);
@@ -308,15 +311,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               setTimeout(() => setShowNotification(false), 3000);
               return;
             } else {
-              // ----------- UPDATED LOGIC FOR BUS CARD STATUS -----------
-              // Student exists but not in this session, add roll_no to session
-              await updateDoc(sessionDocRef, {
-                roll_no: arrayUnion(rollNumber),
-                updated_at: serverTimestamp(),
-              });
-
-              // Now update the student's bus_card_status and bus card's isActive flag
-              // Check if a bus card document exists for this student
               const busCardId = await checkBusCardExistsByRollNo(rollNumber);
 
               const studentDocRef = doc(
@@ -328,7 +322,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               );
 
               if (busCardId) {
-                // Bus card exists: set bus_card_status to 'Active' and bus card's isActive to true
                 await updateDoc(studentDocRef, {
                   bus_card_status: 'Active',
                   updated_at: serverTimestamp(),
@@ -339,13 +332,11 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
                   updated_at: serverTimestamp(),
                 });
               } else {
-                // No bus card: set bus_card_status to 'Inactive'
                 await updateDoc(studentDocRef, {
                   bus_card_status: 'Inactive',
                   updated_at: serverTimestamp(),
                 });
               }
-              // ----------- END UPDATED LOGIC -----------
 
               setSuccessMessage(`Student added to session successfully!`);
               resetForm();
@@ -380,13 +371,9 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           'students',
           rollNumber
         );
-
         const isActive = busCard ? busCardStatus === 'Active' : false;
 
         if (isEditMode) {
-          // EDIT MODE: Handle email update carefully
-
-          // Fetch existing student data
           const existingStudentDoc = await getDoc(studentDocRef);
           if (!existingStudentDoc.exists()) {
             setErrorMessage('Student record not found.');
@@ -396,7 +383,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           }
           const existingData = existingStudentDoc.data() as Student;
 
-          // Check if email changed
           if (normalizedEmail !== originalEmail) {
             const emailExists = await checkEmailExists(normalizedEmail);
             if (emailExists) {
@@ -422,7 +408,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             );
           }
 
-          // Handle bus card update logic (unchanged)
           const previousBusCardId = existingData.bus_card_id || '';
 
           if (busCard && busCard !== previousBusCardId) {
@@ -487,7 +472,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           return;
         }
 
-        // ADD MODE: unchanged (create user and Firestore doc)
         const generatedPassword = generatePassword();
 
         await createUserWithEmailAndPassword(
@@ -590,7 +574,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   return (
     <div className="bg-white w-full min-h-screen relative">
-      <AddStudentHeader onBackToStudents={onBack} />
+      <AddStudentHeader onBackToStudents={onBack} isEditMode={isEditMode} />
 
       <form onSubmit={handleSubmit} className="space-y-6 p-4 mx-6">
         <RollNumberEmailRow

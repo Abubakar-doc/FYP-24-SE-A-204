@@ -235,8 +235,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
       return false;
     }
   };
-
-  // --- HELPER: Delete user by email via API ---
+ // --- HELPER: Delete user by email via API ---
   const deleteUserByEmail = async (emailToDelete: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/delete-user', {
@@ -441,8 +440,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
       setLoading(false);
     }
   };
-
-  // Reset handler
+ // Reset handler
   const handleReset = () => {
     if (nameRef.current) nameRef.current.value = '';
     if (emailRef.current) emailRef.current.value = '';
@@ -458,7 +456,7 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({ onBack }) => {
 
   return (
     <div className="bg-white w-full min-h-screen relative">
-      <AddDriverHeader onBackToDriver={onBack ?? (() => {})} />
+      <AddDriverHeader onBackToDriver={onBack ?? (() => {})} isEditMode={isEditMode} />
 
       <form onSubmit={handleSubmit} className="space-y-4 p-4 mx-6" noValidate>
         {/* Name and Email Fields */}
