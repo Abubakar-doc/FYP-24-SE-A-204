@@ -9,17 +9,15 @@ import {
   FaExclamationTriangle,
   FaCar,
   FaFileAlt,
-  FaUser,
   FaGraduationCap,
-  FaChevronRight,
   FaSignOutAlt,
 } from 'react-icons/fa';
 
-interface SidebarItem {
-  label: string;
-  icon: React.ReactNode;
-  href: string;
-}
+// interface SidebarItem {
+//   label: string;
+//   icon: React.ReactNode;
+//   href: string;
+// }
 
 interface SidebarProps {
   activeItem: string;
@@ -103,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, className, onItemClick, o
           <button
             type="button"
             onClick={() => setShowLogoutModal(true)}
-            className="flex items-center justify-center space-x-2 w-full bg-red-600 hover:bg-red-700 rounded-md py-3 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="flex items-center justify-center space-x-2 w-full bg-gray-600 hover:bg-gray-700 rounded-md py-3 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
             aria-label="Log Out"
           >
             <FaSignOutAlt className="w-5 h-5" />
