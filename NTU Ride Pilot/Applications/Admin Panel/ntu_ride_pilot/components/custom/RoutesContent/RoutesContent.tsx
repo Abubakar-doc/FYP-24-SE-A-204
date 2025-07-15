@@ -60,7 +60,7 @@ const RoutesContent: React.FC = () => {
     };
 
     fetchRoutes();
-    // eslint-disable-next-line
+    
   }, []);
 
   // Filter routes when searchQuery changes

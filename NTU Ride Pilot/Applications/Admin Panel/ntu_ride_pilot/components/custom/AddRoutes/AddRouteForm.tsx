@@ -20,6 +20,13 @@ type BusStop = {
   latitude: string;
 };
 
+// Define the type for the bus stop object as returned from Firestore
+type FirestoreBusStop = {
+  busStopName: string;
+  longitude: number;
+  latitude: number;
+};
+
 type AddRouteFormProps = {
   onBack: () => void;
 };
@@ -46,7 +53,8 @@ const AddRouteForm: React.FC<AddRouteFormProps> = ({ onBack }) => {
             const data = docSnap.data();
             setRouteName(data.name);
             
-            const stops = data.busStops.map((stop: any, index: number) => ({
+            // Use the FirestoreBusStop type here
+            const stops = data.busStops.map((stop: FirestoreBusStop, index: number) => ({
               sequenceid: index + 1,
               busStopName: stop.busStopName,
               longitude: stop.longitude.toString(),
