@@ -121,7 +121,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
     'Validate Roll No Format',
     'Validate Email Format',
     'Validate Name Format',
-    'Add Students to Database and Authentication',
+    'Registering Students',
   ];
 
   const resetProcess = () => {
@@ -729,11 +729,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
           <p className="font-medium">
             Records: <span className="text-gray-700">{dataCount}</span>
           </p>
-          {sessionId && (
-            <p className="font-medium">
-              Session ID: <span className="text-gray-700">{sessionId}</span>
-            </p>
-          )}
+          
         </div>
         {/* Steps */}
         <div className="mb-6 space-y-3">

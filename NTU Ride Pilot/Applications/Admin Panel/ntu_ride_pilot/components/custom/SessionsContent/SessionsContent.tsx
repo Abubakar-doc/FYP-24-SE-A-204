@@ -44,7 +44,7 @@ const SessionsContent: React.FC = () => {
   // Pagination state
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rowsPerPageOptions = [10, 20, 30, 40, 50];
-  const [currentPage, setCurrentPage] = useState(1); // Changed from currentLoadedCount
+  const [currentPage, setCurrentPage] = useState(1);
 
   const previousRollNoRef = useRef<string[]>([]);
   const activeSession = sessions.find((s) => s.session_status === "active") || null;
@@ -85,53 +85,6 @@ const SessionsContent: React.FC = () => {
 
     fetchSessions();
   }, []);
-
-  useEffect(() => {
-    if (!activeSession) {
-      previousRollNoRef.current = [];
-      return;
-    }
-    const previousRollNos = previousRollNoRef.current;
-    const currentRollNos = activeSession.roll_no || [];
-    const newRollNos = currentRollNos.filter((rollNo) => !previousRollNos.includes(rollNo));
-    if (newRollNos.length > 0) {
-      const updateStudentsAndBusCards = async () => {
-        try {
-          const studentsCollection = collection(
-            firestore,
-            "users",
-            "user_roles",
-            "students"
-          );
-          const busCardsCollection = collection(firestore, "bus_cards");
-          for (const rollNo of newRollNos) {
-            const studentQuery = query(studentsCollection, where("roll_no", "==", rollNo));
-            const studentQuerySnapshot = await getDocs(studentQuery);
-            for (const studentDoc of studentQuerySnapshot.docs) {
-              const studentRef = doc(firestore, "users", "user_roles", "students", studentDoc.id);
-              await updateDoc(studentRef, {
-                bus_card_status: "Active",
-                updated_at: Timestamp.now(),
-              });
-            }
-            const busCardQuery = query(busCardsCollection, where("roll_no", "==", rollNo));
-            const busCardQuerySnapshot = await getDocs(busCardQuery);
-            for (const busCardDoc of busCardQuerySnapshot.docs) {
-              const busCardRef = doc(firestore, "bus_cards", busCardDoc.id);
-              await updateDoc(busCardRef, {
-                isActive: true,
-                updated_at: Timestamp.now(),
-              });
-            }
-          }
-        } catch (error) {
-          console.error("Error updating students/bus cards on roll_no change:", error);
-        }
-      };
-      updateStudentsAndBusCards();
-    }
-    previousRollNoRef.current = currentRollNos;
-  }, [activeSession]);
 
   const handleDeactivateSession = async (sessionId: string) => {
     if (!sessionToDeactivate) return;
@@ -399,11 +352,7 @@ const SessionsContent: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-white w-full">
-      {/* ---- SIDEBAR (if you have one, place here) ---- */}
-      {/* <Sidebar /> */}
-      {/* End Sidebar */}
       <div className="flex flex-col flex-1 h-screen relative">
-        {/* Loading overlay - covers only the session content, not sidebar */}
         {(isLoading && !isDeactivating) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <LoadingIndicator message="Loading sessions..." />
@@ -523,7 +472,6 @@ const SessionsContent: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-              {/* Pagination controls */}
               {showPagination && (
                 <Pagination
                   currentLoadedCount={currentPage * rowsPerPage}

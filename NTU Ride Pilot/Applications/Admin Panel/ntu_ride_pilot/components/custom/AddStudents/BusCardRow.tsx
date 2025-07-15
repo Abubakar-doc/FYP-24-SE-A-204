@@ -67,6 +67,9 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
     }
   };
 
+  // Masked value for display
+  const maskedBusCard = busCard ? '*'.repeat(busCard.length) : '';
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -78,7 +81,7 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
           id="busCard"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-[#F5F5F5] p-3 cursor-pointer"
           placeholder="Tap here..."
-          value={busCard}
+          value={maskedBusCard}
           onFocus={openModal}
           readOnly
           required={false} // Optional field
@@ -96,7 +99,7 @@ const BusCardRow: React.FC<BusCardRowProps> = ({
           value={busCardStatus}
           onChange={(e) => setBusCardStatus(e.target.value)}
           required
-          disabled={disabled || statusDisabled} // Disable if no bus card or parent disabled
+          disabled={disabled || statusDisabled}
         >
           <option>Active</option>
           <option>Inactive</option>

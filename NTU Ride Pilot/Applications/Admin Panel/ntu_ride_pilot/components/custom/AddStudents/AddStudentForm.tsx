@@ -115,7 +115,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             setOriginalEmail(data.email);
             setName(data.name);
             setBusCard(data.bus_card_id || '');
-            // Only set the status from database if it exists, otherwise keep the current state
             if (data.bus_card_status) {
               setBusCardStatus(data.bus_card_status);
             }
@@ -139,7 +138,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
   }, [isEditMode, studentId]);
 
   useEffect(() => {
-    // Only auto-set to Inactive when not in edit mode and busCard is empty
     if (initialLoadComplete && !isEditMode && !busCard) {
       setBusCardStatus('Inactive');
     }
@@ -150,10 +148,8 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const digits = '0123456789';
     const specials = '!@#$%^&*()';
-
     const getRandomChar = (str: string) =>
       str[Math.floor(Math.random() * str.length)];
-
     let password = [
       getRandomChar(uppercase),
       getRandomChar(lowercase),
@@ -161,12 +157,10 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       getRandomChar(specials),
       getRandomChar(specials),
     ];
-
     const allChars = uppercase + lowercase + digits + specials;
     for (let i = 0; i < 3; i++) {
       password.push(getRandomChar(allChars));
     }
-
     return password.sort(() => Math.random() - 0.5).join('');
   };
 
@@ -174,17 +168,14 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     const rollNoRegex = /^\d{2}-NTU-[A-Z]{2}-\d{4}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const nameRegex = /^[A-Za-z\s]+$/;
-
     if (!rollNoRegex.test(rollNumber)) {
       setErrorMessage('Invalid Roll Number Format (e.g., 23-NTU-CS-0001)');
       return false;
     }
-
     if (!emailRegex.test(emailToValidate)) {
       setErrorMessage('Invalid Email Format');
       return false;
     }
-
     if (!nameToValidate || typeof nameToValidate !== 'string' || nameToValidate.length > 50) {
       setErrorMessage('Name must be a string with a maximum of 50 characters');
       return false;
@@ -193,7 +184,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       setErrorMessage('Name must contain letters and spaces only');
       return false;
     }
-
     return true;
   };
 
@@ -224,7 +214,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       return false;
     }
   };
-
   const deleteUserByEmail = async (emailToDelete: string) => {
     try {
       const response = await fetch('/api/delete-user', {
@@ -263,7 +252,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     const nativeEvent = e.nativeEvent as SubmitEvent;
     if (
       nativeEvent?.submitter &&
@@ -272,14 +260,12 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
     ) {
       return;
     }
-
     if (!sessionId && !isEditMode) {
       setErrorMessage('No session selected');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
       return;
     }
-
     const normalizedName = normalizeSpaces(name);
     const normalizedEmail = normalizeSpaces(email);
     if (!normalizedName || !normalizedEmail) {
@@ -288,7 +274,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
       setTimeout(() => setShowNotification(false), 3000);
       return;
     }
-
     if (
       validateInputs(normalizedName, normalizedEmail) &&
       normalizedName.length <= 50 &&
@@ -299,7 +284,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
         try {
           const sessionDocRef = doc(firestore, 'sessions', sessionId!);
           const sessionDocSnap = await getDoc(sessionDocRef);
-
           if (sessionDocSnap.exists()) {
             const sessionData = sessionDocSnap.data();
             const sessionRollNos: string[] = sessionData?.roll_no || [];
@@ -312,7 +296,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               return;
             } else {
               const busCardId = await checkBusCardExistsByRollNo(rollNumber);
-
               const studentDocRef = doc(
                 firestore,
                 'users',
@@ -320,7 +303,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
                 'students',
                 rollNumber
               );
-
               if (busCardId) {
                 await updateDoc(studentDocRef, {
                   bus_card_status: 'Active',
@@ -337,7 +319,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
                   updated_at: serverTimestamp(),
                 });
               }
-
               setSuccessMessage(`Student added to session successfully!`);
               resetForm();
               setExistingRollNumbers((prev) => [...prev, rollNumber]);
@@ -360,9 +341,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           return;
         }
       }
-
       setLoading(true);
-
       try {
         const studentDocRef = doc(
           firestore,
@@ -372,7 +351,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           rollNumber
         );
         const isActive = busCard ? busCardStatus === 'Active' : false;
-
         if (isEditMode) {
           const existingStudentDoc = await getDoc(studentDocRef);
           if (!existingStudentDoc.exists()) {
@@ -382,7 +360,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             return;
           }
           const existingData = existingStudentDoc.data() as Student;
-
           if (normalizedEmail !== originalEmail) {
             const emailExists = await checkEmailExists(normalizedEmail);
             if (emailExists) {
@@ -391,7 +368,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               setLoading(false);
               return;
             }
-
             const deleted = await deleteUserByEmail(originalEmail);
             if (!deleted) {
               setErrorMessage('Failed to delete old user account.');
@@ -399,7 +375,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               setLoading(false);
               return;
             }
-
             const generatedPassword = generatePassword();
             await createUserWithEmailAndPassword(
               secondaryAuth,
@@ -407,13 +382,10 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               generatedPassword
             );
           }
-
           const previousBusCardId = existingData.bus_card_id || '';
-
           if (busCard && busCard !== previousBusCardId) {
             const busCardDocRef = doc(firestore, 'bus_cards', busCard);
             const busCardDoc = await getDoc(busCardDocRef);
-
             if (busCardDoc.exists()) {
               const busCardData = busCardDoc.data();
               if (busCardData.roll_no && busCardData.roll_no !== rollNumber) {
@@ -462,7 +434,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             ...(busCard ? { bus_card_id: busCard } : { bus_card_id: '' }),
             updated_at: serverTimestamp(),
           });
-
           setSuccessMessage('Student updated successfully!');
           resetForm();
           setExistingRollNumbers((prev) => [...prev, rollNumber]);
@@ -471,19 +442,15 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           setLoading(false);
           return;
         }
-
         const generatedPassword = generatePassword();
-
         await createUserWithEmailAndPassword(
           secondaryAuth,
           normalizedEmail,
           generatedPassword
         );
-
         if (busCard) {
           const busCardDocRef = doc(firestore, 'bus_cards', busCard);
           const busCardDoc = await getDoc(busCardDocRef);
-
           if (busCardDoc.exists()) {
             const busCardData = busCardDoc.data();
             if (busCardData.roll_no) {
@@ -497,7 +464,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
               return;
             }
           }
-
           await setDoc(busCardDocRef, {
             bus_card_id: busCard,
             isActive: isActive,
@@ -507,7 +473,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             updated_at: serverTimestamp(),
           });
         }
-
         const studentData: Student = {
           roll_no: rollNumber,
           email: normalizedEmail,
@@ -518,12 +483,9 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
           bus_card_status: busCard ? busCardStatus : 'Inactive',
           ...(busCard ? { bus_card_id: busCard } : {}),
         };
-
         await setDoc(studentDocRef, studentData);
-
         const sessionDocRef = doc(firestore, 'sessions', sessionId!);
         const sessionDocSnap = await getDoc(sessionDocRef);
-
         if (sessionDocSnap.exists()) {
           const rollNos: string[] = sessionDocSnap.data()?.roll_no || [];
           if (!rollNos.includes(rollNumber)) {
@@ -539,7 +501,6 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ onBack }) => {
             created_at: serverTimestamp(),
           });
         }
-
         setSuccessMessage('Student added successfully!');
         resetForm();
         setExistingRollNumbers((prev) => [...prev, rollNumber]);
